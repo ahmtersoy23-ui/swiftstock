@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+*.apk
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Cache
+.cache/
+.eslintcache
+.npm/
+
+# Android
+wms-frontend/android/.gradle/
+wms-frontend/android/app/build/
+wms-frontend/android/build/
+wms-frontend/android/capacitor-cordova-android-plugins/build/
+wms-frontend/android/local.properties
+
+# iOS
+wms-frontend/ios/App/Pods/
+wms-frontend/ios/DerivedData/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Secrets (never commit)
+*.pem
+*.key
+credentials.json
+service-account.json

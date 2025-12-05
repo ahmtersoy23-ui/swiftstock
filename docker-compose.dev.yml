@@ -1,0 +1,117 @@
+# ============================================
+# WMS - DEVELOPMENT DOCKER COMPOSE
+# ============================================
+
+version: '3.8'
+
+services:
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: wms-postgres-dev
+    environment:
+      POSTGRES_USER: wms_user
+      POSTGRES_PASSWORD: wms_password
+      POSTGRES_DB: wms_db
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./wms-backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wms_user -d wms_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wms-network-dev
+
+  # ============================================
+  # Redis Cache
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: wms-redis-dev
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data_dev:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wms-network-dev
+
+  # ============================================
+  # Backend API (Development with hot reload)
+  # ============================================
+  backend:
+    build:
+      context: ./wms-backend
+      dockerfile: Dockerfile.dev
+    container_name: wms-backend-dev
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgres://wms_user:wms_password@postgres:5432/wms_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: wms_user
+      DB_PASSWORD: wms_password
+      DB_NAME: wms_db
+      JWT_SECRET: dev-jwt-secret-key-change-in-production
+      JWT_REFRESH_SECRET: dev-refresh-secret-key-change-in-production
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
+    volumes:
+      - ./wms-backend/src:/app/src:ro
+      - ./wms-backend/package.json:/app/package.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+    networks:
+      - wms-network-dev
+
+  # ============================================
+  # Frontend (Vite dev server)
+  # ============================================
+  frontend:
+    build:
+      context: ./wms-frontend
+      dockerfile: Dockerfile.dev
+    container_name: wms-frontend-dev
+    environment:
+      VITE_API_URL: http://localhost:3001/api/v1
+    volumes:
+      - ./wms-frontend/src:/app/src:ro
+      - ./wms-frontend/public:/app/public:ro
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    networks:
+      - wms-network-dev
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres_data_dev:
+  redis_data_dev:
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  wms-network-dev:
+    driver: bridge

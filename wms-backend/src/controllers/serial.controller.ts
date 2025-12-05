@@ -1,0 +1,298 @@
+// ============================================
+// SERIAL NUMBER CONTROLLER
+// ============================================
+
+import { Request, Response } from 'express';
+import pool from '../config/database';
+
+interface SerialNumber {
+  serial_id: number;
+  sku_code: string;
+  serial_no: string;
+  full_barcode: string;
+  status: 'AVAILABLE' | 'IN_STOCK' | 'SHIPPED' | 'USED';
+  warehouse_id?: number;
+  location_id?: number;
+  created_at: Date;
+  last_scanned_at?: Date;
+}
+
+// Generate serial numbers for a product (for label printing)
+export const generateSerialNumbers = async (req: Request, res: Response) => {
+  const { sku_code, quantity } = req.body;
+
+  if (!sku_code || !quantity || quantity < 1) {
+    return res.status(400).json({
+      success: false,
+      error: 'sku_code and quantity (>= 1) are required',
+    });
+  }
+
+  if (quantity > 1000) {
+    return res.status(400).json({
+      success: false,
+      error: 'Maximum 1000 serial numbers per request',
+    });
+  }
+
+  try {
+    // Verify product exists
+    const productCheck = await pool.query(
+      'SELECT sku_code, product_name FROM products WHERE sku_code = $1',
+      [sku_code]
+    );
+
+    if (productCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found',
+      });
+    }
+
+    const product = productCheck.rows[0];
+    const generatedSerials: SerialNumber[] = [];
+
+    // Generate serial numbers in a transaction
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      for (let i = 0; i < quantity; i++) {
+        // Get next serial number using database function
+        const serialResult = await client.query(
+          'SELECT get_next_serial($1) as serial_no',
+          [sku_code]
+        );
+        const serial_no = serialResult.rows[0].serial_no;
+        const full_barcode = `${sku_code}-${serial_no}`;
+
+        // Insert serial number record
+        const insertResult = await client.query(
+          `INSERT INTO serial_numbers (sku_code, serial_no, full_barcode, status)
+           VALUES ($1, $2, $3, 'AVAILABLE')
+           RETURNING *`,
+          [sku_code, serial_no, full_barcode]
+        );
+
+        generatedSerials.push(insertResult.rows[0]);
+      }
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    res.json({
+      success: true,
+      data: {
+        product_name: product.product_name,
+        sku_code: sku_code,
+        count: generatedSerials.length,
+        serials: generatedSerials.map((s) => ({
+          serial_no: s.serial_no,
+          full_barcode: s.full_barcode,
+        })),
+      },
+    });
+  } catch (error: any) {
+    console.error('Generate serial numbers error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate serial numbers',
+    });
+  }
+};
+
+// Get serial numbers for a product
+export const getSerialNumbers = async (req: Request, res: Response) => {
+  const { sku_code } = req.params;
+  const { status, limit = 100, offset = 0 } = req.query;
+
+  try {
+    let query = `
+      SELECT sn.*, p.product_name, w.code as warehouse_code, l.qr_code as location_code
+      FROM serial_numbers sn
+      JOIN products p ON p.sku_code = sn.sku_code
+      LEFT JOIN warehouses w ON w.warehouse_id = sn.warehouse_id
+      LEFT JOIN locations l ON l.location_id = sn.location_id
+      WHERE sn.sku_code = $1
+    `;
+    const params: any[] = [sku_code];
+
+    if (status) {
+      query += ` AND sn.status = $${params.length + 1}`;
+      params.push(status);
+    }
+
+    query += ` ORDER BY sn.serial_id DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+
+    // Get total count
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM serial_numbers WHERE sku_code = $1 ${status ? 'AND status = $2' : ''}`,
+      status ? [sku_code, status] : [sku_code]
+    );
+
+    res.json({
+      success: true,
+      data: result.rows,
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        limit: Number(limit),
+        offset: Number(offset),
+      },
+    });
+  } catch (error: any) {
+    console.error('Get serial numbers error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get serial numbers',
+    });
+  }
+};
+
+// Lookup a serial number by full barcode
+export const lookupSerialBarcode = async (req: Request, res: Response) => {
+  const { barcode } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT sn.*, p.product_name, p.base_unit, p.units_per_box,
+              w.code as warehouse_code, l.qr_code as location_code
+       FROM serial_numbers sn
+       JOIN products p ON p.sku_code = sn.sku_code
+       LEFT JOIN warehouses w ON w.warehouse_id = sn.warehouse_id
+       LEFT JOIN locations l ON l.location_id = sn.location_id
+       WHERE sn.full_barcode = $1`,
+      [barcode]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Serial number not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error: any) {
+    console.error('Lookup serial barcode error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to lookup serial barcode',
+    });
+  }
+};
+
+// Update serial number status (used during IN/OUT transactions)
+export const updateSerialStatus = async (req: Request, res: Response) => {
+  const { barcode } = req.params;
+  const { status, warehouse_id, location_id, transaction_id } = req.body;
+
+  const validStatuses = ['AVAILABLE', 'IN_STOCK', 'SHIPPED', 'USED'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      error: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE serial_numbers
+       SET status = $1,
+           warehouse_id = $2,
+           location_id = $3,
+           last_transaction_id = $4,
+           last_scanned_at = CURRENT_TIMESTAMP
+       WHERE full_barcode = $5
+       RETURNING *`,
+      [status, warehouse_id || null, location_id || null, transaction_id || null, barcode]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Serial number not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error: any) {
+    console.error('Update serial status error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update serial status',
+    });
+  }
+};
+
+// Get serial number statistics for a product
+export const getSerialStats = async (req: Request, res: Response) => {
+  const { sku_code } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT
+         status,
+         COUNT(*) as count
+       FROM serial_numbers
+       WHERE sku_code = $1
+       GROUP BY status`,
+      [sku_code]
+    );
+
+    const stats: Record<string, number> = {
+      AVAILABLE: 0,
+      IN_STOCK: 0,
+      SHIPPED: 0,
+      USED: 0,
+      total: 0,
+    };
+
+    result.rows.forEach((row) => {
+      stats[row.status] = parseInt(row.count);
+      stats.total += parseInt(row.count);
+    });
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error: any) {
+    console.error('Get serial stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get serial stats',
+    });
+  }
+};
+
+// Parse SKU-SERIAL barcode format
+export const parseSerialBarcode = (barcode: string): { sku_code: string; serial_no: string } | null => {
+  // Format: SKU-SERIAL (e.g., IWA-12345-000001)
+  // Last 6 characters after final dash are serial number
+  const lastDashIndex = barcode.lastIndexOf('-');
+  if (lastDashIndex === -1) return null;
+
+  const potentialSerial = barcode.substring(lastDashIndex + 1);
+
+  // Serial number should be 6 digits
+  if (!/^\d{6}$/.test(potentialSerial)) return null;
+
+  return {
+    sku_code: barcode.substring(0, lastDashIndex),
+    serial_no: potentialSerial,
+  };
+};

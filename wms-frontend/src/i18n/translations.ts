@@ -1,0 +1,572 @@
+export const translations = {
+  tr: {
+    // Navigation
+    home: 'Ana Sayfa',
+    operations: 'Operasyonlar',
+    inventory: 'Envanter',
+    history: 'Geçmiş',
+    products: 'Ürünler',
+    locations: 'Lokasyonlar & Barkodlar',
+
+    // Home Page
+    welcomeMessage: 'Depo Yönetim Sistemine Hoş Geldiniz',
+    systemStatus: 'Sistem Durumu',
+    backendConnected: '✓ Backend bağlantısı başarılı',
+    backendFailed: '✗ Backend bağlantısı başarısız',
+    quickActions: 'Hızlı Erişim',
+    warehouseOperations: 'Depo operasyonları',
+    stockLocationQuery: 'Stok & lokasyon sorgulama',
+    manageLocations: 'Lokasyon yönetimi',
+    manageProducts: 'Ürün yönetimi',
+
+    // Operations Page
+    warehouseOperationsTitle: 'Depo Operasyonları',
+    selectOperationMode: 'Operasyon Modu Seçin',
+    sessionCompleted: 'Oturum tamamlandı',
+    sessionCancelled: 'Oturum iptal edildi',
+    completeSession: 'Oturumu Tamamla',
+    cancel: 'İptal',
+
+    // Operation Steps
+    scanProduct: 'Ürün tarayın (her tarama = 1 adet)',
+    scanLocation: 'Lokasyon tarayın',
+    enterQuantity: 'Miktar gir ve onayla',
+    scanDestination: 'Hedef lokasyon okut',
+
+    // Action Buttons
+    newBox: 'Yeni Koli',
+    newPallet: 'Yeni Palet',
+    complete: 'Tamamla',
+    createContainer: 'Konteyner Oluştur',
+
+    // Operations Page UI
+    selectModeOrScan: 'Aşağıdan mod seçin veya MODE barkodu tarayın',
+    camera: 'Kamera',
+    closeCamera: 'Kapat',
+    items: 'adet',
+    scannedProducts: 'Taranan Ürünler',
+    scanCompleteOrCancel: 'TAMAMLA veya İPTAL barkodunu tarayın',
+
+    // Quantity Input
+    quantity: 'Miktar',
+    unit: 'Birim',
+    each: 'Adet',
+    box: 'Koli',
+    pallet: 'Palet',
+    confirm: 'Onayla',
+
+    // Inventory Page
+    inventoryQuery: 'Envanter Sorgulama',
+    searchBySKU: 'SKU ile Ara',
+    searchByLocation: 'Lokasyon ile Ara',
+    search: 'Ara',
+    searching: 'Aranıyor...',
+    productNotFound: 'Ürün bulunamadı',
+    locationNotFound: 'Lokasyon bulunamadı',
+    totalStock: 'Toplam Stok',
+    noStockFound: 'Hiçbir lokasyonda stok bulunamadı',
+    location: 'Lokasyon',
+    zone: 'Bölge',
+    boxes: 'Koliler',
+    pallets: 'Paletler',
+    totalItems: 'Toplam Ürün Sayısı',
+    locationEmpty: 'Lokasyon boş',
+    productName: 'Ürün Adı',
+
+    // Inventory Query Hints
+    skuQueryMode: 'SKU Sorgulama Modu',
+    locationQueryMode: 'Lokasyon Sorgulama Modu',
+    skuQueryHint: 'Bu ürünün depolandığı tüm lokasyonları görmek için SKU kodu girin veya ürün barkodunu okutun.',
+    locationQueryHint: 'Bu lokasyonda depolanan tüm ürünleri görmek için lokasyon kodunu girin veya lokasyon barkodunu okutun.',
+    example: 'Örnek',
+
+    // Products Page
+    productsCatalog: 'Ürün Kataloğu',
+    total: 'toplam',
+    allProducts: 'Tüm Ürünler',
+    filterByCategory: 'Kategoriye göre filtrele',
+    allCategories: 'Tüm Kategoriler',
+    allStatus: 'Tüm Durumlar',
+    active: 'Aktif',
+    inactive: 'Pasif',
+    deleteSelected: 'Seçilenleri Sil',
+    addProduct: 'Ürün Ekle',
+    bulkImport: 'Toplu İçe Aktar',
+    deleteAll: 'Tümünü Sil',
+    addNewProduct: 'Yeni Ürün Ekle',
+    barcode: 'Barkod',
+    category: 'Kategori',
+    baseUnit: 'Birim',
+    unitsPerBox: 'Adet/Koli',
+    boxesPerPallet: 'Koli/Palet',
+    weight: 'Ağırlık',
+    dimensions: 'Boyutlar',
+    status: 'Durum',
+    actions: 'İşlemler',
+    printLabel: 'Etiket Bas',
+    saveProduct: 'Ürünü Kaydet',
+    selectAll: 'Tümünü Seç',
+    delete: 'Sil',
+    loadingProducts: 'Ürünler yükleniyor...',
+    noProductsFound: 'Ürün bulunamadı',
+    searchPlaceholder: 'İsim, SKU veya kategoriye göre ara...',
+    showing: 'Gösterilen',
+    of: 'toplam',
+    page: 'Sayfa',
+    first: 'İlk',
+    prev: 'Önceki',
+    next: 'Sonraki',
+    last: 'Son',
+
+    // Locations Page
+    allLocations: 'Tüm Lokasyonlar',
+    actionBarcodes: 'Yardımcı Barkodlar',
+    actionBarcodesHint: 'Bu barkodları yazdırın ve operasyon sırasında kullanın',
+    operationModes: 'Operasyon Modları',
+    operationModesHint: 'Bu barkodları operasyon başlatmak için kullanın',
+    print: 'Yazdır',
+    locationType: 'Tip',
+    description: 'Açıklama',
+
+    // Transactions Page
+    transactionHistory: 'İşlem Geçmişi',
+    recentTransactions: 'Son İşlemler',
+    filterByType: 'Tipe göre filtrele',
+    allTypes: 'Tüm Tipler',
+    date: 'Tarih',
+    type: 'Tip',
+    user: 'Kullanıcı',
+    warehouse: 'Depo',
+    loadingTransactions: 'İşlemler yükleniyor...',
+    failedToLoadTransactions: 'İşlemler yüklenemedi',
+    noTransactionsFound: 'İşlem bulunamadı',
+    createdBy: 'Oluşturan',
+    reference: 'Referans',
+    notes: 'Notlar',
+    refresh: 'Yenile',
+    loadingItems: 'Yükleniyor...',
+    transactionDetails: 'İşlem Detayları',
+    product: 'Ürün',
+    qty: 'Miktar',
+    noItemsFound: 'Ürün bulunamadı',
+    filterByDate: 'Tarihe göre filtrele',
+    today: 'Bugün',
+    yesterday: 'Dün',
+    last7Days: 'Son 7 gün',
+    last30Days: 'Son 30 gün',
+    allTime: 'Tüm zamanlar',
+    in: 'Giriş',
+    out: 'Çıkış',
+    adjust: 'Düzeltme',
+    filterBySKU: 'SKU ile filtrele',
+    filterByLocation: 'Lokasyon ile filtrele',
+    skuPlaceholder: 'SKU kodu girin...',
+    locationPlaceholder: 'Lokasyon kodu girin...',
+    clearFilters: 'Filtreleri Temizle',
+
+    // Common
+    loading: 'Yükleniyor...',
+    error: 'Hata',
+    success: 'Başarılı',
+    noData: 'Veri yok',
+
+    // Operation Modes
+    receiving: 'Mal Kabul',
+    picking: 'Mal Çıkış',
+    transfer: 'Transfer',
+    count: 'Sayım',
+
+    // Operation Mode Descriptions
+    receivingDesc: 'Mal kabul: Gelen ürünleri tara ve depola',
+    pickingDesc: 'Sipariş toplama: Raflardan ürün topla',
+    transferDesc: 'Transfer: Ürünleri bir raftan diğerine taşı',
+    countDesc: 'Sayım: Raf ve stok sayımı yap',
+
+    // Action Barcode Descriptions
+    createBoxDesc: 'Yeni koli oluşturmaya başla',
+    createPalletDesc: 'Yeni palet oluşturmaya başla',
+    completeDesc: 'Mevcut işlemi tamamla',
+    cancelDesc: 'Mevcut işlemi iptal et',
+
+    // Error Messages - Scan Errors
+    errorNotFound: 'Bulunamadı',
+    errorUnknownBarcode: 'Bilinmeyen barkod tipi',
+    errorScanFailed: 'Tarama hatası',
+
+    // Error Messages - Workflow Errors
+    errorSelectModeFirst: 'Önce mod seçin',
+    errorScanLocationFirst: 'Önce lokasyon tarayın',
+    errorScanProductFirst: 'Önce ürün tarayın',
+    errorNoItemsToComplete: 'Tamamlanacak ürün yok',
+    errorMissingInfo: 'Eksik bilgi',
+
+    // Error Messages - Stock Errors
+    errorInsufficientStock: 'Stok yetersiz!',
+    errorStockAvailable: 'adet mevcut',
+
+    // Error Messages - Serial/Container Errors
+    errorSerialAlreadyScanned: 'Bu seri numara zaten tarandı!',
+    errorContainerEmpty: 'Konteyner boş',
+    errorContainerCreateFailed: 'Konteyner oluşturulamadı',
+
+    // Error Messages - Transaction Errors
+    errorTransactionFailed: 'Kayıt başarısız',
+    errorTransactionError: 'İşlem hatası',
+
+    // Error Messages - Camera Errors
+    errorCameraPermissionDenied: 'Kamera izni verilmedi',
+    errorCameraStartFailed: 'Kamera başlatılamadı',
+    errorCameraOpenFailed: 'Kamera açılamadı',
+
+    // Manual Input Labels
+    locationCode: 'Lokasyon Kodu',
+    enterLocationCode: 'Lokasyon kodu girin...',
+    skuOrBarcode: 'SKU / Barkod',
+    enterSkuCode: 'SKU veya barkod girin...',
+    confirm: 'Tamam',
+    add: 'Ekle',
+
+    // Admin Page
+    admin: 'Yönetim',
+    adminUserManagement: 'Kullanıcı Yönetimi',
+    adminAddUser: 'Kullanıcı Ekle',
+    adminEditUser: 'Kullanıcı Düzenle',
+    adminUsername: 'Kullanıcı Adı',
+    adminFullName: 'Ad Soyad',
+    adminEmail: 'E-posta',
+    adminPassword: 'Şifre',
+    adminRole: 'Rol',
+    adminWarehouse: 'Depo',
+    adminAllWarehouses: 'Tüm Depolar',
+    adminLastLogin: 'Son Giriş',
+    adminNoUsers: 'Kullanıcı bulunamadı',
+    adminSave: 'Kaydet',
+    adminEdit: 'Düzenle',
+    adminResetPassword: 'Şifre Sıfırla',
+    adminNewPassword: 'Yeni Şifre',
+    adminNewPasswordPlaceholder: 'Yeni şifre girin...',
+    adminPasswordReset: 'Şifre başarıyla sıfırlandı',
+    adminUserCreated: 'Kullanıcı Oluşturuldu',
+    adminPasswordNote: 'Bu şifreyi kaydedin. Kullanıcı ilk girişinde şifre değiştirecek.',
+    adminOk: 'Tamam',
+    adminDeleteConfirm: 'kullanıcısını silmek istediğinize emin misiniz?',
+    adminFillRequired: 'Zorunlu alanları doldurun',
+    adminPasswordRequired: 'Şifre zorunludur',
+    adminAccessDenied: 'Erişim Engellendi',
+    adminNoPermission: 'Bu sayfaya erişim yetkiniz bulunmamaktadır.',
+    adminUsernamePlaceholder: 'Kullanıcı adı girin...',
+    adminEmailPlaceholder: 'E-posta girin...',
+    adminPasswordPlaceholder: 'Şifre girin...',
+    adminFullNamePlaceholder: 'Ad soyad girin...',
+    roleAdmin: 'Yönetici',
+    roleManager: 'Müdür',
+    roleOperator: 'Operatör',
+    roleViewer: 'İzleyici',
+
+    // Success Messages
+    successCancelled: 'İptal edildi',
+    successStartOver: 'Baştan başlayın',
+    successScanLocation: 'Lokasyon tarayın',
+    successScanProduct: 'Ürün tarayın',
+    successAdded: 'Eklendi',
+    successItemRemoved: 'Ürün silindi',
+    successItemsSaved: 'adet kaydedildi!',
+    successContainerCreated: 'oluşturuldu',
+    successContainerOpened: 'açıldı',
+    successProductsAdded: 'ürün eklendi',
+  },
+
+  en: {
+    // Navigation
+    home: 'Home',
+    operations: 'Operations',
+    inventory: 'Inventory',
+    history: 'History',
+    products: 'Products',
+    locations: 'Locations & Barcodes',
+
+    // Home Page
+    welcomeMessage: 'Welcome to Warehouse Management System',
+    systemStatus: 'System Status',
+    backendConnected: '✓ Backend connected successfully',
+    backendFailed: '✗ Backend connection failed',
+    quickActions: 'Quick Actions',
+    warehouseOperations: 'Warehouse operations',
+    stockLocationQuery: 'Stock & location query',
+    manageLocations: 'Manage locations',
+    manageProducts: 'Manage products',
+
+    // Operations Page
+    warehouseOperationsTitle: 'Warehouse Operations',
+    selectOperationMode: 'Select Operation Mode',
+    sessionCompleted: 'Session completed successfully!',
+    sessionCancelled: 'Session cancelled',
+    completeSession: 'Complete Session',
+    cancel: 'Cancel',
+
+    // Operation Steps
+    scanProduct: 'Scan product (each scan = 1 unit)',
+    scanLocation: 'Scan location',
+    enterQuantity: 'Enter quantity and confirm',
+    scanDestination: 'Scan destination location',
+
+    // Action Buttons
+    newBox: 'New Box',
+    newPallet: 'New Pallet',
+    complete: 'Complete',
+    createContainer: 'Create Container',
+
+    // Operations Page UI
+    selectModeOrScan: 'Select mode below or scan MODE barcode',
+    camera: 'Camera',
+    closeCamera: 'Close',
+    items: 'items',
+    scannedProducts: 'Scanned Products',
+    scanCompleteOrCancel: 'Scan COMPLETE or CANCEL barcode',
+
+    // Quantity Input
+    quantity: 'Quantity',
+    unit: 'Unit',
+    each: 'Each',
+    box: 'Box',
+    pallet: 'Pallet',
+    confirm: 'Confirm',
+
+    // Inventory Page
+    inventoryQuery: 'Inventory Query',
+    searchBySKU: 'Search by SKU',
+    searchByLocation: 'Search by Location',
+    search: 'Search',
+    searching: 'Searching...',
+    productNotFound: 'Product not found',
+    locationNotFound: 'Location not found',
+    totalStock: 'Total Stock',
+    noStockFound: 'No stock found in any location',
+    location: 'Location',
+    zone: 'Zone',
+    boxes: 'Boxes',
+    pallets: 'Pallets',
+    totalItems: 'Total Items in Location',
+    locationEmpty: 'Location is empty',
+    productName: 'Product Name',
+
+    // Inventory Query Hints
+    skuQueryMode: 'SKU Query Mode',
+    locationQueryMode: 'Location Query Mode',
+    skuQueryHint: 'Enter a SKU code or scan a product barcode to see all locations where this product is stored.',
+    locationQueryHint: 'Enter a location code or scan a location barcode to see all products stored in that location.',
+    example: 'Example',
+
+    // Products Page
+    productsCatalog: 'Products Catalog',
+    total: 'total',
+    allProducts: 'All Products',
+    filterByCategory: 'Filter by category',
+    allCategories: 'All Categories',
+    allStatus: 'All Status',
+    active: 'Active',
+    inactive: 'Inactive',
+    deleteSelected: 'Delete Selected',
+    addProduct: 'Add Product',
+    bulkImport: 'Bulk Import',
+    deleteAll: 'Delete All',
+    addNewProduct: 'Add New Product',
+    barcode: 'Barcode',
+    category: 'Category',
+    baseUnit: 'Unit',
+    unitsPerBox: 'Units/Box',
+    boxesPerPallet: 'Boxes/Pallet',
+    weight: 'Weight',
+    dimensions: 'Dimensions',
+    status: 'Status',
+    actions: 'Actions',
+    printLabel: 'Print Label',
+    saveProduct: 'Save Product',
+    selectAll: 'Select All',
+    delete: 'Delete',
+    loadingProducts: 'Loading products...',
+    noProductsFound: 'No products found',
+    searchPlaceholder: 'Search by name, SKU, or category...',
+    showing: 'Showing',
+    of: 'of',
+    page: 'Page',
+    first: 'First',
+    prev: 'Prev',
+    next: 'Next',
+    last: 'Last',
+
+    // Locations Page
+    allLocations: 'All Locations',
+    actionBarcodes: 'Action Barcodes',
+    actionBarcodesHint: 'Print these barcodes and use them during operations',
+    operationModes: 'Operation Modes',
+    operationModesHint: 'Use these barcodes to start operations',
+    print: 'Print',
+    locationType: 'Type',
+    description: 'Description',
+
+    // Transactions Page
+    transactionHistory: 'Transaction History',
+    recentTransactions: 'Recent Transactions',
+    filterByType: 'Filter by type',
+    allTypes: 'All Types',
+    date: 'Date',
+    type: 'Type',
+    user: 'User',
+    warehouse: 'Warehouse',
+    loadingTransactions: 'Loading transactions...',
+    failedToLoadTransactions: 'Failed to load transactions',
+    noTransactionsFound: 'No transactions found',
+    createdBy: 'Created by',
+    reference: 'Reference',
+    notes: 'Notes',
+    refresh: 'Refresh',
+    loadingItems: 'Loading...',
+    transactionDetails: 'Transaction Details',
+    product: 'Product',
+    qty: 'Quantity',
+    noItemsFound: 'No items found',
+    filterByDate: 'Filter by date',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    last7Days: 'Last 7 days',
+    last30Days: 'Last 30 days',
+    allTime: 'All time',
+    in: 'In',
+    out: 'Out',
+    adjust: 'Adjust',
+    filterBySKU: 'Filter by SKU',
+    filterByLocation: 'Filter by Location',
+    skuPlaceholder: 'Enter SKU code...',
+    locationPlaceholder: 'Enter location code...',
+    clearFilters: 'Clear Filters',
+
+    // Common
+    loading: 'Loading...',
+    error: 'Error',
+    success: 'Success',
+    noData: 'No data',
+
+    // Operation Modes
+    receiving: 'Receiving',
+    picking: 'Picking',
+    transfer: 'Transfer',
+    count: 'Count',
+
+    // Operation Mode Descriptions
+    receivingDesc: 'Receiving: Scan and store incoming products',
+    pickingDesc: 'Picking: Collect products from shelves',
+    transferDesc: 'Transfer: Move products from one location to another',
+    countDesc: 'Count: Perform inventory counting',
+
+    // Action Barcode Descriptions
+    createBoxDesc: 'Start creating a new box',
+    createPalletDesc: 'Start creating a new pallet',
+    completeDesc: 'Complete current operation',
+    cancelDesc: 'Cancel current operation',
+
+    // Error Messages - Scan Errors
+    errorNotFound: 'Not found',
+    errorUnknownBarcode: 'Unknown barcode type',
+    errorScanFailed: 'Scan failed',
+
+    // Error Messages - Workflow Errors
+    errorSelectModeFirst: 'Select mode first',
+    errorScanLocationFirst: 'Scan location first',
+    errorScanProductFirst: 'Scan product first',
+    errorNoItemsToComplete: 'No items to complete',
+    errorMissingInfo: 'Missing information',
+
+    // Error Messages - Stock Errors
+    errorInsufficientStock: 'Insufficient stock!',
+    errorStockAvailable: 'items available',
+
+    // Error Messages - Serial/Container Errors
+    errorSerialAlreadyScanned: 'This serial number already scanned!',
+    errorContainerEmpty: 'Container is empty',
+    errorContainerCreateFailed: 'Failed to create container',
+
+    // Error Messages - Transaction Errors
+    errorTransactionFailed: 'Transaction failed',
+    errorTransactionError: 'Transaction error',
+
+    // Error Messages - Camera Errors
+    errorCameraPermissionDenied: 'Camera permission denied',
+    errorCameraStartFailed: 'Failed to start camera',
+    errorCameraOpenFailed: 'Failed to open camera',
+
+    // Manual Input Labels
+    locationCode: 'Location Code',
+    enterLocationCode: 'Enter location code...',
+    skuOrBarcode: 'SKU / Barcode',
+    enterSkuCode: 'Enter SKU or barcode...',
+    confirm: 'Confirm',
+    add: 'Add',
+
+    // Admin Page
+    admin: 'Admin',
+    adminUserManagement: 'User Management',
+    adminAddUser: 'Add User',
+    adminEditUser: 'Edit User',
+    adminUsername: 'Username',
+    adminFullName: 'Full Name',
+    adminEmail: 'Email',
+    adminPassword: 'Password',
+    adminRole: 'Role',
+    adminWarehouse: 'Warehouse',
+    adminAllWarehouses: 'All Warehouses',
+    adminLastLogin: 'Last Login',
+    adminNoUsers: 'No users found',
+    adminSave: 'Save',
+    adminEdit: 'Edit',
+    adminResetPassword: 'Reset Password',
+    adminNewPassword: 'New Password',
+    adminNewPasswordPlaceholder: 'Enter new password...',
+    adminPasswordReset: 'Password reset successfully',
+    adminUserCreated: 'User Created',
+    adminPasswordNote: 'Save this password. User will change password on first login.',
+    adminOk: 'OK',
+    adminDeleteConfirm: 'Are you sure you want to delete this user?',
+    adminFillRequired: 'Please fill required fields',
+    adminPasswordRequired: 'Password is required',
+    adminAccessDenied: 'Access Denied',
+    adminNoPermission: 'You do not have permission to access this page.',
+    adminUsernamePlaceholder: 'Enter username...',
+    adminEmailPlaceholder: 'Enter email...',
+    adminPasswordPlaceholder: 'Enter password...',
+    adminFullNamePlaceholder: 'Enter full name...',
+    roleAdmin: 'Admin',
+    roleManager: 'Manager',
+    roleOperator: 'Operator',
+    roleViewer: 'Viewer',
+
+    // Success Messages
+    successCancelled: 'Cancelled',
+    successStartOver: 'Start over',
+    successScanLocation: 'Scan location',
+    successScanProduct: 'Scan product',
+    successAdded: 'Added',
+    successItemRemoved: 'Item removed',
+    successItemsSaved: 'items saved!',
+    successContainerCreated: 'created',
+    successContainerOpened: 'opened',
+    successProductsAdded: 'products added',
+  },
+};
+
+export const useTranslation = () => {
+  const language = 'tr'; // This will be replaced with actual store usage
+  return {
+    t: (key: string) => {
+      const keys = key.split('.');
+      let value: any = translations[language];
+
+      for (const k of keys) {
+        value = value?.[k];
+      }
+
+      return value || key;
+    },
+    language,
+  };
+};

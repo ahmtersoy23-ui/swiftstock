@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SwiftStock WMS</string>
+    <string name="title_activity_main">SwiftStock WMS</string>
+    <string name="package_name">com.swiftstock.wms</string>
+    <string name="custom_url_scheme">com.swiftstock.wms</string>
+</resources>
