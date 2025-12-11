@@ -1,8 +1,7 @@
 import { type ReactNode, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { useStore } from '../stores/appStore';
 import { apiClient } from '../lib/api';
 import './Layout.css';
 
@@ -13,13 +12,11 @@ interface LayoutProps {
 function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, clearAuth, refreshToken } = useAuthStore();
+  const { clearAuth, refreshToken } = useAuthStore();
   const { currentWarehouse, language, setCurrentWarehouse, setLanguage } = useStore();
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const isActive = (path: string) => location.pathname === path;
-  const t = translations[language];
-  const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+  const isHomePage = location.pathname === '/';
 
   const handleWarehouseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCurrentWarehouse(e.target.value);
@@ -44,11 +41,23 @@ function Layout({ children }: LayoutProps) {
     }
   };
 
+  const handleHomeClick = () => {
+    navigate('/');
+  };
+
   return (
-    <div className={`layout theme-${currentWarehouse}`}>
-      <header className={`header theme-${currentWarehouse}`}>
+    <div className={`layout layout-minimal theme-${currentWarehouse}`}>
+      <header className={`header header-minimal theme-${currentWarehouse}`}>
         <div className="header-content">
-          <h1 className="logo">SWIFTSTOCK</h1>
+          {/* Home button - only show when not on home page */}
+          {!isHomePage && (
+            <button className="home-btn" onClick={handleHomeClick} title="Ana Sayfa">
+              <span className="home-icon">&#x2302;</span>
+            </button>
+          )}
+          <h1 className="logo" onClick={handleHomeClick} style={{ cursor: 'pointer' }}>
+            SWIFTSTOCK
+          </h1>
           <div className="user-info">
             <select
               value={language}
@@ -56,57 +65,31 @@ function Layout({ children }: LayoutProps) {
               className="language-select"
               title="Language / Dil"
             >
-              <option value="tr">🇹🇷 TR</option>
-              <option value="en">🇬🇧 EN</option>
+              <option value="tr">TR</option>
+              <option value="en">EN</option>
             </select>
             <select
               value={currentWarehouse}
               onChange={handleWarehouseChange}
               className="warehouse-select"
             >
-              <option value="USA">🇺🇸 USA</option>
-              <option value="TUR">🇹🇷 TUR</option>
-              <option value="FAB">🏭 FAB</option>
+              <option value="USA">USA</option>
+              <option value="TUR">TUR</option>
+              <option value="FAB">FAB</option>
             </select>
-            <span className="user">{user?.full_name || user?.username || 'User'}</span>
             <button
               onClick={handleLogout}
               disabled={loggingOut}
               className="logout-btn"
-              title="Çıkış Yap"
+              title="Cikis Yap"
             >
-              {loggingOut ? '...' : '🚪'}
+              {loggingOut ? '...' : '->'}
             </button>
           </div>
         </div>
       </header>
 
-      <div className="nav-wrapper">
-        <nav className="nav">
-          <Link to="/operations" className={isActive('/') || isActive('/operations') ? 'active' : ''}>
-            {t.operations}
-          </Link>
-          <Link to="/inventory" className={isActive('/inventory') ? 'active' : ''}>
-            {t.inventory}
-          </Link>
-          <Link to="/transactions" className={isActive('/transactions') ? 'active' : ''}>
-            {t.history}
-          </Link>
-          <Link to="/products" className={isActive('/products') ? 'active' : ''}>
-            {t.products}
-          </Link>
-          <Link to="/locations" className={isActive('/locations') ? 'active' : ''}>
-            {t.locations}
-          </Link>
-          {isAdminOrManager && (
-            <Link to="/admin" className={isActive('/admin') ? 'active' : ''}>
-              {t.admin}
-            </Link>
-          )}
-        </nav>
-      </div>
-
-      <main className="main">{children}</main>
+      <main className="main main-full">{children}</main>
     </div>
   );
 }

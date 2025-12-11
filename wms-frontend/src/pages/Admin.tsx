@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../lib/api';
-import { useStore } from '../store/useStore';
+import { useStore } from '../stores/appStore';
 import { useAuthStore } from '../stores/authStore';
 import { translations } from '../i18n/translations';
 import './Admin.css';
@@ -38,6 +39,7 @@ const emptyForm: UserForm = {
 };
 
 function Admin() {
+  const navigate = useNavigate();
   const { language } = useStore();
   const { user: currentUser } = useAuthStore();
   const t = translations[language];
@@ -208,6 +210,9 @@ function Admin() {
     <div className="admin-page">
       <div className="admin-card">
         <div className="admin-header">
+          <button className="back-btn" onClick={() => navigate('/')}>
+            ←
+          </button>
           <h2>{t.adminUserManagement}</h2>
           {isAdmin && (
             <button className="add-user-btn" onClick={handleAdd}>
@@ -244,7 +249,7 @@ function Admin() {
                       <td>{user.email}</td>
                       <td>
                         <span className={getRoleBadgeClass(user.role)}>
-                          {t[`role${user.role.charAt(0) + user.role.slice(1).toLowerCase()}`] || user.role}
+                          {(t as Record<string, string>)[`role${user.role.charAt(0) + user.role.slice(1).toLowerCase()}`] || user.role}
                         </span>
                       </td>
                       <td>{user.warehouse_code || t.adminAllWarehouses}</td>

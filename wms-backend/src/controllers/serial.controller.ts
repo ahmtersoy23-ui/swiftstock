@@ -296,3 +296,149 @@ export const parseSerialBarcode = (barcode: string): { sku_code: string; serial_
     serial_no: potentialSerial,
   };
 };
+
+// Get serial number history (all operations/events)
+export const getSerialHistory = async (req: Request, res: Response) => {
+  const { barcode } = req.params;
+
+  try {
+    // First get the serial number info
+    const serialResult = await pool.query(
+      `SELECT sn.*, p.product_name
+       FROM serial_numbers sn
+       JOIN products p ON p.sku_code = sn.sku_code
+       WHERE sn.full_barcode = $1`,
+      [barcode]
+    );
+
+    if (serialResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Serial number not found',
+      });
+    }
+
+    const serialInfo = serialResult.rows[0];
+
+    // Get history from serial_history table
+    const historyResult = await pool.query(
+      `SELECT
+         sh.history_id,
+         sh.event_type,
+         sh.from_status,
+         sh.to_status,
+         sh.notes,
+         sh.created_at,
+         fl.location_code as from_location,
+         tl.location_code as to_location,
+         fw.code as from_warehouse,
+         tw.code as to_warehouse,
+         u.username as performed_by,
+         ss.mode_type as session_mode
+       FROM serial_history sh
+       LEFT JOIN locations fl ON fl.location_id = sh.from_location_id
+       LEFT JOIN locations tl ON tl.location_id = sh.to_location_id
+       LEFT JOIN warehouses fw ON fw.warehouse_id = sh.from_warehouse_id
+       LEFT JOIN warehouses tw ON tw.warehouse_id = sh.to_warehouse_id
+       LEFT JOIN users u ON u.user_id = sh.user_id
+       LEFT JOIN scan_sessions ss ON ss.session_id = sh.session_id
+       WHERE sh.full_barcode = $1
+       ORDER BY sh.created_at DESC`,
+      [barcode]
+    );
+
+    // Also get related scan operations for additional context
+    const scanOpsResult = await pool.query(
+      `SELECT
+         so.operation_id,
+         so.operation_type,
+         so.quantity,
+         so.unit_type,
+         so.scanned_at,
+         so.notes,
+         ss.mode_type,
+         ss.session_code,
+         ss.user_name,
+         l.location_code
+       FROM scan_operations so
+       JOIN scan_sessions ss ON ss.session_id = so.session_id
+       LEFT JOIN locations l ON l.location_code = so.location_code
+       WHERE so.sku_code = $1
+       ORDER BY so.scanned_at DESC
+       LIMIT 50`,
+      [serialInfo.sku_code]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        serial: {
+          serial_id: serialInfo.serial_id,
+          full_barcode: serialInfo.full_barcode,
+          sku_code: serialInfo.sku_code,
+          serial_no: serialInfo.serial_no,
+          product_name: serialInfo.product_name,
+          status: serialInfo.status,
+          created_at: serialInfo.created_at,
+          last_scanned_at: serialInfo.last_scanned_at,
+        },
+        history: historyResult.rows,
+        scan_operations: scanOpsResult.rows,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get serial history error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get serial history',
+    });
+  }
+};
+
+// Add a history entry for serial number
+export const addSerialHistoryEntry = async (
+  serial_id: number,
+  full_barcode: string,
+  event_type: string,
+  options: {
+    from_status?: string;
+    to_status?: string;
+    from_location_id?: number;
+    to_location_id?: number;
+    from_warehouse_id?: number;
+    to_warehouse_id?: number;
+    session_id?: number;
+    transaction_id?: number;
+    user_id?: number;
+    notes?: string;
+  }
+) => {
+  try {
+    await pool.query(
+      `INSERT INTO serial_history
+       (serial_id, full_barcode, event_type, from_status, to_status,
+        from_location_id, to_location_id, from_warehouse_id, to_warehouse_id,
+        session_id, transaction_id, user_id, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      [
+        serial_id,
+        full_barcode,
+        event_type,
+        options.from_status || null,
+        options.to_status || null,
+        options.from_location_id || null,
+        options.to_location_id || null,
+        options.from_warehouse_id || null,
+        options.to_warehouse_id || null,
+        options.session_id || null,
+        options.transaction_id || null,
+        options.user_id || null,
+        options.notes || null,
+      ]
+    );
+    return true;
+  } catch (error) {
+    console.error('Failed to add serial history entry:', error);
+    return false;
+  }
+};

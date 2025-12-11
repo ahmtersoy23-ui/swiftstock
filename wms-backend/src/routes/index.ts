@@ -13,6 +13,8 @@ import * as orderController from '../controllers/order.controller';
 import * as cyclecountController from '../controllers/cyclecount.controller';
 import * as rmaController from '../controllers/rma.controller';
 import * as serialController from '../controllers/serial.controller';
+import * as reportController from '../controllers/report.controller';
+import * as shipmentController from '../controllers/shipment.controller';
 import { authenticateToken, optionalAuth, requireRole } from '../middleware/auth.middleware';
 import {
   loginRateLimiter,
@@ -47,6 +49,7 @@ const router = Router();
 // AUTHENTICATION ROUTES (Public)
 // ============================================
 router.post('/auth/login', loginRateLimiter, validateBody(loginSchema), authController.login);
+router.post('/auth/google', loginRateLimiter, authController.googleLogin);
 router.post('/auth/logout', optionalAuth, authController.logout);
 router.post('/auth/refresh', refreshTokenRateLimiter, validateBody(refreshTokenSchema), authController.refreshAccessToken);
 router.get('/auth/profile', authenticateToken, authController.getProfile);
@@ -181,8 +184,36 @@ router.post('/rma/:rma_id/complete', authenticateToken, requireRole('ADMIN', 'MA
 router.post('/serials/generate', validateBody(generateSerialsSchema), serialController.generateSerialNumbers);
 router.get('/serials/sku/:sku_code', serialController.getSerialNumbers);
 router.get('/serials/barcode/:barcode', serialController.lookupSerialBarcode);
+router.get('/serials/barcode/:barcode/history', serialController.getSerialHistory);
 router.put('/serials/barcode/:barcode', validateBody(updateSerialStatusSchema), serialController.updateSerialStatus);
 router.get('/serials/stats/:sku_code', serialController.getSerialStats);
+
+// ============================================
+// REPORT ROUTES
+// ============================================
+router.post('/reports/count', authenticateToken, reportController.saveCountReport);
+router.get('/reports/count', authenticateToken, reportController.getAllCountReports);
+router.get('/reports/count/:report_id', authenticateToken, reportController.getCountReportById);
+router.delete('/reports/count/:report_id', authenticateToken, requireRole('ADMIN', 'MANAGER'), reportController.deleteCountReport);
+router.get('/reports/inventory/:warehouse_id', authenticateToken, reportController.getInventoryReport);
+
+// ============================================
+// VIRTUAL SHIPMENT ROUTES (Sevkiyat)
+// ============================================
+router.get('/shipments', authenticateToken, shipmentController.getAllShipments);
+router.get('/shipments/:shipment_id', authenticateToken, shipmentController.getShipmentById);
+router.post('/shipments', authenticateToken, requireRole('ADMIN', 'MANAGER'), shipmentController.createShipment);
+router.post('/shipments/:shipment_id/boxes', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), shipmentController.createBox);
+router.get('/shipments/:shipment_id/boxes', authenticateToken, shipmentController.getShipmentBoxes);
+router.post('/shipments/:shipment_id/close', authenticateToken, requireRole('ADMIN', 'MANAGER'), shipmentController.closeShipment);
+router.post('/shipments/:shipment_id/ship', authenticateToken, requireRole('ADMIN', 'MANAGER'), shipmentController.shipShipment);
+
+// Box operations
+router.get('/boxes/:barcode', authenticateToken, shipmentController.getBoxByBarcode);
+router.post('/boxes/:box_id/items', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), shipmentController.addItemToBox);
+router.delete('/boxes/contents/:content_id', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), shipmentController.removeItemFromBox);
+router.post('/boxes/:box_id/close', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), shipmentController.closeBox);
+router.put('/boxes/:box_id/destination', authenticateToken, requireRole('ADMIN', 'MANAGER'), shipmentController.updateBoxDestination);
 
 // ============================================
 // HEALTH CHECK

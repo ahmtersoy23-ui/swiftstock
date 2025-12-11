@@ -52,12 +52,21 @@ export interface Container {
   container_type: 'BOX' | 'PALLET';
   warehouse_id: number;
   parent_container_id?: number;
+  location_id?: number;
   status: 'ACTIVE' | 'SHIPPED' | 'OPENED' | 'ARCHIVED';
   created_by: string;
   created_at: Date;
   opened_at?: Date;
   closed_at?: Date;
   notes?: string;
+  // Extended fields from getAllContainers
+  warehouse_code?: string;
+  warehouse_name?: string;
+  location_code?: string;
+  location_qr?: string;
+  current_items?: number;
+  original_items?: number;
+  calculated_status?: 'SEALED' | 'PARTIAL' | 'OPENED' | 'EMPTY';
 }
 
 export interface ContainerContent {
@@ -249,4 +258,86 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
     total: number;
     totalPages: number;
   };
+}
+
+// ============================================
+// VIRTUAL SHIPMENT TYPES (Sevkiyat)
+// ============================================
+
+export type ShipmentStatus = 'OPEN' | 'CLOSED' | 'SHIPPED' | 'CANCELLED';
+export type BoxDestination = 'USA' | 'FBA';
+export type BoxStatus = 'OPEN' | 'CLOSED' | 'SHIPPED';
+
+export interface VirtualShipment {
+  shipment_id: number;
+  prefix: string;
+  name: string;
+  source_warehouse_id: number;
+  source_warehouse_code?: string;
+  source_warehouse_name?: string;
+  default_destination: BoxDestination;
+  status: ShipmentStatus;
+  total_boxes: number;
+  total_items: number;
+  usa_boxes?: number;
+  fba_boxes?: number;
+  notes?: string;
+  created_by: string;
+  created_at: Date;
+  closed_at?: Date;
+  shipped_at?: Date;
+  boxes?: ShipmentBox[];
+}
+
+export interface ShipmentBox {
+  box_id: number;
+  shipment_id: number;
+  barcode: string;
+  box_number: number;
+  destination: BoxDestination;
+  status: BoxStatus;
+  total_items: number;
+  total_quantity: number;
+  weight_kg?: number;
+  notes?: string;
+  created_by: string;
+  created_at: Date;
+  closed_at?: Date;
+  // Extended fields
+  prefix?: string;
+  shipment_name?: string;
+  shipment_status?: ShipmentStatus;
+  contents?: ShipmentBoxContent[];
+}
+
+export interface ShipmentBoxContent {
+  content_id: number;
+  box_id: number;
+  sku_code: string;
+  quantity: number;
+  product_name?: string;
+  product_barcode?: string;
+  added_by: string;
+  added_at: Date;
+}
+
+export interface CreateShipmentRequest {
+  prefix: string;
+  name: string;
+  source_warehouse_id: number;
+  default_destination?: BoxDestination;
+  notes?: string;
+  created_by: string;
+}
+
+export interface CreateBoxRequest {
+  destination?: BoxDestination;
+  notes?: string;
+  created_by: string;
+}
+
+export interface AddItemToBoxRequest {
+  sku_code: string;
+  quantity: number;
+  added_by: string;
 }

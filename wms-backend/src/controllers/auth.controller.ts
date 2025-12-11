@@ -5,6 +5,7 @@
 import { Response } from 'express';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
+import { OAuth2Client } from 'google-auth-library';
 import pool from '../config/database';
 import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
 import {
@@ -16,6 +17,15 @@ import {
 import { logger } from '../utils/logger';
 
 const SALT_ROUNDS = 10;
+
+// Google OAuth client
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// Get allowed emails from environment
+const getAllowedEmails = (): string[] => {
+  const emails = process.env.GOOGLE_ALLOWED_EMAILS || '';
+  return emails.split(',').map(e => e.trim().toLowerCase()).filter(e => e.length > 0);
+};
 
 /**
  * User login
@@ -505,6 +515,194 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
     });
   } catch (error) {
     logger.error('Change password error:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: ERROR_MESSAGES.INTERNAL_ERROR,
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * Google OAuth login
+ */
+export const googleLogin = async (req: AuthRequest, res: Response): Promise<void> => {
+  const client = await pool.connect();
+
+  try {
+    const { credential, device_uuid, device_name } = req.body;
+
+    if (!credential) {
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: 'Google credential gereklidir.',
+      });
+      return;
+    }
+
+    // Verify Google token
+    let ticket;
+    try {
+      ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+    } catch (err) {
+      logger.error('Google token verification error:', err);
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        success: false,
+        error: 'Geçersiz Google token.',
+      });
+      return;
+    }
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        success: false,
+        error: 'Google hesabından email alınamadı.',
+      });
+      return;
+    }
+
+    const googleEmail = payload.email.toLowerCase();
+    const googleName = payload.name || payload.email.split('@')[0];
+
+    // Check if email is in allowed list
+    const allowedEmails = getAllowedEmails();
+    if (allowedEmails.length > 0 && !allowedEmails.includes(googleEmail)) {
+      res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        error: 'Bu email adresi ile giriş yapma yetkiniz yok.',
+      });
+      return;
+    }
+
+    // Find or create user by email
+    let userResult = await client.query(
+      `SELECT user_id, username, email, full_name, role, warehouse_code, is_active
+       FROM users
+       WHERE email = $1`,
+      [googleEmail]
+    );
+
+    let user;
+
+    if (userResult.rows.length === 0) {
+      // Create new user with Google info
+      const username = googleEmail.split('@')[0] + '_' + Date.now().toString().slice(-4);
+      const randomPassword = uuidv4();
+      const passwordHash = await bcrypt.hash(randomPassword, SALT_ROUNDS);
+
+      const newUserResult = await client.query(
+        `INSERT INTO users (username, email, password_hash, full_name, role, is_active, must_change_password)
+         VALUES ($1, $2, $3, $4, 'OPERATOR', true, false)
+         RETURNING user_id, username, email, full_name, role, warehouse_code, is_active`,
+        [username, googleEmail, passwordHash, googleName]
+      );
+      user = newUserResult.rows[0];
+
+      logger.info(`New user created via Google OAuth: ${googleEmail}`);
+    } else {
+      user = userResult.rows[0];
+    }
+
+    // Check if user is active
+    if (!user.is_active) {
+      res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        error: 'Hesabınız devre dışı bırakıldı.',
+      });
+      return;
+    }
+
+    // Update last login
+    await client.query(
+      `UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE user_id = $1`,
+      [user.user_id]
+    );
+
+    // Create auth user object
+    const authUser: AuthUser = {
+      user_id: user.user_id,
+      username: user.username,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+      warehouse_code: user.warehouse_code,
+    };
+
+    // Generate tokens
+    const accessToken = generateToken(authUser);
+    const refreshToken = generateRefreshToken(authUser);
+
+    // Store refresh token in database
+    const tokenHash = await bcrypt.hash(refreshToken, 5);
+    await client.query(
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, device_id)
+       VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '7 days', $3)`,
+      [user.user_id, tokenHash, device_uuid]
+    );
+
+    // Log device session if device_uuid provided
+    if (device_uuid) {
+      let deviceResult = await client.query(
+        `SELECT device_id FROM devices WHERE device_uuid = $1`,
+        [device_uuid]
+      );
+
+      let deviceId: number;
+
+      if (deviceResult.rows.length === 0) {
+        const newDevice = await client.query(
+          `INSERT INTO devices (device_uuid, device_name, assigned_user_id, last_seen, registered_by)
+           VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)
+           RETURNING device_id`,
+          [device_uuid, device_name || 'Unknown Device', user.user_id, user.username]
+        );
+        deviceId = newDevice.rows[0].device_id;
+      } else {
+        deviceId = deviceResult.rows[0].device_id;
+        await client.query(
+          `UPDATE devices SET last_seen = CURRENT_TIMESTAMP, assigned_user_id = $1 WHERE device_id = $2`,
+          [user.user_id, deviceId]
+        );
+      }
+
+      await client.query(
+        `INSERT INTO device_sessions (device_id, user_id, session_token, ip_address)
+         VALUES ($1, $2, $3, $4)`,
+        [deviceId, user.user_id, tokenHash, req.ip]
+      );
+    }
+
+    // Log audit event
+    await client.query(
+      `INSERT INTO audit_logs (user_id, username, action, ip_address, user_agent)
+       VALUES ($1, $2, 'GOOGLE_LOGIN', $3, $4)`,
+      [user.user_id, user.username, req.ip, req.get('user-agent')]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          user_id: user.user_id,
+          username: user.username,
+          email: user.email,
+          full_name: user.full_name,
+          role: user.role,
+          warehouse_code: user.warehouse_code,
+        },
+        accessToken,
+        refreshToken,
+        must_change_password: false,
+      },
+      message: 'Google ile giriş başarılı.',
+    });
+  } catch (error) {
+    logger.error('Google login error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,

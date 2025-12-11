@@ -1,0 +1,586 @@
+.shipments-page {
+  min-height: calc(100vh - 120px);
+  background: #f1f5f9;
+  padding: 1rem;
+}
+
+.shipments-card {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.shipments-header {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  color: white;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.shipments-header h2 {
+  margin: 0;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  flex: 1;
+  line-height: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 1.125rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.add-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.add-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.shipments-content {
+  padding: 1rem;
+}
+
+/* Messages */
+.success-message {
+  padding: 0.75rem 1rem;
+  background: #dcfce7;
+  color: #16a34a;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.error-message {
+  padding: 0.75rem 1rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+/* Filter Bar */
+.filter-bar {
+  margin-bottom: 1rem;
+}
+
+.filter-select {
+  padding: 0.5rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: white;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+/* Layout */
+.shipments-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .shipments-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Shipments List */
+.shipments-list h3,
+.boxes-panel h3 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.shipment-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.shipment-card {
+  padding: 1rem;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shipment-card:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+}
+
+.shipment-card.selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.shipment-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.shipment-prefix {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1e293b;
+  font-family: monospace;
+}
+
+.shipment-name {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.shipment-stats {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.shipment-stats .separator {
+  margin: 0 0.5rem;
+}
+
+.shipment-destinations {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.dest-count {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.dest-count.usa {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.dest-count.fba {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.shipment-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-close-shipment {
+  flex: 1;
+  padding: 0.5rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-close-shipment:hover {
+  background: #e2e8f0;
+}
+
+.btn-ship {
+  flex: 1;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-ship:hover {
+  opacity: 0.9;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.status-open {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.status-badge.status-closed {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.status-badge.status-shipped {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-badge.status-cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Destination Badge */
+.destination-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.destination-badge.usa {
+  background: #3b82f6;
+  color: white;
+}
+
+.destination-badge.fba {
+  background: #f59e0b;
+  color: white;
+}
+
+/* Boxes Panel */
+.boxes-panel {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.boxes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.create-box-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-create-box {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-create-box.usa {
+  background: #3b82f6;
+}
+
+.btn-create-box.usa:hover {
+  background: #2563eb;
+}
+
+.btn-create-box.fba {
+  background: #f59e0b;
+}
+
+.btn-create-box.fba:hover {
+  background: #d97706;
+}
+
+/* Boxes Grid */
+.boxes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.box-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem;
+  transition: all 0.2s;
+}
+
+.box-card.open {
+  border-color: #10b981;
+}
+
+.box-card.closed {
+  border-color: #64748b;
+  opacity: 0.8;
+}
+
+.box-card.shipped {
+  border-color: #3b82f6;
+  opacity: 0.7;
+}
+
+.box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.box-barcode {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: monospace;
+  color: #1e293b;
+}
+
+.box-stats {
+  font-size: 0.7rem;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+}
+
+.box-actions {
+  margin-top: 0.5rem;
+}
+
+.destination-select {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  background: white;
+  cursor: pointer;
+}
+
+.box-contents {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.content-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: #64748b;
+  padding: 0.125rem 0;
+}
+
+.content-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: 0.5rem;
+}
+
+.content-qty {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal h3 {
+  margin: 0 0 1.25rem 0;
+  color: #1e293b;
+  font-size: 1.125rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-weight: 500;
+  color: #475569;
+  font-size: 0.875rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
+}
+
+.btn-cancel {
+  padding: 0.625rem 1rem;
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.btn-save {
+  padding: 0.625rem 1rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save:hover {
+  opacity: 0.9;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .shipments-header {
+    flex-wrap: wrap;
+  }
+
+  .boxes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .create-box-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-create-box {
+    width: 100%;
+  }
+}

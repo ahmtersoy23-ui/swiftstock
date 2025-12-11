@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { useStore } from '../store/useStore';
+import { useNavigate } from 'react-router-dom';
+import { useStore } from '../stores/appStore';
 import api, { apiClient } from '../lib/api';
 import type { Product } from '../types';
 import { translations } from '../i18n/translations';
@@ -7,6 +8,7 @@ import * as XLSX from 'xlsx';
 import './Products.css';
 
 function Products() {
+  const navigate = useNavigate();
   const { language, currentWarehouse } = useStore();
   const t = translations[language];
   const [products, setProducts] = useState<Product[]>([]);
@@ -445,17 +447,15 @@ function Products() {
             .section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
             .section h2 { margin-bottom: 15px; color: #2563eb; text-align: center; }
             .preview-label {
-              width: 100mm; height: 30mm; border: 2px solid #2563eb; padding: 2mm;
-              background: white; display: inline-flex; flex-direction: row;
-              align-items: center; gap: 3mm; margin: 15px auto;
+              width: 100mm; height: 30mm; border: 2px solid #2563eb; padding: 1mm 2mm;
+              background: white; display: flex; flex-direction: column;
+              align-items: center; justify-content: space-between; margin: 15px auto;
             }
-            .label-left { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-right: 2mm; }
-            .product-name { font-size: 9pt; font-weight: bold; line-height: 1.2; overflow: hidden;
-              display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-            .label-right { display: flex; flex-direction: column; align-items: center; gap: 1mm; flex-shrink: 0; }
-            .barcode-container { width: 48mm; height: 18mm; display: flex; align-items: center; justify-content: center; }
+            .product-name { font-size: 8pt; font-weight: bold; line-height: 1.2; text-align: center;
+              width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+            .barcode-container { width: 96mm; height: 14mm; display: flex; align-items: center; justify-content: center; }
             .barcode-container svg { max-width: 100%; max-height: 100%; }
-            .serial-code { font-size: 7pt; font-family: 'Courier New', monospace; color: #333; text-align: center; font-weight: bold; }
+            .serial-code { font-size: 6pt; font-family: 'Courier New', monospace; color: #333; text-align: center; }
             .input-section { text-align: center; }
             .input-section label { display: block; margin-bottom: 10px; font-weight: bold; font-size: 16px; }
             .input-section input { padding: 12px; font-size: 20px; width: 180px; text-align: center;
@@ -470,8 +470,8 @@ function Products() {
             .btn-close { background: #6b7280; color: white; }
             .btn-close:hover { background: #4b5563; }
             .labels-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; padding: 20px; background: white; border-radius: 8px; }
-            .label { width: 100mm; height: 30mm; border: 1px dashed #999; padding: 2mm; background: white;
-              display: flex; flex-direction: row; align-items: center; gap: 3mm; page-break-inside: avoid; }
+            .label { width: 100mm; height: 30mm; border: 1px dashed #999; padding: 1mm 2mm; background: white;
+              display: flex; flex-direction: column; align-items: center; justify-content: space-between; page-break-inside: avoid; }
             .hidden { display: none; }
             .loading { text-align: center; padding: 20px; color: #6b7280; }
             .info-box { background: #dbeafe; border: 1px solid #93c5fd; border-radius: 6px; padding: 12px; margin: 15px 0; text-align: center; }
@@ -491,15 +491,11 @@ function Products() {
             <p style="text-align: center; color: #6b7280; margin-bottom: 10px;">Her etiket benzersiz seri numarası içerecek</p>
             <div style="text-align: center;">
               <div class="preview-label">
-                <div class="label-left">
-                  <div class="product-name">${product.product_name}</div>
+                <div class="product-name">${product.product_name}</div>
+                <div class="barcode-container">
+                  <svg id="preview-barcode"></svg>
                 </div>
-                <div class="label-right">
-                  <div class="barcode-container">
-                    <svg id="preview-barcode"></svg>
-                  </div>
-                  <div class="serial-code">${product.sku_code}-XXXXXX</div>
-                </div>
+                <div class="serial-code">${product.sku_code}-XXXXXX</div>
               </div>
             </div>
             <div class="info-box">
@@ -533,7 +529,7 @@ function Products() {
 
             // Preview barcode
             JsBarcode("#preview-barcode", SKU_CODE + "-000001", {
-              format: "CODE128", width: 1.8, height: 55, displayValue: false, margin: 0
+              format: "CODE128", width: 2.2, height: 55, displayValue: false, margin: 0
             });
 
             document.getElementById('quantity-input').addEventListener('keypress', function(e) {
@@ -578,15 +574,11 @@ function Products() {
                 serials.forEach((s, i) => {
                   labelsHTML += \`
                     <div class="label">
-                      <div class="label-left">
-                        <div class="product-name">\${PRODUCT_NAME}</div>
+                      <div class="product-name">\${PRODUCT_NAME}</div>
+                      <div class="barcode-container">
+                        <svg id="barcode-\${i}"></svg>
                       </div>
-                      <div class="label-right">
-                        <div class="barcode-container">
-                          <svg id="barcode-\${i}"></svg>
-                        </div>
-                        <div class="serial-code">\${s.full_barcode}</div>
-                      </div>
+                      <div class="serial-code">\${s.full_barcode}</div>
                     </div>
                   \`;
                 });
@@ -595,7 +587,7 @@ function Products() {
                 // Generate barcodes
                 serials.forEach((s, i) => {
                   JsBarcode("#barcode-" + i, s.full_barcode, {
-                    format: "CODE128", width: 1.8, height: 55, displayValue: false, margin: 0
+                    format: "CODE128", width: 2.2, height: 55, displayValue: false, margin: 0
                   });
                 });
 
@@ -620,6 +612,9 @@ function Products() {
       <div className="products-card">
         {/* Header */}
         <div className="products-header">
+          <button className="back-btn" onClick={() => navigate('/')}>
+            ←
+          </button>
           <h2>{t.productsCatalog}</h2>
           <div className="warehouse-badge">{currentWarehouse}</div>
         </div>

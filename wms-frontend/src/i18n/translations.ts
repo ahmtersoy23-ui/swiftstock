@@ -18,6 +18,12 @@ export const translations = {
     stockLocationQuery: 'Stok & lokasyon sorgulama',
     manageLocations: 'Lokasyon yönetimi',
     manageProducts: 'Ürün yönetimi',
+    reports: 'Raporlar',
+    reportsDesc: 'Sayım ve envanter raporları',
+    adminDesc: 'Kullanıcı yönetimi',
+    transactionsDesc: 'İşlem geçmişi',
+    shipments: 'Sevkiyat',
+    shipmentsDesc: 'Toplu gönderim yönetimi',
 
     // Operations Page
     warehouseOperationsTitle: 'Depo Operasyonları',
@@ -56,7 +62,7 @@ export const translations = {
     confirm: 'Onayla',
 
     // Inventory Page
-    inventoryQuery: 'Envanter Sorgulama',
+    inventoryQuery: 'Envanter',
     searchBySKU: 'SKU ile Ara',
     searchByLocation: 'Lokasyon ile Ara',
     search: 'Ara',
@@ -223,7 +229,7 @@ export const translations = {
     enterLocationCode: 'Lokasyon kodu girin...',
     skuOrBarcode: 'SKU / Barkod',
     enterSkuCode: 'SKU veya barkod girin...',
-    confirm: 'Tamam',
+    ok: 'Tamam',
     add: 'Ekle',
 
     // Admin Page
@@ -274,6 +280,34 @@ export const translations = {
     successContainerCreated: 'oluşturuldu',
     successContainerOpened: 'açıldı',
     successProductsAdded: 'ürün eklendi',
+
+    // Count Mode
+    countMode: 'Sayım Modu',
+    countModeActive: 'Sayım Aktif',
+    countModeStart: 'Sayıma Başla',
+    countScanLocation: 'Sayılacak lokasyonu tarayın',
+    countLocationInventory: 'Lokasyon Envanteri',
+    countExpected: 'Kayıtlı',
+    countActual: 'Sayılan',
+    countVariance: 'Fark',
+    countEnterQuantity: 'Sayılan miktarı girin',
+    countSaveLocation: 'Lokasyonu Kaydet',
+    countNextLocation: 'Sonraki Lokasyon',
+    countComplete: 'Sayımı Tamamla',
+    countSummary: 'Sayım Özeti',
+    countTotalLocations: 'Toplam Lokasyon',
+    countTotalProducts: 'Toplam Ürün',
+    countTotalVariance: 'Toplam Fark',
+    countLocationVariances: 'Lokasyon Bazlı Farklar',
+    countNoVariance: 'Fark Yok',
+    countPositiveVariance: 'Fazla',
+    countNegativeVariance: 'Eksik',
+    countConfirmComplete: 'Sayımı tamamlamak istediğinize emin misiniz?',
+    countSaved: 'Sayım kaydedildi',
+    countCompleted: 'Sayım tamamlandı',
+    countNoProductsInLocation: 'Bu lokasyonda kayıtlı ürün yok',
+    countProductNotExpected: 'Bu ürün bu lokasyonda kayıtlı değil',
+    countAddAsNew: 'Yeni ürün olarak ekle',
   },
 
   en: {
@@ -295,6 +329,12 @@ export const translations = {
     stockLocationQuery: 'Stock & location query',
     manageLocations: 'Manage locations',
     manageProducts: 'Manage products',
+    reports: 'Reports',
+    reportsDesc: 'Count and inventory reports',
+    adminDesc: 'User management',
+    transactionsDesc: 'Transaction history',
+    shipments: 'Shipments',
+    shipmentsDesc: 'Bulk shipment management',
 
     // Operations Page
     warehouseOperationsTitle: 'Warehouse Operations',
@@ -333,7 +373,7 @@ export const translations = {
     confirm: 'Confirm',
 
     // Inventory Page
-    inventoryQuery: 'Inventory Query',
+    inventoryQuery: 'Inventory',
     searchBySKU: 'Search by SKU',
     searchByLocation: 'Search by Location',
     search: 'Search',
@@ -500,7 +540,7 @@ export const translations = {
     enterLocationCode: 'Enter location code...',
     skuOrBarcode: 'SKU / Barcode',
     enterSkuCode: 'Enter SKU or barcode...',
-    confirm: 'Confirm',
+    ok: 'OK',
     add: 'Add',
 
     // Admin Page
@@ -551,6 +591,34 @@ export const translations = {
     successContainerCreated: 'created',
     successContainerOpened: 'opened',
     successProductsAdded: 'products added',
+
+    // Count Mode
+    countMode: 'Count Mode',
+    countModeActive: 'Count Active',
+    countModeStart: 'Start Count',
+    countScanLocation: 'Scan location to count',
+    countLocationInventory: 'Location Inventory',
+    countExpected: 'Expected',
+    countActual: 'Counted',
+    countVariance: 'Variance',
+    countEnterQuantity: 'Enter counted quantity',
+    countSaveLocation: 'Save Location',
+    countNextLocation: 'Next Location',
+    countComplete: 'Complete Count',
+    countSummary: 'Count Summary',
+    countTotalLocations: 'Total Locations',
+    countTotalProducts: 'Total Products',
+    countTotalVariance: 'Total Variance',
+    countLocationVariances: 'Location Variances',
+    countNoVariance: 'No Variance',
+    countPositiveVariance: 'Surplus',
+    countNegativeVariance: 'Shortage',
+    countConfirmComplete: 'Are you sure you want to complete the count?',
+    countSaved: 'Count saved',
+    countCompleted: 'Count completed',
+    countNoProductsInLocation: 'No products registered in this location',
+    countProductNotExpected: 'This product is not registered in this location',
+    countAddAsNew: 'Add as new product',
   },
 };
 

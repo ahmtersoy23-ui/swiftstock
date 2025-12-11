@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../lib/api';
-import { useStore } from '../store/useStore';
+import { useStore } from '../stores/appStore';
 import { translations } from '../i18n/translations';
 import type { Location, OperationMode, Warehouse } from '../types';
 import './Locations.css';
 
 function Locations() {
+  const navigate = useNavigate();
   const { language } = useStore();
   const t = translations[language];
   const [locations, setLocations] = useState<Location[]>([]);
@@ -427,6 +429,9 @@ function Locations() {
     <div className="locations-page">
       <div className="locations-card">
         <div className="locations-header">
+          <button className="back-btn" onClick={() => navigate('/')}>
+            ←
+          </button>
           <h2>{t.locations}</h2>
         </div>
         <div className="locations-content">
@@ -641,65 +646,65 @@ function Locations() {
             </div>
           </div>
 
-          {/* Locations Table */}
+          {/* Locations Grid */}
           <div className="section">
             <h3>📦 {t.allLocations} ({locations.length})</h3>
             {locations.length === 0 ? (
               <div className="empty-state">{t.noData}</div>
             ) : (
-              <div className="table-container">
-                <table className="locations-table">
-                  <thead>
-                    <tr>
-                      <th>{t.location}</th>
-                      <th>{t.warehouse}</th>
-                      <th>{t.zone}</th>
-                      <th>{t.locationType}</th>
-                      <th>Aisle/Bay/Level</th>
-                      <th>{t.description}</th>
-                      <th>Status</th>
-                      <th className="text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {locations.map((location) => (
-                      <tr key={location.location_id}>
-                        <td className="location-code">{location.location_code}</td>
-                        <td>{getWarehouseName(location.warehouse_id)}</td>
-                        <td>
-                          {location.zone && (
-                            <span className={`zone-badge ${location.zone.toLowerCase()}`}>
-                              {location.zone}
-                            </span>
-                          )}
-                        </td>
-                        <td>{location.location_type || '-'}</td>
-                        <td className="hierarchy">
-                          {location.aisle || location.bay || location.level ? (
-                            `${location.aisle || '-'}/${location.bay || '-'}/${location.level || '-'}`
-                          ) : (
-                            '-'
-                          )}
-                        </td>
-                        <td>{location.description || '-'}</td>
-                        <td>
-                          <span className={`status-badge ${location.is_active ? 'active' : 'inactive'}`}>
-                            {location.is_active ? 'Active' : 'Inactive'}
+              <div className="locations-grid">
+                {locations.map((location) => (
+                  <div key={location.location_id} className="location-card">
+                    <div className="location-card-header">
+                      <span className="location-code">{location.location_code}</span>
+                      <span className={`status-badge ${location.is_active ? 'active' : 'inactive'}`}>
+                        {location.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div className="location-card-body">
+                      <div className="location-detail">
+                        <span className="detail-label">{t.warehouse}:</span>
+                        <span className="detail-value">{getWarehouseName(location.warehouse_id)}</span>
+                      </div>
+                      {location.zone && (
+                        <div className="location-detail">
+                          <span className="detail-label">{t.zone}:</span>
+                          <span className={`zone-badge ${location.zone.toLowerCase()}`}>
+                            {location.zone}
                           </span>
-                        </td>
-                        <td className="text-center">
-                          <button
-                            onClick={() => handlePrintLocationBarcode(location)}
-                            className="btn-icon"
-                            title="Print Barcode"
-                          >
-                            🖨️
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      )}
+                      {location.location_type && (
+                        <div className="location-detail">
+                          <span className="detail-label">{t.locationType}:</span>
+                          <span className="detail-value">{location.location_type}</span>
+                        </div>
+                      )}
+                      {(location.aisle || location.bay || location.level) && (
+                        <div className="location-detail">
+                          <span className="detail-label">Aisle/Bay/Level:</span>
+                          <span className="detail-value">
+                            {`${location.aisle || '-'}/${location.bay || '-'}/${location.level || '-'}`}
+                          </span>
+                        </div>
+                      )}
+                      {location.description && (
+                        <div className="location-detail">
+                          <span className="detail-label">{t.description}:</span>
+                          <span className="detail-value">{location.description}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="location-card-footer">
+                      <button
+                        onClick={() => handlePrintLocationBarcode(location)}
+                        className="btn-print-small"
+                      >
+                        🖨️ {t.print}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

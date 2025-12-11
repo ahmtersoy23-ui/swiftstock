@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useAuthStore } from '../stores/authStore';
 import { apiClient } from '../lib/api';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string || '';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -43,6 +46,35 @@ export default function Login() {
     } catch (err: unknown) {
       const error = err as { error?: string };
       setError(error.error || 'Giris sirasinda bir hata olustu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async (credentialResponse: { credential?: string }) => {
+    if (!credentialResponse.credential) {
+      setError('Google giris basarisiz');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await apiClient.googleLogin({
+        credential: credentialResponse.credential,
+      });
+
+      if (response.success && response.data) {
+        const { user, accessToken, refreshToken } = response.data;
+        setAuth(user, accessToken, refreshToken);
+        navigate('/');
+      } else {
+        setError(response.error || 'Google ile giris basarisiz');
+      }
+    } catch (err: unknown) {
+      const error = err as { error?: string };
+      setError(error.error || 'Google giris sirasinda bir hata olustu');
     } finally {
       setLoading(false);
     }
@@ -349,6 +381,36 @@ export default function Login() {
           >
             {loading ? 'Logging in...' : 'Sign In'}
           </button>
+
+          {/* Google Sign-In */}
+          {GOOGLE_CLIENT_ID && (
+            <>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                margin: '16px 0'
+              }}>
+                <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+                <span style={{ fontSize: '12px', color: '#9ca3af' }}>veya</span>
+                <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+              </div>
+
+              <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <GoogleLogin
+                    onSuccess={handleGoogleLogin}
+                    onError={() => setError('Google giris basarisiz')}
+                    theme="outline"
+                    size="large"
+                    text="signin_with"
+                    shape="rectangular"
+                    width="100%"
+                  />
+                </div>
+              </GoogleOAuthProvider>
+            </>
+          )}
 
           <div style={{
             textAlign: 'center',

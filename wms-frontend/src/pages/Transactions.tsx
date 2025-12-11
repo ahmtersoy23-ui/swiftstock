@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../lib/api';
-import { useStore } from '../store/useStore';
+import { useStore } from '../stores/appStore';
 import { translations } from '../i18n/translations';
 import './Transactions.css';
 
@@ -33,6 +34,7 @@ type DateFilter = 'all' | 'today' | 'yesterday' | 'last7' | 'last30';
 type TypeFilter = 'all' | 'IN' | 'OUT' | 'ADJUST' | 'TRANSFER';
 
 function Transactions() {
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState<TransactionWithDetails[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<TransactionWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -227,6 +229,9 @@ function Transactions() {
       <div className="transactions-card">
         {/* Header */}
         <div className="transactions-header">
+          <button className="back-btn" onClick={() => navigate('/')}>
+            ←
+          </button>
           <h2>{t.transactionHistory}</h2>
           <button onClick={loadTransactions} className="refresh-btn" disabled={loading}>
             🔄 {t.refresh}

@@ -200,6 +200,35 @@ export const createTransaction = async (req: Request, res: Response) => {
       );
 
       processedItems.push(itemResult.rows[0]);
+
+      // Update inventory table
+      const inventoryDelta = transaction_type === 'IN' ? quantity_each : -quantity_each;
+
+      // Check if inventory record exists for this SKU + warehouse + location
+      const existingInventory = await client.query(
+        `SELECT inventory_id, quantity_each FROM inventory
+         WHERE sku_code = $1 AND warehouse_id = $2 AND location_id = $3`,
+        [sku_code, warehouse_id, location_id]
+      );
+
+      if (existingInventory.rows.length > 0) {
+        // Update existing inventory
+        await client.query(
+          `UPDATE inventory
+           SET quantity_each = quantity_each + $1, last_updated = NOW()
+           WHERE inventory_id = $2`,
+          [inventoryDelta, existingInventory.rows[0].inventory_id]
+        );
+      } else {
+        // Insert new inventory record (only for IN transactions)
+        if (transaction_type === 'IN') {
+          await client.query(
+            `INSERT INTO inventory (sku_code, warehouse_id, location_id, quantity_each, quantity_box, quantity_pallet)
+             VALUES ($1, $2, $3, $4, 0, 0)`,
+            [sku_code, warehouse_id, location_id, quantity_each]
+          );
+        }
+      }
     }
 
     await client.query('COMMIT');

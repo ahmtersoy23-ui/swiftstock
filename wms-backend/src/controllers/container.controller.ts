@@ -10,12 +10,15 @@ export const createContainer = async (req: Request, res: Response) => {
   const client = await pool.connect();
 
   try {
-    const { container_type, warehouse_code, items, created_by, notes, parent_container_id } = req.body;
+    const { container_type, warehouse_code, items, contents, created_by, notes, parent_container_id } = req.body;
 
-    if (!container_type || !warehouse_code || !items || !created_by) {
+    // Support both 'items' and 'contents' parameters
+    const containerItems = items || contents;
+
+    if (!container_type || !warehouse_code || !containerItems || containerItems.length === 0 || !created_by) {
       return res.status(400).json({
         success: false,
-        error: 'container_type, warehouse_code, items, and created_by are required',
+        error: 'container_type, warehouse_code, items (or contents), and created_by are required',
       });
     }
 
@@ -59,7 +62,7 @@ export const createContainer = async (req: Request, res: Response) => {
     const container = containerResult.rows[0];
 
     // Add items to container
-    for (const item of items) {
+    for (const item of containerItems) {
       await client.query(
         `INSERT INTO container_contents (container_id, sku_code, quantity)
          VALUES ($1, $2, $3)`,
@@ -73,7 +76,8 @@ export const createContainer = async (req: Request, res: Response) => {
       success: true,
       data: {
         container,
-        items_count: items.length,
+        barcode: container.barcode,
+        items_count: containerItems.length,
       },
       message: `Container ${barcode} created successfully`,
     });
@@ -245,15 +249,38 @@ export const openContainer = async (req: Request, res: Response) => {
 
 /**
  * Get all containers (with filters)
+ * Includes item counts and calculated status
  */
 export const getAllContainers = async (req: Request, res: Response) => {
   try {
-    const { warehouse_code, status, type } = req.query;
+    const { warehouse_code, status, type, search } = req.query;
 
     let query = `
-      SELECT c.*, w.code as warehouse_code
+      SELECT
+        c.*,
+        w.code as warehouse_code,
+        w.name as warehouse_name,
+        l.location_code,
+        l.qr_code as location_qr,
+        COALESCE(cc.current_items, 0) as current_items,
+        COALESCE(cc.original_items, 0) as original_items,
+        CASE
+          WHEN c.status = 'OPENED' THEN 'OPENED'
+          WHEN COALESCE(cc.current_items, 0) = 0 THEN 'EMPTY'
+          WHEN COALESCE(cc.current_items, 0) < COALESCE(cc.original_items, 0) THEN 'PARTIAL'
+          ELSE 'SEALED'
+        END as calculated_status
       FROM containers c
       JOIN warehouses w ON c.warehouse_id = w.warehouse_id
+      LEFT JOIN locations l ON c.location_id = l.location_id
+      LEFT JOIN (
+        SELECT
+          container_id,
+          COUNT(*) as current_items,
+          COUNT(*) as original_items
+        FROM container_contents
+        GROUP BY container_id
+      ) cc ON c.container_id = cc.container_id
       WHERE 1=1
     `;
     const params: any[] = [];
@@ -277,7 +304,13 @@ export const getAllContainers = async (req: Request, res: Response) => {
       paramCount++;
     }
 
-    query += ` ORDER BY c.created_at DESC LIMIT 100`;
+    if (search) {
+      query += ` AND (c.barcode ILIKE $${paramCount} OR c.notes ILIKE $${paramCount})`;
+      params.push(`%${search}%`);
+      paramCount++;
+    }
+
+    query += ` ORDER BY c.created_at DESC LIMIT 200`;
 
     const result = await pool.query(query, params);
 
