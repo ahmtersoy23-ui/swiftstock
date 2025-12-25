@@ -139,7 +139,7 @@ export interface LocationInventory {
 export interface OperationMode {
   mode_id: number;
   mode_code: string;
-  mode_type: 'RECEIVING' | 'PICKING' | 'TRANSFER' | 'COUNT';
+  mode_type: 'RECEIVING' | 'PICKING' | 'TRANSFER' | 'COUNT' | 'CONTAINER';
   mode_name: string;
   description?: string;
   workflow_steps?: string[];

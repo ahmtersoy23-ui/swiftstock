@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { shipmentApi, apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
 import { useAuthStore } from '../stores/authStore';
-import { translations } from '../i18n/translations';
 import type { VirtualShipment, ShipmentBox, Warehouse } from '../types';
 import './Shipments.css';
 
@@ -11,7 +10,6 @@ function Shipments() {
   const navigate = useNavigate();
   const { language } = useStore();
   const { user } = useAuthStore();
-  const t = translations[language];
 
   const [shipments, setShipments] = useState<VirtualShipment[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -42,7 +40,7 @@ function Shipments() {
     setLoading(true);
     try {
       const [shipmentsRes, warehousesRes] = await Promise.all([
-        shipmentApi.getAllShipments(statusFilter ? { status: statusFilter } : undefined),
+        shipmentApi.getAll(statusFilter ? { status: statusFilter } : undefined),
         apiClient.getAllWarehouses(),
       ]);
 
@@ -72,7 +70,7 @@ function Shipments() {
     }
 
     try {
-      const response = await shipmentApi.createShipment({
+      const response = await shipmentApi.create({
         ...newShipment,
         created_by: user?.username || 'system',
       });
@@ -98,7 +96,7 @@ function Shipments() {
   const handleSelectShipment = async (shipment: VirtualShipment) => {
     setSelectedShipment(shipment);
     try {
-      const response = await shipmentApi.getShipmentBoxes(shipment.shipment_id);
+      const response = await shipmentApi.getBoxes(shipment.shipment_id);
       if (response.success) {
         setBoxes(response.data || []);
       }
@@ -133,7 +131,7 @@ function Shipments() {
     }
 
     try {
-      const response = await shipmentApi.closeShipment(shipment.shipment_id);
+      const response = await shipmentApi.close(shipment.shipment_id);
       if (response.success) {
         setSuccess(language === 'tr' ? 'Sevkiyat kapatıldı' : 'Shipment closed');
         loadData();
@@ -154,7 +152,7 @@ function Shipments() {
     }
 
     try {
-      const response = await shipmentApi.shipShipment(shipment.shipment_id);
+      const response = await shipmentApi.ship(shipment.shipment_id);
       if (response.success) {
         setSuccess(language === 'tr' ? 'Sevkiyat gönderildi' : 'Shipment marked as shipped');
         loadData();

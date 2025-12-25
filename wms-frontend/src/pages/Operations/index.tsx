@@ -5,6 +5,7 @@ import { apiClient, reportApi } from '../../lib/api';
 import { useStore } from '../../stores/appStore';
 import { translations } from '../../i18n/translations';
 import type { ScanResponse, OperationMode, Product, Location, Container } from '../../types';
+import { useAuthStore } from '../../stores/authStore';
 
 // Local imports
 import { playScanSound } from './utils/audio';
@@ -13,7 +14,6 @@ import { useWorkflow } from './hooks/useWorkflow';
 import { useCountMode } from './hooks/useCountMode';
 import { useScanner } from './hooks/useScanner';
 import type { WorkflowState, CountItem } from './types';
-import { initialCountState } from './types';
 
 // Components
 import { StatusBar, ModeSelector, ItemsList, CountModeView, CountSummaryModal, HelpPanel, CameraView } from './components';
@@ -22,7 +22,9 @@ import '../Operations.css';
 
 function Operations() {
   const navigate = useNavigate();
-  const { currentWarehouse, currentUser, setLastScannedBarcode, language } = useStore();
+  const { currentWarehouse, setLastScannedBarcode, language } = useStore();
+  const { user } = useAuthStore();
+  const currentUser = user?.username || 'system';
   const t = translations[language];
 
   // Available modes
@@ -55,7 +57,6 @@ function Operations() {
   const { workflow, workflowRef, setWorkflow, addItem, removeItem, reset: resetWorkflowState } = useWorkflow();
   const {
     countState,
-    setCountState,
     startCountMode,
     setLocationItems,
     incrementExpectedItem,
@@ -758,8 +759,6 @@ function Operations() {
         return t.scanLocation;
     }
   };
-
-  const totalItems = workflow.items.length;
 
   // ============ RENDER ============
 
