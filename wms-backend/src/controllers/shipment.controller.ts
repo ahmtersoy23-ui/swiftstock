@@ -16,7 +16,7 @@ export const getAllShipments = async (req: Request, res: Response) => {
         (SELECT COUNT(*) FROM shipment_boxes sb WHERE sb.shipment_id = vs.shipment_id AND sb.destination = 'USA') as usa_boxes,
         (SELECT COUNT(*) FROM shipment_boxes sb WHERE sb.shipment_id = vs.shipment_id AND sb.destination = 'FBA') as fba_boxes
       FROM virtual_shipments vs
-      JOIN warehouses w ON vs.source_warehouse_id = w.warehouse_id
+      JOIN wms_warehouses w ON vs.source_warehouse_id = w.warehouse_id
       WHERE 1=1
     `;
     const params: any[] = [];
@@ -61,7 +61,7 @@ export const getShipmentById = async (req: Request, res: Response) => {
         w.code as source_warehouse_code,
         w.name as source_warehouse_name
       FROM virtual_shipments vs
-      JOIN warehouses w ON vs.source_warehouse_id = w.warehouse_id
+      JOIN wms_warehouses w ON vs.source_warehouse_id = w.warehouse_id
       WHERE vs.shipment_id = $1`,
       [shipment_id]
     );
@@ -238,7 +238,7 @@ export const getBoxByBarcode = async (req: Request, res: Response) => {
         p.product_name,
         p.barcode as product_barcode
       FROM shipment_box_contents sbc
-      JOIN products p ON sbc.sku_code = p.sku_code
+      JOIN products p ON sbc.product_sku = p.sku_code
       WHERE sbc.box_id = $1
       ORDER BY sbc.added_at`,
       [boxResult.rows[0].box_id]
@@ -266,12 +266,12 @@ export const getBoxByBarcode = async (req: Request, res: Response) => {
 export const addItemToBox = async (req: Request, res: Response) => {
   try {
     const { box_id } = req.params;
-    const { sku_code, quantity, added_by } = req.body;
+    const { product_sku, quantity, added_by } = req.body;
 
     if (!sku_code || !quantity || !added_by) {
       return res.status(400).json({
         success: false,
-        error: 'sku_code, quantity and added_by are required',
+        error: 'product_sku, quantity and added_by are required',
       });
     }
 
@@ -307,7 +307,7 @@ export const addItemToBox = async (req: Request, res: Response) => {
     }
 
     const productResult = await pool.query(
-      'SELECT * FROM products WHERE sku_code = $1',
+      'SELECT * FROM products WHERE product_sku = $1',
       [sku_code]
     );
 
@@ -319,7 +319,7 @@ export const addItemToBox = async (req: Request, res: Response) => {
     }
 
     const existingContent = await pool.query(
-      'SELECT * FROM shipment_box_contents WHERE box_id = $1 AND sku_code = $2',
+      'SELECT * FROM shipment_box_contents WHERE box_id = $1 AND product_sku = $2',
       [box_id, sku_code]
     );
 
@@ -328,16 +328,16 @@ export const addItemToBox = async (req: Request, res: Response) => {
       result = await pool.query(
         `UPDATE shipment_box_contents
          SET quantity = quantity + $1, added_at = CURRENT_TIMESTAMP, added_by = $2
-         WHERE box_id = $3 AND sku_code = $4
+         WHERE box_id = $3 AND product_sku = $4
          RETURNING *`,
         [quantity, added_by, box_id, sku_code]
       );
     } else {
       result = await pool.query(
-        `INSERT INTO shipment_box_contents (box_id, sku_code, quantity, added_by)
+        `INSERT INTO shipment_box_contents (box_id, product_sku, quantity, added_by)
          VALUES ($1, $2, $3, $4)
          RETURNING *`,
-        [box_id, sku_code, quantity, added_by]
+        [box_id, product_sku, quantity, added_by]
       );
     }
 
@@ -631,12 +631,12 @@ export const getShipmentBoxes = async (req: Request, res: Response) => {
       SELECT sb.*,
         (SELECT json_agg(json_build_object(
           'content_id', sbc.content_id,
-          'sku_code', sbc.sku_code,
+          'sku_code', sbc.product_sku,
           'quantity', sbc.quantity,
           'product_name', p.product_name
         ))
         FROM shipment_box_contents sbc
-        JOIN products p ON sbc.sku_code = p.sku_code
+        JOIN products p ON sbc.product_sku = p.sku_code
         WHERE sbc.box_id = sb.box_id) as contents
       FROM shipment_boxes sb
       WHERE sb.shipment_id = $1

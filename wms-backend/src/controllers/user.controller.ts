@@ -58,7 +58,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
 
     // Get total count
     const countResult = await pool.query(
-      `SELECT COUNT(*) as total FROM users u ${whereClause}`,
+      `SELECT COUNT(*) as total FROM wms_users u ${whereClause}`,
       queryParams
     );
 
@@ -78,8 +78,8 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
          u.created_at,
          u.last_login,
          u.created_by
-       FROM users u
-       LEFT JOIN warehouses w ON u.warehouse_code = w.code
+       FROM wms_users u
+       LEFT JOIN wms_warehouses w ON u.warehouse_code = w.code
        ${whereClause}
        ORDER BY u.created_at DESC
        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
@@ -132,8 +132,8 @@ export const getUserById = async (req: AuthRequest, res: Response): Promise<void
            ) FILTER (WHERE up.permission_id IS NOT NULL),
            '[]'
          ) as permissions
-       FROM users u
-       LEFT JOIN warehouses w ON u.warehouse_code = w.code
+       FROM wms_users u
+       LEFT JOIN wms_warehouses w ON u.warehouse_code = w.code
        LEFT JOIN user_permissions up ON u.user_id = up.user_id
        WHERE u.user_id = $1
        GROUP BY u.user_id, w.name`,
@@ -201,7 +201,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
 
     // Check if username already exists
     const existingUser = await client.query(
-      `SELECT user_id FROM users WHERE username = $1`,
+      `SELECT user_id FROM wms_users WHERE username = $1`,
       [username]
     );
 
@@ -216,7 +216,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     // Check if email already exists
     if (email) {
       const existingEmail = await client.query(
-        `SELECT user_id FROM users WHERE email = $1`,
+        `SELECT user_id FROM wms_users WHERE email = $1`,
         [email]
       );
 
@@ -234,7 +234,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
 
     // Create user with must_change_password = true
     const newUserResult = await client.query(
-      `INSERT INTO users (username, email, password_hash, full_name, role, warehouse_code, is_active, created_by, must_change_password)
+      `INSERT INTO wms_users (username, email, password_hash, full_name, role, warehouse_code, is_active, created_by, must_change_password)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
        RETURNING user_id, username, email, full_name, role, warehouse_code, is_active, created_at`,
       [username, email, password_hash, full_name, role, warehouse_code, is_active, req.user?.username || 'SYSTEM']
@@ -301,7 +301,7 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
 
     // Check if user exists
     const userCheck = await client.query(
-      `SELECT user_id FROM users WHERE user_id = $1`,
+      `SELECT user_id FROM wms_users WHERE user_id = $1`,
       [user_id]
     );
 
@@ -316,7 +316,7 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
     // Check if email is already used by another user
     if (email) {
       const existingEmail = await client.query(
-        `SELECT user_id FROM users WHERE email = $1 AND user_id != $2`,
+        `SELECT user_id FROM wms_users WHERE email = $1 AND user_id != $2`,
         [email, user_id]
       );
 
@@ -364,7 +364,7 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
       values.push(user_id);
 
       await client.query(
-        `UPDATE users SET ${updates.join(', ')} WHERE user_id = $${paramIndex}`,
+        `UPDATE wms_users SET ${updates.join(', ')} WHERE user_id = $${paramIndex}`,
         values
       );
     }
@@ -403,8 +403,8 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
          u.created_at,
          u.updated_at,
          u.last_login
-       FROM users u
-       LEFT JOIN warehouses w ON u.warehouse_code = w.code
+       FROM wms_users u
+       LEFT JOIN wms_warehouses w ON u.warehouse_code = w.code
        WHERE u.user_id = $1`,
       [user_id]
     );
@@ -448,7 +448,7 @@ export const deleteUser = async (req: AuthRequest, res: Response): Promise<void>
 
     // Check if user exists
     const userCheck = await client.query(
-      `SELECT user_id, username FROM users WHERE user_id = $1`,
+      `SELECT user_id, username FROM wms_users WHERE user_id = $1`,
       [user_id]
     );
 
@@ -473,7 +473,7 @@ export const deleteUser = async (req: AuthRequest, res: Response): Promise<void>
 
     // Soft delete (set is_active to false)
     await client.query(
-      `UPDATE users SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
+      `UPDATE wms_users SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
       [user_id]
     );
 
@@ -544,7 +544,7 @@ export const resetUserPassword = async (req: AuthRequest, res: Response): Promis
 
     // Check if user exists
     const userCheck = await client.query(
-      `SELECT user_id, username FROM users WHERE user_id = $1`,
+      `SELECT user_id, username FROM wms_users WHERE user_id = $1`,
       [user_id]
     );
 
@@ -561,7 +561,7 @@ export const resetUserPassword = async (req: AuthRequest, res: Response): Promis
 
     // Update password and set must_change_password = true
     await client.query(
-      `UPDATE users SET password_hash = $1, must_change_password = true, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2`,
+      `UPDATE wms_users SET password_hash = $1, must_change_password = true, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2`,
       [password_hash, user_id]
     );
 

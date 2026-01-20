@@ -74,8 +74,8 @@ export const getAllOrders = async (req: AuthRequest, res: Response): Promise<voi
          u.username as picker_username,
          u.full_name as picker_full_name
        FROM shipment_orders so
-       LEFT JOIN warehouses w ON so.warehouse_code = w.code
-       LEFT JOIN users u ON so.assigned_picker_id = u.user_id
+       LEFT JOIN wms_warehouses w ON so.warehouse_code = w.code
+       LEFT JOIN wms_users u ON so.assigned_picker_id = u.user_id
        ${whereClause}
        ORDER BY
          CASE so.priority
@@ -122,8 +122,8 @@ export const getOrderById = async (req: AuthRequest, res: Response): Promise<voi
          u.username as picker_username,
          u.full_name as picker_full_name
        FROM shipment_orders so
-       LEFT JOIN warehouses w ON so.warehouse_code = w.code
-       LEFT JOIN users u ON so.assigned_picker_id = u.user_id
+       LEFT JOIN wms_warehouses w ON so.warehouse_code = w.code
+       LEFT JOIN wms_users u ON so.assigned_picker_id = u.user_id
        WHERE so.order_id = $1`,
       [order_id]
     );
@@ -145,9 +145,9 @@ export const getOrderById = async (req: AuthRequest, res: Response): Promise<voi
          l.location_code,
          u.username as picked_by_username
        FROM shipment_order_items soi
-       LEFT JOIN products p ON soi.sku_code = p.sku_code
-       LEFT JOIN locations l ON soi.location_id = l.location_id
-       LEFT JOIN users u ON soi.picked_by = u.user_id
+       LEFT JOIN products p ON soi.product_sku = p.sku_code
+       LEFT JOIN wms_locations l ON soi.location_id = l.location_id
+       LEFT JOIN wms_users u ON soi.picked_by = u.user_id
        WHERE soi.order_id = $1
        ORDER BY soi.line_number`,
       [order_id]
@@ -247,7 +247,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
 
       // Get product details
       const productResult = await client.query(
-        `SELECT sku_code, product_name, barcode FROM products WHERE sku_code = $1`,
+        `SELECT product_sku, product_name, barcode FROM products WHERE product_sku = $1`,
         [item.sku_code]
       );
 
@@ -261,27 +261,27 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       const locationResult = await client.query(
         `SELECT li.location_id, l.location_code, li.quantity_each
          FROM location_inventory li
-         JOIN locations l ON li.location_id = l.location_id
-         WHERE li.sku_code = $1
-           AND l.warehouse_id = (SELECT warehouse_id FROM warehouses WHERE code = $2)
+         JOIN wms_locations l ON li.location_id = l.location_id
+         WHERE li.product_sku = $1
+           AND l.warehouse_id = (SELECT warehouse_id FROM wms_warehouses WHERE code = $2)
            AND li.quantity_each > 0
          ORDER BY li.quantity_each DESC
          LIMIT 1`,
-        [item.sku_code, warehouse_code]
+        [item.product_sku, warehouse_code]
       );
 
       const location = locationResult.rows[0];
 
       await client.query(
         `INSERT INTO shipment_order_items (
-          order_id, line_number, sku_code, product_name, barcode,
+          order_id, line_number, product_sku, product_name, barcode,
           quantity_ordered, location_id, location_code
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
           newOrder.order_id,
           i + 1,
-          product.sku_code,
+          product.product_sku,
           product.product_name,
           product.barcode,
           item.quantity,
@@ -313,7 +313,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
            json_build_object(
              'item_id', soi.item_id,
              'line_number', soi.line_number,
-             'sku_code', soi.sku_code,
+             'sku_code', soi.product_sku,
              'product_name', soi.product_name,
              'quantity_ordered', soi.quantity_ordered,
              'location_code', soi.location_code
@@ -357,7 +357,7 @@ export const assignPicker = async (req: AuthRequest, res: Response): Promise<voi
 
     // Validate picker exists
     const pickerResult = await client.query(
-      `SELECT user_id, username FROM users WHERE user_id = $1 AND is_active = true`,
+      `SELECT user_id, username FROM wms_users WHERE user_id = $1 AND is_active = true`,
       [picker_id]
     );
 
@@ -464,7 +464,7 @@ export const recordPick = async (req: AuthRequest, res: Response): Promise<void>
     await client.query('BEGIN');
 
     const { order_id } = req.params;
-    const { item_id, sku_code, location_id, quantity_picked, device_uuid, notes } = req.body;
+    const { item_id, product_sku, location_id, quantity_picked, device_uuid, notes } = req.body;
 
     if (!item_id || !sku_code || quantity_picked <= 0) {
       res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -507,11 +507,11 @@ export const recordPick = async (req: AuthRequest, res: Response): Promise<void>
     // Record pick confirmation
     await client.query(
       `INSERT INTO pick_confirmations (
-        order_id, item_id, sku_code, location_id, quantity_picked,
+        order_id, item_id, product_sku, location_id, quantity_picked,
         picked_by, device_uuid, scan_method, notes
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, 'BARCODE', $8)`,
-      [order_id, item_id, sku_code, location_id, quantity_picked, req.user?.user_id, device_uuid, notes]
+      [order_id, item_id, product_sku, location_id, quantity_picked, req.user?.user_id, device_uuid, notes]
     );
 
     await client.query('COMMIT');

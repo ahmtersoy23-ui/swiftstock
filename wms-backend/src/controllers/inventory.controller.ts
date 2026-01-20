@@ -42,7 +42,7 @@ export const getInventorySummary = async (req: Request, res: Response) => {
  */
 export const getInventoryBySku = async (req: Request, res: Response) => {
   try {
-    const { sku_code } = req.params;
+    const { product_sku } = req.params;
 
     const result = await pool.query(
       `SELECT 
@@ -54,11 +54,11 @@ export const getInventoryBySku = async (req: Request, res: Response) => {
         w.code as warehouse_code,
         w.name as warehouse_name,
         l.qr_code as location_code
-       FROM inventory i
-       JOIN products p ON i.sku_code = p.sku_code
-       JOIN warehouses w ON i.warehouse_id = w.warehouse_id
-       LEFT JOIN locations l ON i.location_id = l.location_id
-       WHERE i.sku_code = $1 AND i.quantity_each > 0
+       FROM wms_inventory i
+       JOIN products p ON i.product_sku = p.sku_code
+       JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
+       LEFT JOIN wms_locations l ON i.location_id = l.location_id
+       WHERE i.product_sku = $1 AND i.quantity_each > 0
        ORDER BY w.code`,
       [sku_code]
     );
@@ -78,7 +78,7 @@ export const getInventoryBySku = async (req: Request, res: Response) => {
     return res.json({
       success: true,
       data: {
-        sku_code,
+        product_sku,
         product_name: result.rows[0].product_name,
         barcode: result.rows[0].barcode,
         locations: result.rows,
@@ -113,10 +113,10 @@ export const getLowStock = async (req: Request, res: Response) => {
         p.barcode,
         w.code as warehouse_code,
         l.qr_code as location_code
-      FROM inventory i
-      JOIN products p ON i.sku_code = p.sku_code
-      JOIN warehouses w ON i.warehouse_id = w.warehouse_id
-      LEFT JOIN locations l ON i.location_id = l.location_id
+      FROM wms_inventory i
+      JOIN products p ON i.product_sku = p.sku_code
+      JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
+      LEFT JOIN wms_locations l ON i.location_id = l.location_id
       WHERE i.quantity_each <= $1 AND i.quantity_each > 0
     `;
 
@@ -163,7 +163,7 @@ export const searchInventory = async (req: Request, res: Response) => {
       SELECT * FROM v_inventory_summary
       WHERE (
         LOWER(product_name) LIKE LOWER($1)
-        OR LOWER(sku_code) LIKE LOWER($1)
+        OR LOWER(product_sku) LIKE LOWER($1)
         OR barcode LIKE $1
       )
     `;

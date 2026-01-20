@@ -26,7 +26,7 @@ export const scanCode = async (req: Request, res: Response) => {
 
     // Get warehouse_id
     const warehouseResult = await pool.query(
-      'SELECT warehouse_id FROM warehouses WHERE code = $1',
+      'SELECT warehouse_id FROM wms_warehouses WHERE code = $1',
       [warehouse_code]
     );
 
@@ -51,10 +51,10 @@ export const scanCode = async (req: Request, res: Response) => {
       // Get current inventory
       const inventoryResult = await pool.query(
         `SELECT i.*, l.qr_code as location_code
-         FROM inventory i
-         LEFT JOIN locations l ON i.location_id = l.location_id
-         WHERE i.sku_code = $1 AND i.warehouse_id = $2`,
-        [product.sku_code, warehouse_id]
+         FROM wms_inventory i
+         LEFT JOIN wms_locations l ON i.location_id = l.location_id
+         WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
+        [product.product_sku, warehouse_id]
       );
 
       const inventory = inventoryResult.rows[0] || null;
@@ -72,8 +72,8 @@ export const scanCode = async (req: Request, res: Response) => {
     // Check if it's a container barcode (KOL-xxxxx or PAL-xxxxx)
     const containerResult = await pool.query(
       `SELECT c.*, w.code as warehouse_code
-       FROM containers c
-       JOIN warehouses w ON c.warehouse_id = w.warehouse_id
+       FROM wms_containers c
+       JOIN wms_warehouses w ON c.warehouse_id = w.warehouse_id
        WHERE c.barcode = $1`,
       [barcode]
     );
@@ -84,8 +84,8 @@ export const scanCode = async (req: Request, res: Response) => {
       // Get container contents
       const contentsResult = await pool.query(
         `SELECT cc.*, p.product_name, p.barcode as product_barcode
-         FROM container_contents cc
-         JOIN products p ON cc.sku_code = p.sku_code
+         FROM wms_container_contents cc
+         JOIN products p ON cc.product_sku = p.sku_code
          WHERE cc.container_id = $1`,
         [container.container_id]
       );
@@ -103,8 +103,8 @@ export const scanCode = async (req: Request, res: Response) => {
     // Check if it's a location QR code
     const locationResult = await pool.query(
       `SELECT l.*, w.code as warehouse_code
-       FROM locations l
-       JOIN warehouses w ON l.warehouse_id = w.warehouse_id
+       FROM wms_locations l
+       JOIN wms_warehouses w ON l.warehouse_id = w.warehouse_id
        WHERE l.qr_code = $1 AND l.is_active = true`,
       [barcode]
     );
@@ -115,8 +115,8 @@ export const scanCode = async (req: Request, res: Response) => {
       // Get inventory at this location
       const inventoryResult = await pool.query(
         `SELECT i.*, p.product_name, p.barcode
-         FROM inventory i
-         JOIN products p ON i.sku_code = p.sku_code
+         FROM wms_inventory i
+         JOIN products p ON i.product_sku = p.sku_code
          WHERE i.location_id = $1 AND i.quantity_each > 0`,
         [location.location_id]
       );
@@ -156,7 +156,7 @@ export const scanCode = async (req: Request, res: Response) => {
       const serialResult = await pool.query(
         `SELECT sn.*, p.product_name, p.base_unit, p.units_per_box, p.boxes_per_pallet
          FROM serial_numbers sn
-         JOIN products p ON p.sku_code = sn.sku_code
+         JOIN products p ON p.product_sku = sn.sku_code
          WHERE sn.full_barcode = $1`,
         [barcode]
       );
@@ -166,7 +166,7 @@ export const scanCode = async (req: Request, res: Response) => {
 
         // Get product info
         const productResult = await pool.query(
-          'SELECT * FROM products WHERE sku_code = $1',
+          'SELECT * FROM products WHERE product_sku = $1',
           [serial.sku_code]
         );
         const product = productResult.rows[0];
@@ -174,10 +174,10 @@ export const scanCode = async (req: Request, res: Response) => {
         // Get current inventory for this SKU
         const inventoryResult = await pool.query(
           `SELECT i.*, l.qr_code as location_code
-           FROM inventory i
-           LEFT JOIN locations l ON i.location_id = l.location_id
-           WHERE i.sku_code = $1 AND i.warehouse_id = $2`,
-          [serial.sku_code, warehouse_id]
+           FROM wms_inventory i
+           LEFT JOIN wms_locations l ON i.location_id = l.location_id
+           WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
+          [serial.product_sku, warehouse_id]
         );
         const inventory = inventoryResult.rows[0] || null;
 
@@ -198,7 +198,7 @@ export const scanCode = async (req: Request, res: Response) => {
 
       // Serial not in DB, but check if SKU part exists as product
       const productFromSerial = await pool.query(
-        'SELECT * FROM products WHERE sku_code = $1 AND is_active = true',
+        'SELECT * FROM products WHERE product_sku = $1 AND is_active = true',
         [serialParsed.sku_code]
       );
 
@@ -208,10 +208,10 @@ export const scanCode = async (req: Request, res: Response) => {
         // Get current inventory
         const inventoryResult = await pool.query(
           `SELECT i.*, l.qr_code as location_code
-           FROM inventory i
-           LEFT JOIN locations l ON i.location_id = l.location_id
-           WHERE i.sku_code = $1 AND i.warehouse_id = $2`,
-          [product.sku_code, warehouse_id]
+           FROM wms_inventory i
+           LEFT JOIN wms_locations l ON i.location_id = l.location_id
+           WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
+          [product.product_sku, warehouse_id]
         );
         const inventory = inventoryResult.rows[0] || null;
 
@@ -233,7 +233,7 @@ export const scanCode = async (req: Request, res: Response) => {
 
     // Check if it's a SKU code (for products without barcode)
     const skuResult = await pool.query(
-      'SELECT * FROM products WHERE sku_code = $1 AND is_active = true',
+      'SELECT * FROM products WHERE product_sku = $1 AND is_active = true',
       [barcode]
     );
 
@@ -243,10 +243,10 @@ export const scanCode = async (req: Request, res: Response) => {
       // Get current inventory
       const inventoryResult = await pool.query(
         `SELECT i.*, l.qr_code as location_code
-         FROM inventory i
-         LEFT JOIN locations l ON i.location_id = l.location_id
-         WHERE i.sku_code = $1 AND i.warehouse_id = $2`,
-        [product.sku_code, warehouse_id]
+         FROM wms_inventory i
+         LEFT JOIN wms_locations l ON i.location_id = l.location_id
+         WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
+        [product.product_sku, warehouse_id]
       );
 
       const inventory = inventoryResult.rows[0] || null;
@@ -282,7 +282,7 @@ export const scanCode = async (req: Request, res: Response) => {
  */
 export const lookupBySku = async (req: Request, res: Response) => {
   try {
-    const { sku_code, warehouse_code } = req.query;
+    const { product_sku, warehouse_code } = req.query;
 
     if (!sku_code || !warehouse_code) {
       return res.status(400).json({
@@ -298,13 +298,13 @@ export const lookupBySku = async (req: Request, res: Response) => {
         i.last_updated,
         l.qr_code as location_code
        FROM products p
-       LEFT JOIN inventory i ON p.sku_code = i.sku_code
-       LEFT JOIN warehouses w ON i.warehouse_id = w.warehouse_id
-       LEFT JOIN locations l ON i.location_id = l.location_id
-       WHERE p.sku_code = $1 
+       LEFT JOIN wms_inventory i ON p.product_sku = i.sku_code
+       LEFT JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
+       LEFT JOIN wms_locations l ON i.location_id = l.location_id
+       WHERE p.product_sku = $1 
          AND p.is_active = true
          AND w.code = $2`,
-      [sku_code, warehouse_code]
+      [product_sku, warehouse_code]
     );
 
     if (result.rows.length === 0) {

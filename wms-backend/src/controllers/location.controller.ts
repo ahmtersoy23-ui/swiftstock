@@ -11,8 +11,8 @@ export const getAllLocations = async (req: Request, res: Response) => {
 
     let query = `
       SELECT l.*, w.code as warehouse_code, w.name as warehouse_name
-      FROM locations l
-      JOIN warehouses w ON l.warehouse_id = w.warehouse_id
+      FROM wms_locations l
+      JOIN wms_warehouses w ON l.warehouse_id = w.warehouse_id
       WHERE 1=1
     `;
     const params: any[] = [];
@@ -56,8 +56,8 @@ export const getLocationById = async (req: Request, res: Response) => {
 
     const result = await pool.query(
       `SELECT l.*, w.code as warehouse_code, w.name as warehouse_name
-       FROM locations l
-       JOIN warehouses w ON l.warehouse_id = w.warehouse_id
+       FROM wms_locations l
+       JOIN wms_warehouses w ON l.warehouse_id = w.warehouse_id
        WHERE l.location_id = $1`,
       [location_id]
     );
@@ -93,8 +93,8 @@ export const getLocationByCode = async (req: Request, res: Response) => {
 
     const result = await pool.query(
       `SELECT l.*, w.code as warehouse_code, w.name as warehouse_name
-       FROM locations l
-       JOIN warehouses w ON l.warehouse_id = w.warehouse_id
+       FROM wms_locations l
+       JOIN wms_warehouses w ON l.warehouse_id = w.warehouse_id
        WHERE l.location_code = $1`,
       [location_code]
     );
@@ -151,7 +151,7 @@ export const createLocation = async (req: Request, res: Response) => {
 
     // Get warehouse_id from code
     const warehouseResult = await pool.query(
-      'SELECT warehouse_id FROM warehouses WHERE code = $1',
+      'SELECT warehouse_id FROM wms_warehouses WHERE code = $1',
       [warehouse_code]
     );
 
@@ -166,7 +166,7 @@ export const createLocation = async (req: Request, res: Response) => {
 
     // Insert location
     const result = await pool.query(
-      `INSERT INTO locations (
+      `INSERT INTO wms_locations (
         warehouse_id, location_code, qr_code, description, zone,
         aisle, bay, level, location_type, capacity_units, max_weight_kg, notes
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -234,7 +234,7 @@ export const updateLocation = async (req: Request, res: Response) => {
     const values = [location_id, ...fields.map((field) => updates[field])];
 
     const result = await pool.query(
-      `UPDATE locations SET ${setClause}, updated_at = NOW()
+      `UPDATE wms_locations SET ${setClause}, updated_at = NOW()
        WHERE location_id = $1 RETURNING *`,
       values
     );
@@ -283,7 +283,7 @@ export const deleteLocation = async (req: Request, res: Response) => {
     }
 
     const result = await pool.query(
-      'DELETE FROM locations WHERE location_id = $1 RETURNING *',
+      'DELETE FROM wms_locations WHERE location_id = $1 RETURNING *',
       [location_id]
     );
 
@@ -325,8 +325,8 @@ export const getLocationInventory = async (req: Request, res: Response) => {
         l.location_code,
         l.zone
        FROM location_inventory li
-       JOIN products p ON li.sku_code = p.sku_code
-       JOIN locations l ON li.location_id = l.location_id
+       JOIN products p ON li.product_sku = p.sku_code
+       JOIN wms_locations l ON li.location_id = l.location_id
        WHERE li.location_id = $1
        ORDER BY p.product_name`,
       [location_id]

@@ -22,7 +22,7 @@ export const getAllSessions = async (req: AuthRequest, res: Response) => {
         COUNT(DISTINCT i.item_id) as total_items,
         COUNT(DISTINCT CASE WHEN i.status = 'COUNTED' THEN i.item_id END) as counted_items
       FROM cycle_count_sessions s
-      JOIN warehouses w ON s.warehouse_id = w.warehouse_id
+      JOIN wms_warehouses w ON s.warehouse_id = w.warehouse_id
       LEFT JOIN cycle_count_items i ON s.session_id = i.session_id
       WHERE 1=1
     `;
@@ -79,7 +79,7 @@ export const getSessionById = async (req: AuthRequest, res: Response) => {
         w.name as warehouse_name,
         w.code as warehouse_code
       FROM cycle_count_sessions s
-      JOIN warehouses w ON s.warehouse_id = w.warehouse_id
+      JOIN wms_warehouses w ON s.warehouse_id = w.warehouse_id
       WHERE s.session_id = $1`,
       [session_id]
     );
@@ -98,8 +98,8 @@ export const getSessionById = async (req: AuthRequest, res: Response) => {
         p.product_name,
         l.location_code
       FROM cycle_count_items i
-      JOIN products p ON i.sku_code = p.sku_code
-      LEFT JOIN locations l ON i.location_id = l.location_id
+      JOIN products p ON i.product_sku = p.sku_code
+      LEFT JOIN wms_locations l ON i.location_id = l.location_id
       WHERE i.session_id = $1
       ORDER BY i.created_at ASC`,
       [session_id]
@@ -133,7 +133,7 @@ export const createSession = async (req: AuthRequest, res: Response) => {
       scheduled_date,
       assigned_to,
       notes,
-      items, // Array of { sku_code, location_id?, expected_quantity? }
+      items, // Array of { product_sku, location_id?, expected_quantity? }
     } = req.body;
 
     if (!warehouse_id || !count_type) {
@@ -175,17 +175,17 @@ export const createSession = async (req: AuthRequest, res: Response) => {
         // Get current quantity from inventory
         const invResult = await client.query(
           `SELECT quantity_on_hand FROM inventory
-           WHERE sku_code = $1 AND warehouse_id = $2`,
-          [item.sku_code, warehouse_id]
+           WHERE product_sku = $1 AND warehouse_id = $2`,
+          [item.product_sku, warehouse_id]
         );
 
         const expectedQty = item.expected_quantity ?? invResult.rows[0]?.quantity_on_hand ?? 0;
 
         await client.query(
           `INSERT INTO cycle_count_items
-            (session_id, sku_code, location_id, expected_quantity, status)
+            (session_id, product_sku, location_id, expected_quantity, status)
           VALUES ($1, $2, $3, $4, $5)`,
-          [session.session_id, item.sku_code, item.location_id || null, expectedQty, 'PENDING']
+          [session.session_id, item.product_sku, item.location_id || null, expectedQty, 'PENDING']
         );
       }
     }
@@ -358,12 +358,12 @@ export const completeSession = async (req: AuthRequest, res: Response) => {
 
       await client.query(
         `INSERT INTO cycle_count_adjustments
-          (item_id, session_id, sku_code, location_id, old_quantity, new_quantity, variance, adjustment_type, adjusted_by)
+          (item_id, session_id, product_sku, location_id, old_quantity, new_quantity, variance, adjustment_type, adjusted_by)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
           item.item_id,
           session_id,
-          item.sku_code,
+          item.product_sku,
           item.location_id,
           item.expected_quantity,
           item.counted_quantity,
@@ -376,10 +376,10 @@ export const completeSession = async (req: AuthRequest, res: Response) => {
       // If auto_adjust is true, update inventory
       if (auto_adjust) {
         await client.query(
-          `UPDATE inventory
+          `UPDATE wms_inventory
            SET quantity_on_hand = $1, updated_at = CURRENT_TIMESTAMP
-           WHERE sku_code = $2 AND warehouse_id = (SELECT warehouse_id FROM cycle_count_sessions WHERE session_id = $3)`,
-          [item.counted_quantity, item.sku_code, session_id]
+           WHERE product_sku = $2 AND warehouse_id = (SELECT warehouse_id FROM cycle_count_sessions WHERE session_id = $3)`,
+          [item.counted_quantity, item.product_sku, session_id]
         );
 
         await client.query(

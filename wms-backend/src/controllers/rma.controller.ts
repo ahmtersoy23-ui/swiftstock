@@ -22,7 +22,7 @@ export const getAllRMAs = async (req: AuthRequest, res: Response) => {
         COUNT(DISTINCT i.item_id) as total_items,
         SUM(i.quantity_requested) as total_quantity
       FROM rma_requests r
-      JOIN warehouses w ON r.warehouse_id = w.warehouse_id
+      JOIN wms_warehouses w ON r.warehouse_id = w.warehouse_id
       LEFT JOIN rma_items i ON r.rma_id = i.rma_id
       WHERE 1=1
     `;
@@ -76,7 +76,7 @@ export const getRMAById = async (req: AuthRequest, res: Response) => {
     const rmaResult = await pool.query(
       `SELECT r.*, w.name as warehouse_name, w.code as warehouse_code
        FROM rma_requests r
-       JOIN warehouses w ON r.warehouse_id = w.warehouse_id
+       JOIN wms_warehouses w ON r.warehouse_id = w.warehouse_id
        WHERE r.rma_id = $1`,
       [rma_id]
     );
@@ -92,7 +92,7 @@ export const getRMAById = async (req: AuthRequest, res: Response) => {
     const itemsResult = await pool.query(
       `SELECT i.*, p.product_name
        FROM rma_items i
-       JOIN products p ON i.sku_code = p.sku_code
+       JOIN products p ON i.product_sku = p.sku_code
        WHERE i.rma_id = $1`,
       [rma_id]
     );
@@ -133,7 +133,7 @@ export const createRMA = async (req: AuthRequest, res: Response) => {
       reason,
       priority,
       notes,
-      items, // Array of { sku_code, quantity_requested, unit_price?, action }
+      items, // Array of { product_sku, quantity_requested, unit_price?, action }
     } = req.body;
 
     if (!warehouse_id || !reason || !items || items.length === 0) {
@@ -174,9 +174,9 @@ export const createRMA = async (req: AuthRequest, res: Response) => {
     // Add items
     for (const item of items) {
       await client.query(
-        `INSERT INTO rma_items (rma_id, sku_code, quantity_requested, unit_price, action)
+        `INSERT INTO rma_items (rma_id, product_sku, quantity_requested, unit_price, action)
          VALUES ($1, $2, $3, $4, $5)`,
-        [rma.rma_id, item.sku_code, item.quantity_requested, item.unit_price || null, item.action]
+        [rma.rma_id, item.product_sku, item.quantity_requested, item.unit_price || null, item.action]
       );
     }
 
@@ -301,12 +301,12 @@ export const receiveReturn = async (req: AuthRequest, res: Response) => {
     // Create receipt record
     await client.query(
       `INSERT INTO return_receipts
-        (rma_id, item_id, sku_code, quantity_received, condition, location_id, received_by, notes)
+        (rma_id, item_id, product_sku, quantity_received, condition, location_id, received_by, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         item.rma_id,
         item_id,
-        item.sku_code,
+        item.product_sku,
         quantity_received,
         condition,
         location_id || null,

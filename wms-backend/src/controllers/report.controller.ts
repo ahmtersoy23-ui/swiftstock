@@ -99,13 +99,13 @@ export const saveCountReport = async (req: AuthRequest, res: Response) => {
         for (const item of loc.items) {
           await client.query(
             `INSERT INTO count_report_items
-              (report_id, report_location_id, sku_code, product_name, expected_quantity,
+              (report_id, report_location_id, product_sku, product_name, expected_quantity,
                counted_quantity, variance, is_unexpected, scanned_barcodes)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
             [
               report.report_id,
               reportLocationId,
-              item.sku_code,
+              item.product_sku,
               item.product_name || null,
               item.expected_quantity || 0,
               item.counted_quantity || 0,
@@ -122,13 +122,13 @@ export const saveCountReport = async (req: AuthRequest, res: Response) => {
         for (const item of loc.unexpectedItems) {
           await client.query(
             `INSERT INTO count_report_items
-              (report_id, report_location_id, sku_code, product_name, expected_quantity,
+              (report_id, report_location_id, product_sku, product_name, expected_quantity,
                counted_quantity, variance, is_unexpected, scanned_barcodes)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
             [
               report.report_id,
               reportLocationId,
-              item.sku_code,
+              item.product_sku,
               item.product_name || null,
               0, // unexpected items have no expected quantity
               item.counted_quantity || 0,
@@ -181,7 +181,7 @@ export const getAllCountReports = async (req: AuthRequest, res: Response) => {
         cr.*,
         w.name as warehouse_name
       FROM count_reports cr
-      JOIN warehouses w ON cr.warehouse_id = w.warehouse_id
+      JOIN wms_warehouses w ON cr.warehouse_id = w.warehouse_id
       WHERE 1=1
     `;
     const params: any[] = [];
@@ -259,7 +259,7 @@ export const getCountReportById = async (req: AuthRequest, res: Response) => {
     const reportResult = await pool.query(
       `SELECT cr.*, w.name as warehouse_name
        FROM count_reports cr
-       JOIN warehouses w ON cr.warehouse_id = w.warehouse_id
+       JOIN wms_warehouses w ON cr.warehouse_id = w.warehouse_id
        WHERE cr.report_id = $1`,
       [report_id]
     );
@@ -332,7 +332,7 @@ export const getInventoryReport = async (req: AuthRequest, res: Response) => {
 
     // Verify warehouse exists
     const warehouseResult = await pool.query(
-      `SELECT * FROM warehouses WHERE warehouse_id = $1`,
+      `SELECT * FROM wms_warehouses WHERE warehouse_id = $1`,
       [warehouse_id]
     );
 
@@ -355,15 +355,15 @@ export const getInventoryReport = async (req: AuthRequest, res: Response) => {
           l.location_id,
           l.location_code,
           l.qr_code,
-          p.sku_code,
+          p.product_sku,
           p.product_name,
           p.barcode,
           COALESCE(i.quantity_on_hand, 0) as quantity,
           p.units_per_box,
           p.boxes_per_pallet
-        FROM inventory i
-        JOIN products p ON i.sku_code = p.sku_code
-        LEFT JOIN locations l ON i.location_id = l.location_id
+        FROM wms_inventory i
+        JOIN products p ON i.product_sku = p.sku_code
+        LEFT JOIN wms_locations l ON i.location_id = l.location_id
         WHERE i.warehouse_id = $1 AND i.quantity_on_hand > 0
         ORDER BY l.location_code NULLS LAST, p.product_name
       `;
@@ -371,7 +371,7 @@ export const getInventoryReport = async (req: AuthRequest, res: Response) => {
       // Group by product (default)
       query = `
         SELECT
-          p.sku_code,
+          p.product_sku,
           p.product_name,
           p.barcode,
           SUM(COALESCE(i.quantity_on_hand, 0)) as quantity,
@@ -379,9 +379,9 @@ export const getInventoryReport = async (req: AuthRequest, res: Response) => {
           p.boxes_per_pallet,
           COUNT(DISTINCT i.location_id) as location_count
         FROM products p
-        LEFT JOIN inventory i ON p.sku_code = i.sku_code AND i.warehouse_id = $1
+        LEFT JOIN wms_inventory i ON p.product_sku = i.sku_code AND i.warehouse_id = $1
         WHERE i.quantity_on_hand > 0 OR i.quantity_on_hand IS NULL
-        GROUP BY p.sku_code, p.product_name, p.barcode, p.units_per_box, p.boxes_per_pallet
+        GROUP BY p.product_sku, p.product_name, p.barcode, p.units_per_box, p.boxes_per_pallet
         HAVING SUM(COALESCE(i.quantity_on_hand, 0)) > 0
         ORDER BY p.product_name
       `;

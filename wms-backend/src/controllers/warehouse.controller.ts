@@ -9,7 +9,7 @@ import { ApiResponse } from '../index';
 export const getAllWarehouses = async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM warehouses WHERE is_active = true ORDER BY code'
+      'SELECT * FROM wms_warehouses WHERE is_active = true ORDER BY code'
     );
 
     const response: ApiResponse = {
@@ -33,7 +33,7 @@ export const getWarehouseByCode = async (req: Request, res: Response) => {
     const { warehouse_code } = req.params;
 
     const result = await pool.query(
-      'SELECT * FROM warehouses WHERE code = $1',
+      'SELECT * FROM wms_warehouses WHERE code = $1',
       [warehouse_code]
     );
 
@@ -64,7 +64,7 @@ export const getWarehouseById = async (req: Request, res: Response) => {
     const { warehouse_id } = req.params;
 
     const result = await pool.query(
-      'SELECT * FROM warehouses WHERE warehouse_id = $1',
+      'SELECT * FROM wms_warehouses WHERE warehouse_id = $1',
       [warehouse_id]
     );
 

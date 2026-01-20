@@ -33,7 +33,7 @@ export const createTransaction = async (req: Request, res: Response) => {
 
     // Get warehouse_id
     const warehouseResult = await client.query(
-      'SELECT warehouse_id FROM warehouses WHERE code = $1',
+      'SELECT warehouse_id FROM wms_warehouses WHERE code = $1',
       [warehouse_code]
     );
 
@@ -51,7 +51,7 @@ export const createTransaction = async (req: Request, res: Response) => {
     let location_id = null;
     if (location_qr) {
       const locationResult = await client.query(
-        'SELECT location_id FROM locations WHERE qr_code = $1 AND warehouse_id = $2',
+        'SELECT location_id FROM wms_locations WHERE qr_code = $1 AND warehouse_id = $2',
         [location_qr, warehouse_id]
       );
 
@@ -60,7 +60,7 @@ export const createTransaction = async (req: Request, res: Response) => {
       } else {
         // Use default MAIN location
         const mainLocationResult = await client.query(
-          `SELECT location_id FROM locations 
+          `SELECT location_id FROM wms_locations 
            WHERE warehouse_id = $1 AND qr_code LIKE '%-MAIN'`,
           [warehouse_id]
         );
@@ -71,7 +71,7 @@ export const createTransaction = async (req: Request, res: Response) => {
     } else {
       // Use default MAIN location
       const mainLocationResult = await client.query(
-        `SELECT location_id FROM locations 
+        `SELECT location_id FROM wms_locations 
          WHERE warehouse_id = $1 AND qr_code LIKE '%-MAIN'`,
         [warehouse_id]
       );
@@ -101,9 +101,9 @@ export const createTransaction = async (req: Request, res: Response) => {
     // Step 2: Fetch all products in one query
     const allIdentifiers = [...skuCodes, ...barcodes];
     const productDetailsResult = await client.query(
-      `SELECT sku_code, barcode, units_per_box, boxes_per_pallet
+      `SELECT product_sku, barcode, units_per_box, boxes_per_pallet
        FROM products
-       WHERE sku_code = ANY($1) OR barcode = ANY($1)`,
+       WHERE product_sku = ANY($1) OR barcode = ANY($1)`,
       [allIdentifiers]
     );
 
@@ -111,7 +111,7 @@ export const createTransaction = async (req: Request, res: Response) => {
     const productBySku = new Map();
     const productByBarcode = new Map();
     productDetailsResult.rows.forEach(p => {
-      productBySku.set(p.sku_code, p);
+      productBySku.set(p.product_sku, p);
       if (p.barcode) productByBarcode.set(p.barcode, p);
     });
 
@@ -128,20 +128,20 @@ export const createTransaction = async (req: Request, res: Response) => {
       }).filter(Boolean);
 
       const inventoryResult = await client.query(
-        `SELECT sku_code, quantity_each
+        `SELECT product_sku, quantity_each
          FROM inventory
-         WHERE sku_code = ANY($1) AND warehouse_id = $2 AND location_id = $3`,
+         WHERE product_sku = ANY($1) AND warehouse_id = $2 AND location_id = $3`,
         [skuList, warehouse_id, location_id]
       );
 
       inventoryResult.rows.forEach(inv => {
-        inventoryMap.set(inv.sku_code, inv.quantity_each);
+        inventoryMap.set(inv.product_sku, inv.quantity_each);
       });
     }
 
     // Step 4: Process items with in-memory data
     for (const item of items) {
-      let sku_code = item.sku_code;
+      let product_sku = item.sku_code;
 
       // Resolve barcode to SKU if needed
       if (item.barcode && !sku_code) {
@@ -153,11 +153,11 @@ export const createTransaction = async (req: Request, res: Response) => {
             error: `Product not found for barcode: ${item.barcode}`,
           } as ApiResponse);
         }
-        sku_code = product.sku_code;
+        product_sku = product.sku_code;
       }
 
       // Get product details from map
-      const product = productBySku.get(sku_code);
+      const product = productBySku.get(product_sku);
       if (!product) {
         await client.query('ROLLBACK');
         return res.status(404).json({
@@ -180,7 +180,7 @@ export const createTransaction = async (req: Request, res: Response) => {
 
       // Check stock for OUT transactions
       if (transaction_type === 'OUT') {
-        const currentStock = inventoryMap.get(sku_code) || 0;
+        const currentStock = inventoryMap.get(product_sku) || 0;
         if (currentStock < quantity_each) {
           await client.query('ROLLBACK');
           return res.status(400).json({
@@ -193,10 +193,10 @@ export const createTransaction = async (req: Request, res: Response) => {
       // Insert transaction item
       const itemResult = await client.query(
         `INSERT INTO transaction_items
-         (transaction_id, sku_code, quantity, unit_type, quantity_each, to_location_id)
+         (transaction_id, product_sku, quantity, unit_type, quantity_each, to_location_id)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [transaction.transaction_id, sku_code, item.quantity, unit_type, quantity_each, location_id]
+        [transaction.transaction_id, product_sku, item.quantity, unit_type, quantity_each, location_id]
       );
 
       processedItems.push(itemResult.rows[0]);
@@ -207,14 +207,14 @@ export const createTransaction = async (req: Request, res: Response) => {
       // Check if inventory record exists for this SKU + warehouse + location
       const existingInventory = await client.query(
         `SELECT inventory_id, quantity_each FROM inventory
-         WHERE sku_code = $1 AND warehouse_id = $2 AND location_id = $3`,
-        [sku_code, warehouse_id, location_id]
+         WHERE product_sku = $1 AND warehouse_id = $2 AND location_id = $3`,
+        [product_sku, warehouse_id, location_id]
       );
 
       if (existingInventory.rows.length > 0) {
         // Update existing inventory
         await client.query(
-          `UPDATE inventory
+          `UPDATE wms_inventory
            SET quantity_each = quantity_each + $1, last_updated = NOW()
            WHERE inventory_id = $2`,
           [inventoryDelta, existingInventory.rows[0].inventory_id]
@@ -223,9 +223,9 @@ export const createTransaction = async (req: Request, res: Response) => {
         // Insert new inventory record (only for IN transactions)
         if (transaction_type === 'IN') {
           await client.query(
-            `INSERT INTO inventory (sku_code, warehouse_id, location_id, quantity_each, quantity_box, quantity_pallet)
+            `INSERT INTO wms_inventory (product_sku, warehouse_id, location_id, quantity_each, quantity_box, quantity_pallet)
              VALUES ($1, $2, $3, $4, 0, 0)`,
-            [sku_code, warehouse_id, location_id, quantity_each]
+            [product_sku, warehouse_id, location_id, quantity_each]
           );
         }
       }
@@ -268,8 +268,8 @@ export const getRecentTransactions = async (req: Request, res: Response) => {
         l.qr_code as location_code,
         COUNT(ti.item_id) as item_count
       FROM transactions t
-      JOIN warehouses w ON t.warehouse_id = w.warehouse_id
-      LEFT JOIN locations l ON t.location_id = l.location_id
+      JOIN wms_warehouses w ON t.warehouse_id = w.warehouse_id
+      LEFT JOIN wms_locations l ON t.location_id = l.location_id
       LEFT JOIN transaction_items ti ON t.transaction_id = ti.transaction_id
     `;
 
@@ -312,8 +312,8 @@ export const getTransactionDetails = async (req: Request, res: Response) => {
     const transactionResult = await pool.query(
       `SELECT t.*, w.code as warehouse_code, l.qr_code as location_code
        FROM transactions t
-       JOIN warehouses w ON t.warehouse_id = w.warehouse_id
-       LEFT JOIN locations l ON t.location_id = l.location_id
+       JOIN wms_warehouses w ON t.warehouse_id = w.warehouse_id
+       LEFT JOIN wms_locations l ON t.location_id = l.location_id
        WHERE t.transaction_id = $1`,
       [transaction_id]
     );
@@ -330,7 +330,7 @@ export const getTransactionDetails = async (req: Request, res: Response) => {
     const itemsResult = await pool.query(
       `SELECT ti.*, p.product_name, p.barcode
        FROM transaction_items ti
-       JOIN products p ON ti.sku_code = p.sku_code
+       JOIN products p ON ti.product_sku = p.sku_code
        WHERE ti.transaction_id = $1`,
       [transaction_id]
     );
@@ -410,11 +410,11 @@ export const undoTransaction = async (req: Request, res: Response) => {
     for (const item of itemsResult.rows) {
       await client.query(
         `INSERT INTO transaction_items 
-         (transaction_id, sku_code, quantity, unit_type, quantity_each, to_location_id)
+         (transaction_id, product_sku, quantity, unit_type, quantity_each, to_location_id)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           reverseTransaction.transaction_id,
-          item.sku_code,
+          item.product_sku,
           item.quantity,
           item.unit_type,
           item.quantity_each,

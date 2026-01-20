@@ -24,7 +24,7 @@ export const createContainer = async (req: Request, res: Response) => {
 
     // Get warehouse_id
     const warehouseResult = await client.query(
-      'SELECT warehouse_id FROM warehouses WHERE code = $1',
+      'SELECT warehouse_id FROM wms_warehouses WHERE code = $1',
       [warehouse_code]
     );
 
@@ -44,7 +44,7 @@ export const createContainer = async (req: Request, res: Response) => {
 
     // Get next sequence number
     const countResult = await client.query(
-      `SELECT COUNT(*) as count FROM containers WHERE barcode LIKE $1`,
+      `SELECT COUNT(*) as count FROM wms_containers WHERE barcode LIKE $1`,
       [`${prefix}-%`]
     );
     const nextNum = parseInt(countResult.rows[0].count) + 1;
@@ -52,7 +52,7 @@ export const createContainer = async (req: Request, res: Response) => {
 
     // Create container
     const containerResult = await client.query(
-      `INSERT INTO containers
+      `INSERT INTO wms_containers
        (barcode, container_type, warehouse_id, parent_container_id, status, created_by, notes)
        VALUES ($1, $2, $3, $4, 'ACTIVE', $5, $6)
        RETURNING *`,
@@ -64,9 +64,9 @@ export const createContainer = async (req: Request, res: Response) => {
     // Add items to container
     for (const item of containerItems) {
       await client.query(
-        `INSERT INTO container_contents (container_id, sku_code, quantity)
+        `INSERT INTO wms_container_contents (container_id, product_sku, quantity)
          VALUES ($1, $2, $3)`,
-        [container.container_id, item.sku_code, item.quantity]
+        [container.container_id, item.product_sku, item.quantity]
       );
     }
 
@@ -102,7 +102,7 @@ export const getContainerByBarcode = async (req: Request, res: Response) => {
 
     // Get container info
     const containerResult = await pool.query(
-      'SELECT * FROM containers WHERE barcode = $1',
+      'SELECT * FROM wms_containers WHERE barcode = $1',
       [barcode]
     );
 
@@ -118,8 +118,8 @@ export const getContainerByBarcode = async (req: Request, res: Response) => {
     // Get container contents
     const contentsResult = await pool.query(
       `SELECT cc.*, p.product_name, p.barcode as product_barcode
-       FROM container_contents cc
-       JOIN products p ON cc.sku_code = p.sku_code
+       FROM wms_container_contents cc
+       JOIN products p ON cc.product_sku = p.sku_code
        WHERE cc.container_id = $1`,
       [container.container_id]
     );
@@ -162,7 +162,7 @@ export const openContainer = async (req: Request, res: Response) => {
 
     // Get container
     const containerResult = await client.query(
-      'SELECT * FROM containers WHERE barcode = $1 AND status = $2',
+      'SELECT * FROM wms_containers WHERE barcode = $1 AND status = $2',
       [barcode, 'ACTIVE']
     );
 
@@ -177,7 +177,7 @@ export const openContainer = async (req: Request, res: Response) => {
 
     // Get contents
     const contentsResult = await client.query(
-      'SELECT * FROM container_contents WHERE container_id = $1',
+      'SELECT * FROM wms_container_contents WHERE container_id = $1',
       [container.container_id]
     );
 
@@ -188,7 +188,7 @@ export const openContainer = async (req: Request, res: Response) => {
        (transaction_uuid, transaction_type, warehouse_id, location_id, container_id,
         notes, created_by, device_id)
        VALUES ($1, 'IN', $2,
-         (SELECT location_id FROM locations WHERE qr_code = $3 LIMIT 1),
+         (SELECT location_id FROM wms_locations WHERE qr_code = $3 LIMIT 1),
          $4, $5, $6, $7)
        RETURNING transaction_id`,
       [
@@ -209,9 +209,9 @@ export const openContainer = async (req: Request, res: Response) => {
       // Add to transaction_items
       await client.query(
         `INSERT INTO transaction_items
-         (transaction_id, sku_code, quantity, unit_type, quantity_each)
+         (transaction_id, product_sku, quantity, unit_type, quantity_each)
          VALUES ($1, $2, $3, 'EACH', $4)`,
-        [transaction_id, content.sku_code, content.quantity, content.quantity]
+        [transaction_id, content.product_sku, content.quantity, content.quantity]
       );
 
       // Update inventory (will be handled by trigger)
@@ -219,7 +219,7 @@ export const openContainer = async (req: Request, res: Response) => {
 
     // Update container status
     await client.query(
-      `UPDATE containers
+      `UPDATE wms_containers
        SET status = 'OPENED', opened_at = NOW()
        WHERE container_id = $1`,
       [container.container_id]
@@ -270,15 +270,15 @@ export const getAllContainers = async (req: Request, res: Response) => {
           WHEN COALESCE(cc.current_items, 0) < COALESCE(cc.original_items, 0) THEN 'PARTIAL'
           ELSE 'SEALED'
         END as calculated_status
-      FROM containers c
-      JOIN warehouses w ON c.warehouse_id = w.warehouse_id
-      LEFT JOIN locations l ON c.location_id = l.location_id
+      FROM wms_containers c
+      JOIN wms_warehouses w ON c.warehouse_id = w.warehouse_id
+      LEFT JOIN wms_locations l ON c.location_id = l.location_id
       LEFT JOIN (
         SELECT
           container_id,
           COUNT(*) as current_items,
           COUNT(*) as original_items
-        FROM container_contents
+        FROM wms_container_contents
         GROUP BY container_id
       ) cc ON c.container_id = cc.container_id
       WHERE 1=1

@@ -103,7 +103,7 @@ export const createScanSession = async (req: Request, res: Response) => {
 
     // Get warehouse_id
     const warehouseResult = await pool.query(
-      'SELECT warehouse_id FROM warehouses WHERE code = $1',
+      'SELECT warehouse_id FROM wms_warehouses WHERE code = $1',
       [warehouse_code]
     );
 
@@ -164,7 +164,7 @@ export const getScanSession = async (req: Request, res: Response) => {
     const result = await pool.query(
       `SELECT s.*, w.code as warehouse_code, w.name as warehouse_name
        FROM scan_sessions s
-       JOIN warehouses w ON s.warehouse_id = w.warehouse_id
+       JOIN wms_warehouses w ON s.warehouse_id = w.warehouse_id
        WHERE s.session_id = $1`,
       [session_id]
     );
@@ -205,7 +205,7 @@ export const getActiveScanSession = async (req: Request, res: Response) => {
     const result = await pool.query(
       `SELECT s.*, w.code as warehouse_code, w.name as warehouse_name
        FROM scan_sessions s
-       JOIN warehouses w ON s.warehouse_id = w.warehouse_id
+       JOIN wms_warehouses w ON s.warehouse_id = w.warehouse_id
        WHERE s.user_name = $1 AND s.status = 'ACTIVE'
        ORDER BY s.started_at DESC
        LIMIT 1`,
@@ -315,7 +315,7 @@ export const addScanOperation = async (req: Request, res: Response) => {
     const {
       session_id,
       operation_type,
-      sku_code,
+      product_sku,
       location_id,
       from_location_id,
       to_location_id,
@@ -355,14 +355,14 @@ export const addScanOperation = async (req: Request, res: Response) => {
     // Insert operation
     const result = await pool.query(
       `INSERT INTO scan_operations (
-        session_id, operation_type, sku_code, location_id,
+        session_id, operation_type, product_sku, location_id,
         from_location_id, to_location_id, quantity, unit_type, notes
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
       [
         session_id,
         operation_type,
-        sku_code,
+        product_sku,
         location_id,
         from_location_id,
         to_location_id,
@@ -401,10 +401,10 @@ export const getSessionOperations = async (req: Request, res: Response) => {
         fl.location_code as from_location_code,
         tl.location_code as to_location_code
        FROM scan_operations so
-       LEFT JOIN products p ON so.sku_code = p.sku_code
-       LEFT JOIN locations l ON so.location_id = l.location_id
-       LEFT JOIN locations fl ON so.from_location_id = fl.location_id
-       LEFT JOIN locations tl ON so.to_location_id = tl.location_id
+       LEFT JOIN products p ON so.product_sku = p.sku_code
+       LEFT JOIN wms_locations l ON so.location_id = l.location_id
+       LEFT JOIN wms_locations fl ON so.from_location_id = fl.location_id
+       LEFT JOIN wms_locations tl ON so.to_location_id = tl.location_id
        WHERE so.session_id = $1
        ORDER BY so.scanned_at DESC`,
       [session_id]

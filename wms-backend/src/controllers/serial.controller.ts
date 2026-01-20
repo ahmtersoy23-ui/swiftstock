@@ -19,7 +19,7 @@ interface SerialNumber {
 
 // Generate serial numbers for a product (for label printing)
 export const generateSerialNumbers = async (req: Request, res: Response) => {
-  const { sku_code, quantity } = req.body;
+  const { product_sku, quantity } = req.body;
 
   if (!sku_code || !quantity || quantity < 1) {
     return res.status(400).json({
@@ -38,7 +38,7 @@ export const generateSerialNumbers = async (req: Request, res: Response) => {
   try {
     // Verify product exists
     const productCheck = await pool.query(
-      'SELECT sku_code, product_name FROM products WHERE sku_code = $1',
+      'SELECT product_sku, product_name FROM products WHERE product_sku = $1',
       [sku_code]
     );
 
@@ -68,10 +68,10 @@ export const generateSerialNumbers = async (req: Request, res: Response) => {
 
         // Insert serial number record
         const insertResult = await client.query(
-          `INSERT INTO serial_numbers (sku_code, serial_no, full_barcode, status)
+          `INSERT INTO serial_numbers (product_sku, serial_no, full_barcode, status)
            VALUES ($1, $2, $3, 'AVAILABLE')
            RETURNING *`,
-          [sku_code, serial_no, full_barcode]
+          [product_sku, serial_no, full_barcode]
         );
 
         generatedSerials.push(insertResult.rows[0]);
@@ -89,7 +89,7 @@ export const generateSerialNumbers = async (req: Request, res: Response) => {
       success: true,
       data: {
         product_name: product.product_name,
-        sku_code: sku_code,
+        sku_code: product_sku,
         count: generatedSerials.length,
         serials: generatedSerials.map((s) => ({
           serial_no: s.serial_no,
@@ -108,17 +108,17 @@ export const generateSerialNumbers = async (req: Request, res: Response) => {
 
 // Get serial numbers for a product
 export const getSerialNumbers = async (req: Request, res: Response) => {
-  const { sku_code } = req.params;
+  const { product_sku } = req.params;
   const { status, limit = 100, offset = 0 } = req.query;
 
   try {
     let query = `
       SELECT sn.*, p.product_name, w.code as warehouse_code, l.qr_code as location_code
       FROM serial_numbers sn
-      JOIN products p ON p.sku_code = sn.sku_code
-      LEFT JOIN warehouses w ON w.warehouse_id = sn.warehouse_id
-      LEFT JOIN locations l ON l.location_id = sn.location_id
-      WHERE sn.sku_code = $1
+      JOIN products p ON p.product_sku = sn.sku_code
+      LEFT JOIN wms_warehouses w ON w.warehouse_id = sn.warehouse_id
+      LEFT JOIN wms_locations l ON l.location_id = sn.location_id
+      WHERE sn.product_sku = $1
     `;
     const params: any[] = [sku_code];
 
@@ -134,8 +134,8 @@ export const getSerialNumbers = async (req: Request, res: Response) => {
 
     // Get total count
     const countResult = await pool.query(
-      `SELECT COUNT(*) FROM serial_numbers WHERE sku_code = $1 ${status ? 'AND status = $2' : ''}`,
-      status ? [sku_code, status] : [sku_code]
+      `SELECT COUNT(*) FROM serial_numbers WHERE product_sku = $1 ${status ? 'AND status = $2' : ''}`,
+      status ? [product_sku, status] : [sku_code]
     );
 
     res.json({
@@ -165,9 +165,9 @@ export const lookupSerialBarcode = async (req: Request, res: Response) => {
       `SELECT sn.*, p.product_name, p.base_unit, p.units_per_box,
               w.code as warehouse_code, l.qr_code as location_code
        FROM serial_numbers sn
-       JOIN products p ON p.sku_code = sn.sku_code
-       LEFT JOIN warehouses w ON w.warehouse_id = sn.warehouse_id
-       LEFT JOIN locations l ON l.location_id = sn.location_id
+       JOIN products p ON p.product_sku = sn.sku_code
+       LEFT JOIN wms_warehouses w ON w.warehouse_id = sn.warehouse_id
+       LEFT JOIN wms_locations l ON l.location_id = sn.location_id
        WHERE sn.full_barcode = $1`,
       [barcode]
     );
@@ -240,7 +240,7 @@ export const updateSerialStatus = async (req: Request, res: Response) => {
 
 // Get serial number statistics for a product
 export const getSerialStats = async (req: Request, res: Response) => {
-  const { sku_code } = req.params;
+  const { product_sku } = req.params;
 
   try {
     const result = await pool.query(
@@ -248,7 +248,7 @@ export const getSerialStats = async (req: Request, res: Response) => {
          status,
          COUNT(*) as count
        FROM serial_numbers
-       WHERE sku_code = $1
+       WHERE product_sku = $1
        GROUP BY status`,
       [sku_code]
     );
@@ -306,7 +306,7 @@ export const getSerialHistory = async (req: Request, res: Response) => {
     const serialResult = await pool.query(
       `SELECT sn.*, p.product_name
        FROM serial_numbers sn
-       JOIN products p ON p.sku_code = sn.sku_code
+       JOIN products p ON p.product_sku = sn.sku_code
        WHERE sn.full_barcode = $1`,
       [barcode]
     );
@@ -336,11 +336,11 @@ export const getSerialHistory = async (req: Request, res: Response) => {
          u.username as performed_by,
          ss.mode_type as session_mode
        FROM serial_history sh
-       LEFT JOIN locations fl ON fl.location_id = sh.from_location_id
-       LEFT JOIN locations tl ON tl.location_id = sh.to_location_id
-       LEFT JOIN warehouses fw ON fw.warehouse_id = sh.from_warehouse_id
-       LEFT JOIN warehouses tw ON tw.warehouse_id = sh.to_warehouse_id
-       LEFT JOIN users u ON u.user_id = sh.user_id
+       LEFT JOIN wms_locations fl ON fl.location_id = sh.from_location_id
+       LEFT JOIN wms_locations tl ON tl.location_id = sh.to_location_id
+       LEFT JOIN wms_warehouses fw ON fw.warehouse_id = sh.from_warehouse_id
+       LEFT JOIN wms_warehouses tw ON tw.warehouse_id = sh.to_warehouse_id
+       LEFT JOIN wms_users u ON u.user_id = sh.user_id
        LEFT JOIN scan_sessions ss ON ss.session_id = sh.session_id
        WHERE sh.full_barcode = $1
        ORDER BY sh.created_at DESC`,
@@ -362,8 +362,8 @@ export const getSerialHistory = async (req: Request, res: Response) => {
          l.location_code
        FROM scan_operations so
        JOIN scan_sessions ss ON ss.session_id = so.session_id
-       LEFT JOIN locations l ON l.location_code = so.location_code
-       WHERE so.sku_code = $1
+       LEFT JOIN wms_locations l ON l.location_code = so.location_code
+       WHERE so.product_sku = $1
        ORDER BY so.scanned_at DESC
        LIMIT 50`,
       [serialInfo.sku_code]
@@ -375,7 +375,7 @@ export const getSerialHistory = async (req: Request, res: Response) => {
         serial: {
           serial_id: serialInfo.serial_id,
           full_barcode: serialInfo.full_barcode,
-          sku_code: serialInfo.sku_code,
+          sku_code: serialInfo.product_sku,
           serial_no: serialInfo.serial_no,
           product_name: serialInfo.product_name,
           status: serialInfo.status,

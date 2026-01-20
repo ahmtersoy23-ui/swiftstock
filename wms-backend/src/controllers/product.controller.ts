@@ -1,56 +1,69 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
-import { Product, ApiResponse } from '../types';
+import { ApiResponse } from '../types';
+
+/**
+ * Product interface matching pricelab_db schema
+ * Note: SwiftStock has READ-ONLY access to products table
+ */
+interface Product {
+  id: number;
+  product_sku: string;
+  name: string;
+  description?: string;
+  image?: string;
+  category_id?: number;
+  created_at?: Date;
+  updated_at?: Date;
+}
 
 /**
  * Get all products with pagination and search
+ * READ-ONLY from pricelab products table
  */
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
     const {
-      is_active = 'true',
       page = '1',
       limit = '100',
       search = '',
-      category = ''
+      category_id = ''
     } = req.query;
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
     const offset = (pageNum - 1) * limitNum;
-    const isActive = is_active === 'true';
     const searchTerm = search as string;
-    const categoryFilter = category as string;
+    const categoryFilter = category_id as string;
 
-    let query = 'SELECT * FROM products WHERE is_active = $1';
-    let countQuery = 'SELECT COUNT(*) FROM products WHERE is_active = $1';
-    const params: any[] = [isActive];
+    // Only select products with product_sku (required for WMS)
+    let query = 'SELECT id, product_sku, name, description, image, category_id, created_at FROM products WHERE product_sku IS NOT NULL';
+    let countQuery = 'SELECT COUNT(*) FROM products WHERE product_sku IS NOT NULL';
+    const params: any[] = [];
 
     // Add category filter if provided
     if (categoryFilter) {
-      query += ` AND category = $${params.length + 1}`;
-      countQuery += ` AND category = $${params.length + 1}`;
-      params.push(categoryFilter);
+      query += ` AND category_id = $${params.length + 1}`;
+      countQuery += ` AND category_id = $${params.length + 1}`;
+      params.push(parseInt(categoryFilter));
     }
 
     // Add search filter if provided
     if (searchTerm) {
       query += ` AND (
-        LOWER(product_name) LIKE LOWER($${params.length + 1})
-        OR LOWER(sku_code) LIKE LOWER($${params.length + 1})
-        OR LOWER(category) LIKE LOWER($${params.length + 1})
-        OR barcode LIKE $${params.length + 1}
+        LOWER(name) LIKE LOWER($${params.length + 1})
+        OR LOWER(product_sku) LIKE LOWER($${params.length + 1})
+        OR LOWER(description) LIKE LOWER($${params.length + 1})
       )`;
       countQuery += ` AND (
-        LOWER(product_name) LIKE LOWER($${params.length + 1})
-        OR LOWER(sku_code) LIKE LOWER($${params.length + 1})
-        OR LOWER(category) LIKE LOWER($${params.length + 1})
-        OR barcode LIKE $${params.length + 1}
+        LOWER(name) LIKE LOWER($${params.length + 1})
+        OR LOWER(product_sku) LIKE LOWER($${params.length + 1})
+        OR LOWER(description) LIKE LOWER($${params.length + 1})
       )`;
       params.push(`%${searchTerm}%`);
     }
 
-    query += ` ORDER BY product_name LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    query += ` ORDER BY name LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(limitNum, offset);
 
     // Get total count
@@ -82,14 +95,15 @@ export const getAllProducts = async (req: Request, res: Response) => {
 
 /**
  * Get product by SKU
+ * READ-ONLY from pricelab products table
  */
 export const getProductBySku = async (req: Request, res: Response) => {
   try {
-    const { sku_code } = req.params;
+    const { product_sku } = req.params;
 
     const result = await pool.query(
-      'SELECT * FROM products WHERE sku_code = $1',
-      [sku_code]
+      'SELECT id, product_sku, name, description, image, category_id, created_at FROM products WHERE product_sku = $1',
+      [product_sku]
     );
 
     if (result.rows.length === 0) {
@@ -114,165 +128,8 @@ export const getProductBySku = async (req: Request, res: Response) => {
 };
 
 /**
- * Create new product
- */
-export const createProduct = async (req: Request, res: Response) => {
-  try {
-    const {
-      sku_code,
-      product_name,
-      description,
-      barcode,
-      category,
-      base_unit,
-      units_per_box,
-      boxes_per_pallet,
-      weight_kg,
-      dimensions_cm,
-    } = req.body;
-
-    // Validation - only sku_code and product_name are required
-    if (!sku_code || !product_name) {
-      return res.status(400).json({
-        success: false,
-        error: 'sku_code and product_name are required',
-      } as ApiResponse);
-    }
-
-    const result = await pool.query(
-      `INSERT INTO products
-       (sku_code, product_name, description, barcode, category, base_unit, units_per_box, boxes_per_pallet, weight_kg, dimensions_cm)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *`,
-      [
-        sku_code,
-        product_name,
-        description,
-        barcode || null,
-        category,
-        base_unit || 'EACH',
-        units_per_box || 1,
-        boxes_per_pallet || 1,
-        weight_kg,
-        dimensions_cm,
-      ]
-    );
-
-    return res.status(201).json({
-      success: true,
-      data: result.rows[0],
-      message: 'Product created successfully',
-    } as ApiResponse<Product>);
-
-  } catch (error: any) {
-    console.error('Create product error:', error);
-
-    // Handle unique constraint violations
-    if (error.code === '23505') {
-      return res.status(409).json({
-        success: false,
-        error: 'Product with this SKU or barcode already exists',
-      } as ApiResponse);
-    }
-
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-    } as ApiResponse);
-  }
-};
-
-/**
- * Update product
- */
-export const updateProduct = async (req: Request, res: Response) => {
-  try {
-    const { sku_code } = req.params;
-    const {
-      product_name,
-      description,
-      barcode,
-      base_unit,
-      units_per_box,
-      boxes_per_pallet,
-      weight_kg,
-      dimensions_cm,
-    } = req.body;
-
-    const result = await pool.query(
-      `UPDATE products 
-       SET 
-         product_name = COALESCE($2, product_name),
-         description = COALESCE($3, description),
-         barcode = COALESCE($4, barcode),
-         base_unit = COALESCE($5, base_unit),
-         units_per_box = COALESCE($6, units_per_box),
-         boxes_per_pallet = COALESCE($7, boxes_per_pallet),
-         weight_kg = COALESCE($8, weight_kg),
-         dimensions_cm = COALESCE($9, dimensions_cm),
-         updated_at = CURRENT_TIMESTAMP
-       WHERE sku_code = $1
-       RETURNING *`,
-      [sku_code, product_name, description, barcode, base_unit, units_per_box, boxes_per_pallet, weight_kg, dimensions_cm]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Product not found',
-      } as ApiResponse);
-    }
-
-    return res.json({
-      success: true,
-      data: result.rows[0],
-      message: 'Product updated successfully',
-    } as ApiResponse<Product>);
-
-  } catch (error) {
-    console.error('Update product error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-    } as ApiResponse);
-  }
-};
-
-/**
- * Delete (deactivate) product
- */
-export const deleteProduct = async (req: Request, res: Response) => {
-  try {
-    const { sku_code } = req.params;
-
-    const result = await pool.query(
-      'UPDATE products SET is_active = false WHERE sku_code = $1 RETURNING *',
-      [sku_code]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Product not found',
-      } as ApiResponse);
-    }
-
-    return res.json({
-      success: true,
-      message: 'Product deactivated successfully',
-    } as ApiResponse);
-
-  } catch (error) {
-    console.error('Delete product error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-    } as ApiResponse);
-  }
-};
-
-/**
  * Search products
+ * READ-ONLY from pricelab products table
  */
 export const searchProducts = async (req: Request, res: Response) => {
   try {
@@ -286,14 +143,14 @@ export const searchProducts = async (req: Request, res: Response) => {
     }
 
     const result = await pool.query(
-      `SELECT * FROM products 
-       WHERE is_active = true 
+      `SELECT id, product_sku, name, description, image, category_id
+       FROM products
+       WHERE product_sku IS NOT NULL
          AND (
-           LOWER(product_name) LIKE LOWER($1)
-           OR LOWER(sku_code) LIKE LOWER($1)
-           OR barcode LIKE $1
+           LOWER(name) LIKE LOWER($1)
+           OR LOWER(product_sku) LIKE LOWER($1)
          )
-       ORDER BY product_name
+       ORDER BY name
        LIMIT 50`,
       [`%${query}%`]
     );
@@ -310,4 +167,40 @@ export const searchProducts = async (req: Request, res: Response) => {
       error: 'Internal server error',
     } as ApiResponse);
   }
+};
+
+/**
+ * Create new product
+ * DISABLED: SwiftStock has READ-ONLY access to products table
+ * Products should be managed from PriceLab
+ */
+export const createProduct = async (req: Request, res: Response) => {
+  return res.status(403).json({
+    success: false,
+    error: 'Product creation is disabled. Please manage products from PriceLab.',
+  } as ApiResponse);
+};
+
+/**
+ * Update product
+ * DISABLED: SwiftStock has READ-ONLY access to products table
+ * Products should be managed from PriceLab
+ */
+export const updateProduct = async (req: Request, res: Response) => {
+  return res.status(403).json({
+    success: false,
+    error: 'Product updates are disabled. Please manage products from PriceLab.',
+  } as ApiResponse);
+};
+
+/**
+ * Delete (deactivate) product
+ * DISABLED: SwiftStock has READ-ONLY access to products table
+ * Products should be managed from PriceLab
+ */
+export const deleteProduct = async (req: Request, res: Response) => {
+  return res.status(403).json({
+    success: false,
+    error: 'Product deletion is disabled. Please manage products from PriceLab.',
+  } as ApiResponse);
 };
