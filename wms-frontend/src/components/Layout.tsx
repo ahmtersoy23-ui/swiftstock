@@ -1,8 +1,7 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
 import { useStore } from '../stores/appStore';
-import { apiClient } from '../lib/api';
+import { useSSO } from '../hooks/useSSO';
 import './Layout.css';
 
 interface LayoutProps {
@@ -12,9 +11,8 @@ interface LayoutProps {
 function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { clearAuth, refreshToken } = useAuthStore();
   const { currentWarehouse, language, setCurrentWarehouse, setLanguage } = useStore();
-  const [loggingOut, setLoggingOut] = useState(false);
+  const { user, logout } = useSSO();
 
   const isHomePage = location.pathname === '/';
 
@@ -24,21 +22,6 @@ function Layout({ children }: LayoutProps) {
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setLanguage(e.target.value as 'tr' | 'en');
-  };
-
-  const handleLogout = async () => {
-    if (loggingOut) return;
-    setLoggingOut(true);
-
-    try {
-      await apiClient.logout(refreshToken || undefined);
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      clearAuth();
-      navigate('/login');
-      setLoggingOut(false);
-    }
   };
 
   const handleHomeClick = () => {
@@ -59,6 +42,30 @@ function Layout({ children }: LayoutProps) {
             SWIFTSTOCK
           </h1>
           <div className="user-info">
+            {user && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginRight: '12px',
+                fontSize: '14px',
+                color: '#94a3b8',
+              }}>
+                {user.picture && (
+                  <img
+                    src={user.picture}
+                    alt={user.name}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      border: '2px solid #3b82f6',
+                    }}
+                  />
+                )}
+                <span style={{ fontWeight: '500' }}>{user.name}</span>
+              </div>
+            )}
             <select
               value={language}
               onChange={handleLanguageChange}
@@ -78,12 +85,21 @@ function Layout({ children }: LayoutProps) {
               <option value="FAB">FAB</option>
             </select>
             <button
-              onClick={handleLogout}
-              disabled={loggingOut}
+              onClick={logout}
               className="logout-btn"
-              title="Cikis Yap"
+              title="Logout"
+              style={{
+                padding: '6px 12px',
+                backgroundColor: '#dc2626',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+              }}
             >
-              {loggingOut ? '...' : '->'}
+              →
             </button>
           </div>
         </div>

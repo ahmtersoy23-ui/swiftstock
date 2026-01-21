@@ -15,31 +15,13 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// Token refresh state
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
-
-const processQueue = (error: unknown, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
-
-// Helper to get auth state from localStorage
-const getAuthState = () => {
-  const authStorage = localStorage.getItem('wms-auth-storage');
-  if (authStorage) {
+// Helper to get SSO token from localStorage
+const getSSOToken = () => {
+  const ssoStorage = localStorage.getItem('swiftstock-sso-storage');
+  if (ssoStorage) {
     try {
-      const { state } = JSON.parse(authStorage);
-      return state;
+      const { state } = JSON.parse(ssoStorage);
+      return state?.accessToken;
     } catch {
       return null;
     }
@@ -47,36 +29,23 @@ const getAuthState = () => {
   return null;
 };
 
-// Helper to update access token in localStorage
-const updateAccessToken = (newAccessToken: string) => {
-  const authStorage = localStorage.getItem('wms-auth-storage');
-  if (authStorage) {
-    try {
-      const data = JSON.parse(authStorage);
-      data.state.accessToken = newAccessToken;
-      localStorage.setItem('wms-auth-storage', JSON.stringify(data));
-    } catch {
-      // Ignore errors
-    }
-  }
-};
-
-// Helper to clear auth and redirect to login
+// Helper to clear auth and redirect to SSO
 const clearAuthAndRedirect = () => {
-  localStorage.removeItem('wms-auth-storage');
-  window.location.href = '/login';
+  localStorage.removeItem('swiftstock-sso-storage');
+  const returnUrl = encodeURIComponent(window.location.href);
+  window.location.href = `https://apps.iwa.web.tr?returnUrl=${returnUrl}&app=swiftstock`;
 };
 
-// Request interceptor - Add auth token if available
+// Request interceptor - Add SSO token if available
 api.interceptors.request.use(
   (config) => {
     if (import.meta.env.DEV) {
       console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
     }
 
-    const state = getAuthState();
-    if (state?.accessToken) {
-      config.headers.Authorization = `Bearer ${state.accessToken}`;
+    const token = getSSOToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
@@ -110,60 +79,11 @@ api.interceptors.response.use(
 
     const { status, data } = error.response as { status: number; data: { error?: string; code?: string } };
 
-    // Handle 401 - Token expired, try to refresh
+    // Handle 401 - Token expired or invalid, redirect to SSO
     if (status === 401 && !originalRequest._retry) {
-      // Skip refresh for auth endpoints
-      if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/refresh')) {
-        clearAuthAndRedirect();
-        return Promise.reject(error);
-      }
-
-      if (isRefreshing) {
-        // Wait for the refresh to complete
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return api(originalRequest);
-          })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
-
-      const state = getAuthState();
-      if (!state?.refreshToken) {
-        clearAuthAndRedirect();
-        return Promise.reject(error);
-      }
-
-      try {
-        const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-          refreshToken: state.refreshToken,
-        });
-
-        if (response.data.success && response.data.data?.accessToken) {
-          const newAccessToken = response.data.data.accessToken;
-          updateAccessToken(newAccessToken);
-          processQueue(null, newAccessToken);
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return api(originalRequest);
-        } else {
-          processQueue(error, null);
-          clearAuthAndRedirect();
-          return Promise.reject(error);
-        }
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        clearAuthAndRedirect();
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
+      clearAuthAndRedirect();
+      return Promise.reject(error);
     }
 
     if (import.meta.env.DEV) {

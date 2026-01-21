@@ -1,14 +1,17 @@
 // ============================================
-// AUTHENTICATION MIDDLEWARE
+// AUTHENTICATION MIDDLEWARE - SSO INTEGRATED
 // ============================================
 
 import { Request, Response, NextFunction } from 'express';
-import jwt, { SignOptions } from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
+import axios from 'axios';
 import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
 import pool from '../config/database';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRES_IN: string | number = process.env.JWT_EXPIRES_IN || '24h';
+const SSO_BASE_URL = process.env.SSO_BASE_URL || 'https://apps.iwa.web.tr';
+const APP_CODE = 'swiftstock';
 
 export interface AuthUser {
   user_id: number;
@@ -21,10 +24,65 @@ export interface AuthUser {
 
 export interface AuthRequest extends Request {
   user?: AuthUser;
+  ssoUser?: {
+    id: string;
+    email: string;
+    name: string;
+    picture?: string;
+  };
+  ssoRole?: 'admin' | 'editor' | 'viewer';
 }
 
 /**
- * Verify JWT token and attach user to request
+ * Verify SSO token with SSO backend
+ */
+const verifySSOToken = async (token: string): Promise<{
+  success: boolean;
+  data?: {
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      picture?: string;
+    };
+    role: 'admin' | 'editor' | 'viewer';
+  };
+} | null> => {
+  try {
+    const response = await axios.post(
+      `${SSO_BASE_URL}/api/auth/verify`,
+      { token, app_code: APP_CODE },
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 5000,
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('SSO token verification failed:', error);
+    return null;
+  }
+};
+
+/**
+ * Map SSO role to internal role
+ */
+const mapSSORole = (ssoRole: 'admin' | 'editor' | 'viewer'): 'ADMIN' | 'MANAGER' | 'OPERATOR' | 'VIEWER' => {
+  switch (ssoRole) {
+    case 'admin':
+      return 'ADMIN';
+    case 'editor':
+      return 'MANAGER';
+    case 'viewer':
+      return 'VIEWER';
+    default:
+      return 'VIEWER';
+  }
+};
+
+/**
+ * Verify SSO token and attach user to request
  */
 export const authenticateToken = async (
   req: AuthRequest,
@@ -43,26 +101,55 @@ export const authenticateToken = async (
       return;
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthUser;
+    // Verify token with SSO backend
+    const ssoResult = await verifySSOToken(token);
 
-    // Check if user still exists and is active
-    const userResult = await pool.query(
-      `SELECT user_id, username, email, full_name, role, warehouse_code, is_active
-       FROM users
-       WHERE user_id = $1`,
-      [decoded.user_id]
-    );
-
-    if (userResult.rows.length === 0) {
+    if (!ssoResult || !ssoResult.success || !ssoResult.data) {
       res.status(HTTP_STATUS.UNAUTHORIZED).json({
         success: false,
-        error: 'Kullanıcı bulunamadı.',
+        error: 'Geçersiz token. Lütfen tekrar giriş yapın.',
       });
       return;
     }
 
-    const user = userResult.rows[0];
+    const { user: ssoUser, role: ssoRole } = ssoResult.data;
+
+    // Attach SSO user info to request
+    req.ssoUser = ssoUser;
+    req.ssoRole = ssoRole;
+
+    // Check if user exists in local database, if not create them
+    let userResult = await pool.query(
+      `SELECT user_id, username, email, full_name, role, warehouse_code, is_active
+       FROM users
+       WHERE email = $1`,
+      [ssoUser.email]
+    );
+
+    let user;
+
+    if (userResult.rows.length === 0) {
+      // Auto-create user from SSO
+      const insertResult = await pool.query(
+        `INSERT INTO users (username, email, full_name, role, is_active, created_at)
+         VALUES ($1, $2, $3, $4, true, NOW())
+         RETURNING user_id, username, email, full_name, role, warehouse_code, is_active`,
+        [ssoUser.email, ssoUser.email, ssoUser.name, mapSSORole(ssoRole)]
+      );
+      user = insertResult.rows[0];
+    } else {
+      user = userResult.rows[0];
+
+      // Update role if it changed in SSO
+      const mappedRole = mapSSORole(ssoRole);
+      if (user.role !== mappedRole) {
+        await pool.query(
+          `UPDATE users SET role = $1, updated_at = NOW() WHERE user_id = $2`,
+          [mappedRole, user.user_id]
+        );
+        user.role = mappedRole;
+      }
+    }
 
     if (!user.is_active) {
       res.status(HTTP_STATUS.FORBIDDEN).json({
@@ -84,24 +171,7 @@ export const authenticateToken = async (
 
     next();
   } catch (error: unknown) {
-    const err = error as Error & { name?: string };
-
-    if (err.name === 'TokenExpiredError') {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json({
-        success: false,
-        error: 'Token süresi doldu. Lütfen tekrar giriş yapın.',
-      });
-      return;
-    }
-
-    if (err.name === 'JsonWebTokenError') {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json({
-        success: false,
-        error: 'Geçersiz token.',
-      });
-      return;
-    }
-
+    console.error('Authentication error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,

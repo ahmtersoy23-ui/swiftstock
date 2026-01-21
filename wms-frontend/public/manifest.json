@@ -1,0 +1,25 @@
+{
+  "name": "SwiftStock WMS",
+  "short_name": "SwiftStock",
+  "description": "Modern Warehouse Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/swiftstock-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": []
+}
