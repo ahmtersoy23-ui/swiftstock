@@ -219,7 +219,8 @@ function Operations() {
     try {
       const response = await apiClient.getAllOperationModes();
       if (response.success) {
-        setAvailableModes(response.data.filter((m: OperationMode) => m.mode_code.startsWith('MODE-')));
+        // Show all active operation modes (IN, OUT, TRANSFER, COUNT)
+        setAvailableModes(response.data);
       }
     } catch (err) {
       console.error('Failed to load modes:', err);

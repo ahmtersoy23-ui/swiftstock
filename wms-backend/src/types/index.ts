@@ -197,6 +197,23 @@ export interface AddToContainerRequest {
   quantity: number;
 }
 
+export interface ScanResponse {
+  success: boolean;
+  type: 'PRODUCT' | 'LOCATION' | 'CONTAINER' | 'MODE';
+  data?: any;
+  message?: string;
+}
+
+export interface TransactionCreateRequest {
+  transaction_type: 'IN' | 'OUT' | 'ADJUST' | 'TRANSFER';
+  warehouse_id: number;
+  location_id?: number;
+  items: {
+    product_sku: string;
+    quantity: number;
+  }[];
+}
+
 // ============================================
 // QUERY FILTER TYPES
 // ============================================

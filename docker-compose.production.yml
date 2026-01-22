@@ -1,0 +1,239 @@
+# ============================================
+# WMS - PRODUCTION CONFIG (8GB RAM)
+# ============================================
+# Optimized for 8GB RAM server with Docker
+# Total SwiftStock footprint: ~1.3GB RAM
+# Headroom: ~6.7GB for other apps + system
+
+version: '3.8'
+
+services:
+  # ============================================
+  # PostgreSQL Database (Production)
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: wms-postgres
+    restart: unless-stopped
+
+    # RESOURCE LIMITS (Generous for 8GB)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          memory: 256M
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wms_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wms_password}
+      POSTGRES_DB: ${POSTGRES_DB:-wms_db}
+
+      # Production PostgreSQL Config
+      POSTGRES_SHARED_BUFFERS: 128MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 384MB
+      POSTGRES_WORK_MEM: 8MB
+      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
+      POSTGRES_MAX_CONNECTIONS: 100
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
+      POSTGRES_WAL_BUFFERS: 16MB
+      POSTGRES_DEFAULT_STATISTICS_TARGET: 100
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./wms-backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    ports:
+      - "5432:5432"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wms_user} -d ${POSTGRES_DB:-wms_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - wms-network
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================
+  # Redis Cache (Production)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: wms-redis
+    restart: unless-stopped
+
+    # RESOURCE LIMITS
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          memory: 128M
+
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 192mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --tcp-backlog 511
+      --timeout 0
+      --tcp-keepalive 300
+
+    volumes:
+      - redis_data:/data
+
+    ports:
+      - "6379:6379"
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - wms-network
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================
+  # Backend API (Production)
+  # ============================================
+  backend:
+    build:
+      context: ./wms-backend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: wms-backend
+    restart: unless-stopped
+
+    # RESOURCE LIMITS
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          memory: 256M
+
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+
+      # Database
+      DATABASE_URL: postgres://${POSTGRES_USER:-wms_user}:${POSTGRES_PASSWORD:-wms_password}@postgres:5432/${POSTGRES_DB:-wms_db}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-wms_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-wms_password}
+      DB_NAME: ${POSTGRES_DB:-wms_db}
+
+      # Security
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      # CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+
+      # Node.js Production Optimizations
+      NODE_OPTIONS: "--max-old-space-size=448"
+      UV_THREADPOOL_SIZE: 4
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    ports:
+      - "3001:3001"
+
+    networks:
+      - wms-network
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================
+  # Frontend (Nginx - Production)
+  # ============================================
+  frontend:
+    build:
+      context: ./wms-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    container_name: wms-frontend
+    restart: unless-stopped
+
+    # RESOURCE LIMITS (Nginx çok hafif)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+        reservations:
+          memory: 32M
+
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
+
+    depends_on:
+      - backend
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      # SSL certificates (if you have)
+      # - ./ssl:/etc/nginx/ssl:ro
+
+    networks:
+      - wms-network
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  wms-network:
+    driver: bridge

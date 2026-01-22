@@ -1,0 +1,98 @@
+# ============================================
+# WMS - MINIMAL CONFIG (External DB/Redis)
+# ============================================
+# Use this if you have existing PostgreSQL/Redis
+# Total footprint: ~400-500MB RAM only
+
+version: '3.8'
+
+services:
+  # ============================================
+  # Backend API (Optimized)
+  # ============================================
+  backend:
+    build:
+      context: ./wms-backend
+      dockerfile: Dockerfile
+    container_name: wms-backend
+    restart: unless-stopped
+
+    # RESOURCE LIMITS
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
+        reservations:
+          memory: 256M
+
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+
+      # External Database Connection
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      DB_HOST: ${DB_HOST:?External PostgreSQL host required}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:?Database user required}
+      DB_PASSWORD: ${DB_PASSWORD:?Database password required}
+      DB_NAME: ${DB_NAME:-wms_db}
+
+      # Security
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
+
+      # External Redis
+      REDIS_HOST: ${REDIS_HOST:?External Redis host required}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
+      # CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+
+      # Node.js memory optimization
+      NODE_OPTIONS: "--max-old-space-size=320"
+
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+
+    networks:
+      - wms-network
+
+  # ============================================
+  # Frontend (Nginx - Static Files)
+  # ============================================
+  frontend:
+    build:
+      context: ./wms-frontend
+      dockerfile: Dockerfile
+    container_name: wms-frontend
+    restart: unless-stopped
+
+    # RESOURCE LIMITS
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+        reservations:
+          memory: 32M
+
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
+
+    depends_on:
+      - backend
+
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+
+    networks:
+      - wms-network
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  wms-network:
+    driver: bridge

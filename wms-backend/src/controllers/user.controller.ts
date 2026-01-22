@@ -19,7 +19,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       page = 1,
       limit = DEFAULT_PAGE_SIZE,
       role,
-      warehouse_code,
+      warehouse_id,
       is_active,
       search,
     } = req.query;
@@ -38,9 +38,9 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       queryParams.push(role);
     }
 
-    if (warehouse_code) {
-      whereConditions.push(`u.warehouse_code = $${paramIndex++}`);
-      queryParams.push(warehouse_code);
+    if (warehouse_id) {
+      whereConditions.push(`u.warehouse_id = $${paramIndex++}`);
+      queryParams.push(warehouse_id);
     }
 
     if (is_active !== undefined) {
@@ -72,14 +72,13 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
          u.email,
          u.full_name,
          u.role,
-         u.warehouse_code,
+         u.warehouse_id,
          w.name as warehouse_name,
          u.is_active,
          u.created_at,
-         u.last_login,
-         u.created_by
+         u.last_login
        FROM wms_users u
-       LEFT JOIN wms_warehouses w ON u.warehouse_code = w.code
+       LEFT JOIN wms_warehouses w ON u.warehouse_id = w.warehouse_id
        ${whereClause}
        ORDER BY u.created_at DESC
        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,

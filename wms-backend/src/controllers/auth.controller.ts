@@ -48,7 +48,7 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
     // Find user
     const userResult = await client.query(
       `SELECT user_id, username, email, password_hash, full_name, role, warehouse_code, is_active, must_change_password
-       FROM users
+       FROM wms_users
        WHERE username = $1`,
       [username]
     );
@@ -582,7 +582,7 @@ export const googleLogin = async (req: AuthRequest, res: Response): Promise<void
     // Find or create user by email
     let userResult = await client.query(
       `SELECT user_id, username, email, full_name, role, warehouse_code, is_active
-       FROM users
+       FROM wms_users
        WHERE email = $1`,
       [googleEmail]
     );

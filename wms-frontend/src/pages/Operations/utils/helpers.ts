@@ -3,6 +3,12 @@ import { translations } from '../../../i18n/translations';
 
 export const getModeColor = (code: string): string => {
   const colors: Record<string, string> = {
+    // New mode codes from database
+    'IN': '#10b981',
+    'OUT': '#f59e0b',
+    'TRANSFER': '#3b82f6',
+    'COUNT': '#8b5cf6',
+    // Legacy mode codes (keep for compatibility)
     'MODE-IN-RECEIVING': '#10b981',
     'MODE-OUT-PICKING': '#f59e0b',
     'MODE-MOVE-TRANSFER': '#3b82f6',
@@ -16,6 +22,12 @@ export const getModeColor = (code: string): string => {
 export const getModeDisplayName = (code: string, lang: 'tr' | 'en'): string => {
   const t = translations[lang];
   const names: Record<string, string> = {
+    // New mode codes from database
+    'IN': `📥 ${t.receiving}`,
+    'OUT': `📤 ${t.picking}`,
+    'TRANSFER': `🔄 ${t.transfer}`,
+    'COUNT': `📋 ${t.count}`,
+    // Legacy mode codes (keep for compatibility)
     'MODE-IN-RECEIVING': `📥 ${t.receiving}`,
     'MODE-OUT-PICKING': `📤 ${t.picking}`,
     'MODE-MOVE-TRANSFER': `🔄 ${t.transfer}`,

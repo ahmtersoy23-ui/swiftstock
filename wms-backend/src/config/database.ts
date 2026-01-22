@@ -5,10 +5,11 @@ import { DB_MAX_CONNECTIONS, DB_IDLE_TIMEOUT_MS, DB_CONNECTION_TIMEOUT_MS } from
 dotenv.config();
 
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'pricelab_db',  // Shared database
-  user: process.env.DB_USER || 'swiftstock',       // SwiftStock user
+  // Use Unix socket for local connections (much faster than TCP)
+  host: process.env.DB_HOST || '/var/run/postgresql',
+  port: process.env.DB_HOST ? parseInt(process.env.DB_PORT || '5432') : undefined,
+  database: process.env.DB_NAME || 'swiftstock_db',
+  user: process.env.DB_USER || 'swiftstock',
   password: process.env.DB_PASSWORD,
   max: DB_MAX_CONNECTIONS,
   idleTimeoutMillis: DB_IDLE_TIMEOUT_MS,

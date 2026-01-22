@@ -11,10 +11,10 @@ export const DEFAULT_PAGE = 1;
 export const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 export const RATE_LIMIT_MAX_REQUESTS = 100;
 
-// Database
-export const DB_CONNECTION_TIMEOUT_MS = 10000; // 10 seconds
-export const DB_IDLE_TIMEOUT_MS = 30000; // 30 seconds
-export const DB_MAX_CONNECTIONS = 20;
+// Database (optimized for local PostgreSQL via Unix socket)
+export const DB_CONNECTION_TIMEOUT_MS = 5000;  // 5 seconds (faster for local)
+export const DB_IDLE_TIMEOUT_MS = 10000;       // 10 seconds (shorter idle for less memory)
+export const DB_MAX_CONNECTIONS = 10;          // 10 connections (enough for single backend instance)
 
 // Transaction types
 export const TRANSACTION_TYPES = {

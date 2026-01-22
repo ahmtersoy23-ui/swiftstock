@@ -7,12 +7,11 @@ import { ApiResponse } from '../types';
  * Note: SwiftStock has READ-ONLY access to products table
  */
 interface Product {
-  id: number;
+  id: string;  // UUID in pricelab_db
   product_sku: string;
-  name: string;
-  description?: string;
-  image?: string;
-  category_id?: number;
+  product_name: string;  // Aliased from 'name' field
+  category?: string;
+  base_cost?: number;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -37,15 +36,15 @@ export const getAllProducts = async (req: Request, res: Response) => {
     const categoryFilter = category_id as string;
 
     // Only select products with product_sku (required for WMS)
-    let query = 'SELECT id, product_sku, name, description, image, category_id, created_at FROM products WHERE product_sku IS NOT NULL';
+    let query = 'SELECT id, product_sku, name AS product_name, category, base_cost, created_at FROM products WHERE product_sku IS NOT NULL';
     let countQuery = 'SELECT COUNT(*) FROM products WHERE product_sku IS NOT NULL';
     const params: any[] = [];
 
     // Add category filter if provided
     if (categoryFilter) {
-      query += ` AND category_id = $${params.length + 1}`;
-      countQuery += ` AND category_id = $${params.length + 1}`;
-      params.push(parseInt(categoryFilter));
+      query += ` AND LOWER(category) = LOWER($${params.length + 1})`;
+      countQuery += ` AND LOWER(category) = LOWER($${params.length + 1})`;
+      params.push(categoryFilter);
     }
 
     // Add search filter if provided
@@ -53,12 +52,12 @@ export const getAllProducts = async (req: Request, res: Response) => {
       query += ` AND (
         LOWER(name) LIKE LOWER($${params.length + 1})
         OR LOWER(product_sku) LIKE LOWER($${params.length + 1})
-        OR LOWER(description) LIKE LOWER($${params.length + 1})
+        OR LOWER(category) LIKE LOWER($${params.length + 1})
       )`;
       countQuery += ` AND (
         LOWER(name) LIKE LOWER($${params.length + 1})
         OR LOWER(product_sku) LIKE LOWER($${params.length + 1})
-        OR LOWER(description) LIKE LOWER($${params.length + 1})
+        OR LOWER(category) LIKE LOWER($${params.length + 1})
       )`;
       params.push(`%${searchTerm}%`);
     }
@@ -102,7 +101,7 @@ export const getProductBySku = async (req: Request, res: Response) => {
     const { product_sku } = req.params;
 
     const result = await pool.query(
-      'SELECT id, product_sku, name, description, image, category_id, created_at FROM products WHERE product_sku = $1',
+      'SELECT id, product_sku, name AS product_name, category, base_cost, created_at FROM products WHERE product_sku = $1',
       [product_sku]
     );
 
@@ -143,12 +142,13 @@ export const searchProducts = async (req: Request, res: Response) => {
     }
 
     const result = await pool.query(
-      `SELECT id, product_sku, name, description, image, category_id
+      `SELECT id, product_sku, name AS product_name, category, base_cost, created_at
        FROM products
        WHERE product_sku IS NOT NULL
          AND (
            LOWER(name) LIKE LOWER($1)
            OR LOWER(product_sku) LIKE LOWER($1)
+           OR LOWER(category) LIKE LOWER($1)
          )
        ORDER BY name
        LIMIT 50`,
