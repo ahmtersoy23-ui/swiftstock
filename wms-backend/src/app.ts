@@ -84,8 +84,8 @@ export function createApp(): Application {
   // API Versioning
   const API_VERSION = 'v1';
 
-  // Swagger Documentation (disabled in test environment)
-  if (process.env.NODE_ENV !== 'test') {
+  // Swagger Documentation (development only)
+  if (process.env.NODE_ENV === 'development') {
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
       customCss: '.swagger-ui .topbar { display: none }',
       customSiteTitle: 'WMS API Documentation',
@@ -132,9 +132,12 @@ export function createApp(): Application {
       ip: req.ip,
     });
 
-    res.status(err.status || 500).json({
+    const statusCode = err.status || 500;
+    res.status(statusCode).json({
       success: false,
-      error: err.message || 'Internal Server Error',
+      error: statusCode >= 500 && process.env.NODE_ENV === 'production'
+        ? 'Internal Server Error'
+        : (err.message || 'Internal Server Error'),
     });
   });
 

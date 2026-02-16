@@ -259,7 +259,8 @@ export const createTransaction = async (req: Request, res: Response) => {
  */
 export const getRecentTransactions = async (req: Request, res: Response) => {
   try {
-    const { warehouse_code, limit = 20 } = req.query;
+    const { warehouse_code } = req.query;
+    const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 20), 500);
 
     let query = `
       SELECT 

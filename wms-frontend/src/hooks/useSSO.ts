@@ -3,6 +3,11 @@ import { useSSOStore } from '../stores/ssoStore';
 const SSO_BASE_URL = 'https://apps.iwa.web.tr';
 const APP_CODE = 'swiftstock';
 
+// Development-only logging helper
+const devLog = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.log(...args);
+};
+
 interface VerifyResponse {
   success: boolean;
   data?: {

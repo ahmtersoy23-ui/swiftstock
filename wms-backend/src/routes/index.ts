@@ -82,81 +82,81 @@ router.get('/orders/picker/:picker_id/performance', authenticateToken, orderCont
 // ============================================
 // SCAN ROUTES
 // ============================================
-router.post('/scan', validateBody(scanSchema), scanController.scanCode);
-router.get('/lookup', scanController.lookupBySku);
+router.post('/scan', authenticateToken, validateBody(scanSchema), scanController.scanCode);
+router.get('/lookup', authenticateToken, scanController.lookupBySku);
 
 // ============================================
 // TRANSACTION ROUTES
 // ============================================
-router.post('/transactions', validateBody(createTransactionSchema), transactionController.createTransaction);
-router.get('/transactions', transactionController.getRecentTransactions);
-router.get('/transactions/:transaction_id', transactionController.getTransactionDetails);
-router.post('/transactions/:transaction_id/undo', transactionController.undoTransaction);
+router.post('/transactions', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateBody(createTransactionSchema), transactionController.createTransaction);
+router.get('/transactions', authenticateToken, transactionController.getRecentTransactions);
+router.get('/transactions/:transaction_id', authenticateToken, transactionController.getTransactionDetails);
+router.post('/transactions/:transaction_id/undo', authenticateToken, requireRole('ADMIN', 'MANAGER'), transactionController.undoTransaction);
 
 // ============================================
 // INVENTORY ROUTES
 // ============================================
-router.get('/inventory', inventoryController.getInventorySummary);
-router.get('/inventory/sku/:sku_code', inventoryController.getInventoryBySku);
-router.get('/inventory/low-stock', inventoryController.getLowStock);
-router.get('/inventory/search', inventoryController.searchInventory);
+router.get('/inventory', authenticateToken, inventoryController.getInventorySummary);
+router.get('/inventory/sku/:sku_code', authenticateToken, inventoryController.getInventoryBySku);
+router.get('/inventory/low-stock', authenticateToken, inventoryController.getLowStock);
+router.get('/inventory/search', authenticateToken, inventoryController.searchInventory);
 
 // ============================================
 // PRODUCT ROUTES
 // ============================================
-router.get('/products', productController.getAllProducts);
-router.get('/products/:sku_code', productController.getProductBySku);
-router.post('/products', validateBody(createProductSchema), productController.createProduct);
-router.put('/products/:sku_code', validateBody(updateProductSchema), productController.updateProduct);
-router.delete('/products/:sku_code', productController.deleteProduct);
-router.get('/products/search', productController.searchProducts);
+router.get('/products', authenticateToken, productController.getAllProducts);
+router.get('/products/search', authenticateToken, productController.searchProducts);  // ← search, /:sku_code'dan ÖNCE olmalı
+router.get('/products/:sku_code', authenticateToken, productController.getProductBySku);
+router.post('/products', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateBody(createProductSchema), productController.createProduct);
+router.put('/products/:sku_code', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateBody(updateProductSchema), productController.updateProduct);
+router.delete('/products/:sku_code', authenticateToken, requireRole('ADMIN'), productController.deleteProduct);
 
 // ============================================
 // CONTAINER ROUTES (Koli/Palet)
 // ============================================
-router.post('/containers', validateBody(createContainerSchema), containerController.createContainer);
-router.get('/containers', containerController.getAllContainers);
-router.get('/containers/:barcode', containerController.getContainerByBarcode);
-router.post('/containers/:barcode/open', validateBody(openContainerSchema), containerController.openContainer);
+router.post('/containers', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateBody(createContainerSchema), containerController.createContainer);
+router.get('/containers', authenticateToken, containerController.getAllContainers);
+router.get('/containers/:barcode', authenticateToken, containerController.getContainerByBarcode);
+router.post('/containers/:barcode/open', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateBody(openContainerSchema), containerController.openContainer);
 
 // ============================================
 // WAREHOUSE ROUTES
 // ============================================
-router.get('/warehouses', warehouseController.getAllWarehouses);
-router.get('/warehouses/:warehouse_id', warehouseController.getWarehouseById);
-router.get('/warehouses/code/:warehouse_code', warehouseController.getWarehouseByCode);
+router.get('/warehouses', authenticateToken, warehouseController.getAllWarehouses);
+router.get('/warehouses/:warehouse_id', authenticateToken, warehouseController.getWarehouseById);
+router.get('/warehouses/code/:warehouse_code', authenticateToken, warehouseController.getWarehouseByCode);
 
 // ============================================
 // LOCATION ROUTES
 // ============================================
-router.get('/locations', locationController.getAllLocations);
-router.get('/locations/:location_id', locationController.getLocationById);
-router.get('/locations/code/:location_code', locationController.getLocationByCode);
-router.post('/locations', validateBody(createLocationSchema), locationController.createLocation);
-router.put('/locations/:location_id', validateBody(updateLocationSchema), locationController.updateLocation);
-router.delete('/locations/:location_id', locationController.deleteLocation);
-router.get('/locations/:location_id/inventory', locationController.getLocationInventory);
+router.get('/locations', authenticateToken, locationController.getAllLocations);
+router.get('/locations/:location_id', authenticateToken, locationController.getLocationById);
+router.get('/locations/code/:location_code', authenticateToken, locationController.getLocationByCode);
+router.post('/locations', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateBody(createLocationSchema), locationController.createLocation);
+router.put('/locations/:location_id', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateBody(updateLocationSchema), locationController.updateLocation);
+router.delete('/locations/:location_id', authenticateToken, requireRole('ADMIN'), locationController.deleteLocation);
+router.get('/locations/:location_id/inventory', authenticateToken, locationController.getLocationInventory);
 
 // ============================================
 // OPERATION MODE ROUTES
 // ============================================
-router.get('/operation-modes', operationController.getAllOperationModes);
-router.get('/operation-modes/:mode_code', operationController.getOperationModeByCode);
+router.get('/operation-modes', authenticateToken, operationController.getAllOperationModes);
+router.get('/operation-modes/:mode_code', authenticateToken, operationController.getOperationModeByCode);
 
 // ============================================
 // SCAN SESSION ROUTES
 // ============================================
-router.post('/scan-sessions', validateBody(createScanSessionSchema), operationController.createScanSession);
-router.get('/scan-sessions/active', operationController.getActiveScanSession);
-router.get('/scan-sessions/:session_id', operationController.getScanSession);
-router.post('/scan-sessions/:session_id/complete', operationController.completeScanSession);
-router.post('/scan-sessions/:session_id/cancel', operationController.cancelScanSession);
-router.get('/scan-sessions/:session_id/operations', operationController.getSessionOperations);
+router.post('/scan-sessions', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateBody(createScanSessionSchema), operationController.createScanSession);
+router.get('/scan-sessions/active', authenticateToken, operationController.getActiveScanSession);
+router.get('/scan-sessions/:session_id', authenticateToken, operationController.getScanSession);
+router.post('/scan-sessions/:session_id/complete', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), operationController.completeScanSession);
+router.post('/scan-sessions/:session_id/cancel', authenticateToken, requireRole('ADMIN', 'MANAGER'), operationController.cancelScanSession);
+router.get('/scan-sessions/:session_id/operations', authenticateToken, operationController.getSessionOperations);
 
 // ============================================
 // SCAN OPERATION ROUTES
 // ============================================
-router.post('/scan-operations', validateBody(addScanOperationSchema), operationController.addScanOperation);
+router.post('/scan-operations', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateBody(addScanOperationSchema), operationController.addScanOperation);
 
 // ============================================
 // CYCLE COUNT ROUTES
@@ -181,12 +181,12 @@ router.post('/rma/:rma_id/complete', authenticateToken, requireRole('ADMIN', 'MA
 // ============================================
 // SERIAL NUMBER ROUTES
 // ============================================
-router.post('/serials/generate', validateBody(generateSerialsSchema), serialController.generateSerialNumbers);
-router.get('/serials/sku/:sku_code', serialController.getSerialNumbers);
-router.get('/serials/barcode/:barcode', serialController.lookupSerialBarcode);
-router.get('/serials/barcode/:barcode/history', serialController.getSerialHistory);
-router.put('/serials/barcode/:barcode', validateBody(updateSerialStatusSchema), serialController.updateSerialStatus);
-router.get('/serials/stats/:sku_code', serialController.getSerialStats);
+router.post('/serials/generate', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateBody(generateSerialsSchema), serialController.generateSerialNumbers);
+router.get('/serials/sku/:sku_code', authenticateToken, serialController.getSerialNumbers);
+router.get('/serials/barcode/:barcode', authenticateToken, serialController.lookupSerialBarcode);
+router.get('/serials/barcode/:barcode/history', authenticateToken, serialController.getSerialHistory);
+router.put('/serials/barcode/:barcode', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateBody(updateSerialStatusSchema), serialController.updateSerialStatus);
+router.get('/serials/stats/:sku_code', authenticateToken, serialController.getSerialStats);
 
 // ============================================
 // REPORT ROUTES

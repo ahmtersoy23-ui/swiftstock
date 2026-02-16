@@ -16,7 +16,7 @@ import {
 } from '../middleware/auth.middleware';
 import { logger } from '../utils/logger';
 
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 12;
 
 // Google OAuth client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);

@@ -8,7 +8,13 @@ import axios from 'axios';
 import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
 import pool from '../config/database';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+// JWT_SECRET is required - fail fast if not provided
+export const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is required');
+  process.exit(1);
+}
+
 const JWT_EXPIRES_IN: string | number = process.env.JWT_EXPIRES_IN || '24h';
 const SSO_BASE_URL = process.env.SSO_BASE_URL || 'https://apps.iwa.web.tr';
 const APP_CODE = 'swiftstock';
@@ -118,12 +124,12 @@ export const authenticateToken = async (
     req.ssoUser = ssoUser;
     req.ssoRole = ssoRole;
 
-    // Check if user exists in local database, if not create them
+    // Check if user exists in local database by SSO user_id first, then email
     let userResult = await pool.query(
-      `SELECT user_id, username, email, full_name, role, warehouse_code, is_active
+      `SELECT user_id, username, email, full_name, role, warehouse_id, is_active, sso_user_id
        FROM users
-       WHERE email = $1`,
-      [ssoUser.email]
+       WHERE sso_user_id = $1 OR email = $2`,
+      [ssoUser.id, ssoUser.email]
     );
 
     let user;
@@ -131,14 +137,23 @@ export const authenticateToken = async (
     if (userResult.rows.length === 0) {
       // Auto-create user from SSO
       const insertResult = await pool.query(
-        `INSERT INTO users (username, email, full_name, role, is_active, created_at)
-         VALUES ($1, $2, $3, $4, true, NOW())
-         RETURNING user_id, username, email, full_name, role, warehouse_code, is_active`,
-        [ssoUser.email, ssoUser.email, ssoUser.name, mapSSORole(ssoRole)]
+        `INSERT INTO users (username, email, full_name, role, is_active, sso_user_id, created_at)
+         VALUES ($1, $2, $3, $4, true, $5, NOW())
+         RETURNING user_id, username, email, full_name, role, warehouse_id, is_active, sso_user_id`,
+        [ssoUser.email, ssoUser.email, ssoUser.name, mapSSORole(ssoRole), ssoUser.id]
       );
       user = insertResult.rows[0];
     } else {
       user = userResult.rows[0];
+
+      // Update sso_user_id if not set
+      if (!user.sso_user_id) {
+        await pool.query(
+          `UPDATE users SET sso_user_id = $1, updated_at = NOW() WHERE user_id = $2`,
+          [ssoUser.id, user.user_id]
+        );
+        user.sso_user_id = ssoUser.id;
+      }
 
       // Update role if it changed in SSO
       const mappedRole = mapSSORole(ssoRole);
@@ -166,7 +181,7 @@ export const authenticateToken = async (
       email: user.email,
       full_name: user.full_name,
       role: user.role,
-      warehouse_code: user.warehouse_code,
+      warehouse_id: user.warehouse_id,
     };
 
     next();
@@ -309,25 +324,31 @@ export const optionalAuth = async (
       return;
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthUser;
+    // SSO token verification (same as authenticateToken but no auto-create)
+    const ssoResult = await verifySSOToken(token);
 
-    const userResult = await pool.query(
-      `SELECT user_id, username, email, full_name, role, warehouse_code, is_active
-       FROM users
-       WHERE user_id = $1 AND is_active = true`,
-      [decoded.user_id]
-    );
+    if (ssoResult?.success && ssoResult.data) {
+      const { user: ssoUser, role: ssoRole } = ssoResult.data;
 
-    if (userResult.rows.length > 0) {
-      const user = userResult.rows[0];
-      req.user = {
-        user_id: user.user_id,
-        username: user.username,
-        email: user.email,
-        full_name: user.full_name,
-        role: user.role,
-        warehouse_code: user.warehouse_code,
-      };
+      // DB lookup (simplified — no auto-create for optional auth)
+      const userResult = await pool.query(
+        `SELECT user_id, username, email, full_name, role, warehouse_code, is_active
+         FROM users
+         WHERE email = $1`,
+        [ssoUser.email]
+      );
+
+      if (userResult.rows.length > 0 && userResult.rows[0].is_active) {
+        const user = userResult.rows[0];
+        req.user = {
+          user_id: user.user_id,
+          username: user.username,
+          email: user.email,
+          full_name: user.full_name,
+          role: user.role,
+          warehouse_code: user.warehouse_code,
+        };
+      }
     }
 
     next();

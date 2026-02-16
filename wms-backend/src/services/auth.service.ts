@@ -5,10 +5,9 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database';
-import { AuthUser, generateToken, generateRefreshToken } from '../middleware/auth.middleware';
+import { AuthUser, JWT_SECRET, generateToken, generateRefreshToken } from '../middleware/auth.middleware';
 import logger from '../utils/logger';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const BCRYPT_ROUNDS = 12;
 
 export interface LoginResult {
