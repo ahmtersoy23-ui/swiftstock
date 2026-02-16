@@ -12,9 +12,9 @@ services:
   # ============================================
   backend:
     build:
-      context: ./wms-backend
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: wms-backend
+    container_name: backend
     restart: unless-stopped
 
     # RESOURCE LIMITS
@@ -64,9 +64,9 @@ services:
   # ============================================
   frontend:
     build:
-      context: ./wms-frontend
+      context: ./frontend
       dockerfile: Dockerfile
-    container_name: wms-frontend
+    container_name: frontend
     restart: unless-stopped
 
     # RESOURCE LIMITS

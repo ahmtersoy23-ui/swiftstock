@@ -42,7 +42,7 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./wms-backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
     ports:
       - "5432:5432"
@@ -117,11 +117,11 @@ services:
   # ============================================
   backend:
     build:
-      context: ./wms-backend
+      context: ./backend
       dockerfile: Dockerfile
       args:
         NODE_ENV: production
-    container_name: wms-backend
+    container_name: backend
     restart: unless-stopped
 
     # RESOURCE LIMITS
@@ -183,11 +183,11 @@ services:
   # ============================================
   frontend:
     build:
-      context: ./wms-frontend
+      context: ./frontend
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL}
-    container_name: wms-frontend
+    container_name: frontend
     restart: unless-stopped
 
     # RESOURCE LIMITS (Nginx çok hafif)

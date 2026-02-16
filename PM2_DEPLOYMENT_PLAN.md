@@ -25,7 +25,7 @@ sudo -u postgres psql -d pricelab_db -c "\dt wms_*"
 ### 2. Backend Kodu Güncelle (Local)
 
 **Değiştirilecek dosyalar**:
-- `wms-backend/src/config/database.ts` → pricelab_db bağlantısı
+- `backend/src/config/database.ts` → pricelab_db bağlantısı
 - Table names: `products` → `products` (değişmez)
 - Table names: `warehouses` → `wms_warehouses`
 - Table names: `locations` → `wms_locations`
@@ -40,7 +40,7 @@ sudo -u postgres psql -d pricelab_db -c "\dt wms_*"
 ### 3. Build Backend
 
 ```bash
-cd /Users/ahmetersoy/Desktop/swiftstock/wms-backend
+cd /Users/ahmetersoy/Desktop/swiftstock/backend
 
 # Dependencies kur
 npm install
@@ -54,7 +54,7 @@ npm run build
 ### 4. Frontend Build
 
 ```bash
-cd /Users/ahmetersoy/Desktop/swiftstock/wms-frontend
+cd /Users/ahmetersoy/Desktop/swiftstock/frontend
 
 # Dependencies kur
 npm install
@@ -70,14 +70,14 @@ npm run build
 ```bash
 # Backend deploy
 cd /Users/ahmetersoy/Desktop/swiftstock
-scp -r wms-backend/dist root@78.47.117.36:/var/www/swiftstock-backend/
-scp wms-backend/package*.json root@78.47.117.36:/var/www/swiftstock-backend/
+scp -r backend/dist root@78.47.117.36:/var/www/swiftstock-backend/
+scp backend/package*.json root@78.47.117.36:/var/www/swiftstock-backend/
 
 # Frontend deploy
-scp -r wms-frontend/dist/* root@78.47.117.36:/var/www/swiftstock/frontend/
+scp -r frontend/dist/* root@78.47.117.36:/var/www/swiftstock/frontend/
 
 # Environment dosyası
-scp wms-backend/.env.production root@78.47.117.36:/var/www/swiftstock-backend/.env
+scp backend/.env.production root@78.47.117.36:/var/www/swiftstock-backend/.env
 ```
 
 ### 6. PM2 Setup (Sunucuda)

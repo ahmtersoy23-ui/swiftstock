@@ -4,10 +4,10 @@
   "description": "SwiftStock WMS - Warehouse Management System",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd wms-backend && npm run dev",
-    "dev:frontend": "cd wms-frontend && npm run dev",
-    "install:all": "cd wms-backend && npm install && cd ../wms-frontend && npm install",
-    "build": "cd wms-backend && npm run build && cd ../wms-frontend && npm run build"
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd backend && npm run build && cd ../frontend && npm run build"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

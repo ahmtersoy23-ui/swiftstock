@@ -161,7 +161,7 @@ curl http://localhost:3001/api/health
 docker stats
 
 # SwiftStock servisleri
-docker stats wms-postgres wms-redis wms-backend wms-frontend
+docker stats wms-postgres wms-redis backend frontend
 ```
 
 ### Beklenen Çıktı:
@@ -169,8 +169,8 @@ docker stats wms-postgres wms-redis wms-backend wms-frontend
 NAME            CPU %    MEM USAGE / LIMIT     MEM %
 wms-postgres    2%       180MB / 256MB         70%
 wms-redis       1%       85MB / 128MB          66%
-wms-backend     5%       290MB / 384MB         75%
-wms-frontend    0.5%     25MB / 64MB           39%
+backend     5%       290MB / 384MB         75%
+frontend    0.5%     25MB / 64MB           39%
 ```
 
 ### Log Temizliği
@@ -236,7 +236,7 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 ### Sorun: Container Sürekli Restart Oluyor
 ```bash
 # Logları kontrol et
-docker logs wms-backend --tail 100
+docker logs backend --tail 100
 
 # Bellek limiti aşıldıysa artır:
 # docker-compose.optimized.yml'de memory limits'i değiştir

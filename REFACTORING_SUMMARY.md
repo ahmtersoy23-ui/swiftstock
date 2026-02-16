@@ -64,7 +64,7 @@ SwiftStock başarıyla Docker'dan PM2'ye taşındı ve pricelab_db shared databa
 
 ### Backend Core
 ```
-wms-backend/
+backend/
 ├── src/
 │   ├── config/
 │   │   └── database.ts                    ✅ Updated

@@ -1025,8 +1025,8 @@ Workflow:
 docker-compose.dev.yml
 
 Services:
-- wms-backend (hot reload)
-- wms-frontend (Vite dev)
+- backend (hot reload)
+- frontend (Vite dev)
 - postgres:15
 - redis:7
 - adminer (DB UI)
@@ -1046,8 +1046,8 @@ Services:
 docker-compose.yml
 
 Services:
-- wms-backend (optimized)
-- wms-frontend (nginx)
+- backend (optimized)
+- frontend (nginx)
 - postgres:15-alpine
 - redis:7-alpine
 - nginx (reverse proxy)
@@ -2001,7 +2001,7 @@ cp .env.example .env
 docker-compose up -d
 
 # 5. Database'i başlat
-cd wms-backend && npm run db:init
+cd backend && npm run db:init
 
 # 6. Uygulamayı çalıştır
 npm run dev

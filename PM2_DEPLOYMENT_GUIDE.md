@@ -54,7 +54,7 @@ sudo -u postgres psql -d pricelab_db -c "\dt wms_*"
 
 ```bash
 # Navigate to project
-cd /Users/ahmetersoy/Desktop/swiftstock/wms-backend
+cd /Users/ahmetersoy/Desktop/swiftstock/backend
 
 # Install dependencies
 npm install
@@ -240,7 +240,7 @@ certbot renew --dry-run
 
 ```bash
 # On local machine
-cd /Users/ahmetersoy/Desktop/swiftstock/wms-frontend
+cd /Users/ahmetersoy/Desktop/swiftstock/frontend
 
 # Update API URL in .env
 echo "VITE_API_URL=https://swiftstock.iwa.web.tr/api" > .env.production
@@ -407,7 +407,7 @@ ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 
 ```bash
 # On local machine
-cd /Users/ahmetersoy/Desktop/swiftstock/wms-backend
+cd /Users/ahmetersoy/Desktop/swiftstock/backend
 npm run build
 scp -r dist/* root@78.47.117.36:/var/www/swiftstock-backend/dist/
 
@@ -421,7 +421,7 @@ pm2 logs swiftstock-backend
 
 ```bash
 # On local machine
-cd /Users/ahmetersoy/Desktop/swiftstock/wms-frontend
+cd /Users/ahmetersoy/Desktop/swiftstock/frontend
 npm run build
 scp -r dist/* root@78.47.117.36:/var/www/swiftstock/frontend/
 ```

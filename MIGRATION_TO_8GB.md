@@ -176,7 +176,7 @@ docker compose -f docker-compose.production.yml up -d --build
 docker compose -f docker-compose.production.yml logs -f
 
 # Sadece backend
-docker logs -f wms-backend
+docker logs -f backend
 
 # Sadece PostgreSQL
 docker logs -f wms-postgres
@@ -208,7 +208,7 @@ curl http://localhost:3001/api/health
 docker ps
 
 # Beklenen çıktı: 4 container UP durumunda
-# wms-postgres, wms-redis, wms-backend, wms-frontend
+# wms-postgres, wms-redis, backend, frontend
 ```
 
 ---
@@ -282,14 +282,14 @@ docker compose up -d
 docker stats
 
 # SwiftStock servisleri
-docker stats wms-postgres wms-redis wms-backend wms-frontend
+docker stats wms-postgres wms-redis backend frontend
 
 # Beklenen çıktı (8GB'de):
 # NAME            CPU %    MEM USAGE / LIMIT     MEM %
 # wms-postgres    2-5%     350MB / 512MB         68%
 # wms-redis       1-2%     150MB / 256MB         58%
-# wms-backend     3-8%     380MB / 512MB         74%
-# wms-frontend    0-1%     30MB / 64MB           46%
+# backend     3-8%     380MB / 512MB         74%
+# frontend    0-1%     30MB / 64MB           46%
 ```
 
 ### Otomatik İzleme Script'i
@@ -418,7 +418,7 @@ docker compose up -d
 
 ```bash
 # Logları kontrol et
-docker logs wms-backend
+docker logs backend
 
 # Çözüm 1: Rebuild
 docker compose -f docker-compose.production.yml down
@@ -446,7 +446,7 @@ sudo kill -9 <PID>
 docker stats
 
 # Limit aşanları restart et
-docker restart wms-backend
+docker restart backend
 ```
 
 ---
