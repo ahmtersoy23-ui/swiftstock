@@ -7,7 +7,11 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../../app';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only';
+const JWT_SECRET = process.env.JWT_SECRET || process.env.TEST_JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET or TEST_JWT_SECRET environment variable required for tests');
+}
 
 export interface TestUser {
   user_id: number;
