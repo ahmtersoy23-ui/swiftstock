@@ -51,7 +51,7 @@ export const scanCode = async (req: Request, res: Response) => {
       // Get current inventory
       const inventoryResult = await pool.query(
         `SELECT i.*, l.qr_code as location_code
-         FROM wms_inventory i
+         FROM inventory i
          LEFT JOIN wms_locations l ON i.location_id = l.location_id
          WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
         [product.product_sku, warehouse_id]
@@ -115,7 +115,7 @@ export const scanCode = async (req: Request, res: Response) => {
       // Get inventory at this location
       const inventoryResult = await pool.query(
         `SELECT i.*, p.product_name, p.barcode
-         FROM wms_inventory i
+         FROM inventory i
          JOIN products p ON i.product_sku = p.sku_code
          WHERE i.location_id = $1 AND i.quantity_each > 0`,
         [location.location_id]
@@ -174,7 +174,7 @@ export const scanCode = async (req: Request, res: Response) => {
         // Get current inventory for this SKU
         const inventoryResult = await pool.query(
           `SELECT i.*, l.qr_code as location_code
-           FROM wms_inventory i
+           FROM inventory i
            LEFT JOIN wms_locations l ON i.location_id = l.location_id
            WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
           [serial.product_sku, warehouse_id]
@@ -208,7 +208,7 @@ export const scanCode = async (req: Request, res: Response) => {
         // Get current inventory
         const inventoryResult = await pool.query(
           `SELECT i.*, l.qr_code as location_code
-           FROM wms_inventory i
+           FROM inventory i
            LEFT JOIN wms_locations l ON i.location_id = l.location_id
            WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
           [product.product_sku, warehouse_id]
@@ -243,7 +243,7 @@ export const scanCode = async (req: Request, res: Response) => {
       // Get current inventory
       const inventoryResult = await pool.query(
         `SELECT i.*, l.qr_code as location_code
-         FROM wms_inventory i
+         FROM inventory i
          LEFT JOIN wms_locations l ON i.location_id = l.location_id
          WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
         [product.product_sku, warehouse_id]
@@ -284,7 +284,7 @@ export const lookupBySku = async (req: Request, res: Response) => {
   try {
     const { product_sku, warehouse_code } = req.query;
 
-    if (!sku_code || !warehouse_code) {
+    if (!product_sku || !warehouse_code) {
       return res.status(400).json({
         success: false,
         error: 'sku_code and warehouse_code are required',
@@ -298,7 +298,7 @@ export const lookupBySku = async (req: Request, res: Response) => {
         i.last_updated,
         l.qr_code as location_code
        FROM products p
-       LEFT JOIN wms_inventory i ON p.product_sku = i.sku_code
+       LEFT JOIN inventory i ON p.product_sku = i.sku_code
        LEFT JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
        LEFT JOIN wms_locations l ON i.location_id = l.location_id
        WHERE p.product_sku = $1 

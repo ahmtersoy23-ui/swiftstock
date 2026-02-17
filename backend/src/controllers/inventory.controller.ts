@@ -54,7 +54,7 @@ export const getInventoryBySku = async (req: Request, res: Response) => {
         w.code as warehouse_code,
         w.name as warehouse_name,
         l.qr_code as location_code
-       FROM wms_inventory i
+       FROM inventory i
        JOIN products p ON i.product_sku = p.sku_code
        JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
        LEFT JOIN wms_locations l ON i.location_id = l.location_id
@@ -113,7 +113,7 @@ export const getLowStock = async (req: Request, res: Response) => {
         p.barcode,
         w.code as warehouse_code,
         l.qr_code as location_code
-      FROM wms_inventory i
+      FROM inventory i
       JOIN products p ON i.product_sku = p.sku_code
       JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
       LEFT JOIN wms_locations l ON i.location_id = l.location_id

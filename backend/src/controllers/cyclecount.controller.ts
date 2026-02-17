@@ -376,7 +376,7 @@ export const completeSession = async (req: AuthRequest, res: Response) => {
       // If auto_adjust is true, update inventory
       if (auto_adjust) {
         await client.query(
-          `UPDATE wms_inventory
+          `UPDATE inventory
            SET quantity_on_hand = $1, updated_at = CURRENT_TIMESTAMP
            WHERE product_sku = $2 AND warehouse_id = (SELECT warehouse_id FROM cycle_count_sessions WHERE session_id = $3)`,
           [item.counted_quantity, item.product_sku, session_id]

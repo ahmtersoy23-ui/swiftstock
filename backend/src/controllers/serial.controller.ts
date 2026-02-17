@@ -21,7 +21,7 @@ interface SerialNumber {
 export const generateSerialNumbers = async (req: Request, res: Response) => {
   const { product_sku, quantity } = req.body;
 
-  if (!sku_code || !quantity || quantity < 1) {
+  if (!product_sku || !quantity || quantity < 1) {
     return res.status(400).json({
       success: false,
       error: 'sku_code and quantity (>= 1) are required',
@@ -39,7 +39,7 @@ export const generateSerialNumbers = async (req: Request, res: Response) => {
     // Verify product exists
     const productCheck = await pool.query(
       'SELECT product_sku, product_name FROM products WHERE product_sku = $1',
-      [sku_code]
+      [product_sku]
     );
 
     if (productCheck.rows.length === 0) {
@@ -61,10 +61,10 @@ export const generateSerialNumbers = async (req: Request, res: Response) => {
         // Get next serial number using database function
         const serialResult = await client.query(
           'SELECT get_next_serial($1) as serial_no',
-          [sku_code]
+          [product_sku]
         );
         const serial_no = serialResult.rows[0].serial_no;
-        const full_barcode = `${sku_code}-${serial_no}`;
+        const full_barcode = `${product_sku}-${serial_no}`;
 
         // Insert serial number record
         const insertResult = await client.query(
@@ -120,7 +120,7 @@ export const getSerialNumbers = async (req: Request, res: Response) => {
       LEFT JOIN wms_locations l ON l.location_id = sn.location_id
       WHERE sn.product_sku = $1
     `;
-    const params: any[] = [sku_code];
+    const params: any[] = [product_sku];
 
     if (status) {
       query += ` AND sn.status = $${params.length + 1}`;
@@ -135,7 +135,7 @@ export const getSerialNumbers = async (req: Request, res: Response) => {
     // Get total count
     const countResult = await pool.query(
       `SELECT COUNT(*) FROM serial_numbers WHERE product_sku = $1 ${status ? 'AND status = $2' : ''}`,
-      status ? [product_sku, status] : [sku_code]
+      status ? [product_sku, status] : [product_sku]
     );
 
     res.json({
@@ -250,7 +250,7 @@ export const getSerialStats = async (req: Request, res: Response) => {
        FROM serial_numbers
        WHERE product_sku = $1
        GROUP BY status`,
-      [sku_code]
+      [product_sku]
     );
 
     const stats: Record<string, number> = {

@@ -361,7 +361,7 @@ export const getInventoryReport = async (req: AuthRequest, res: Response) => {
           COALESCE(i.quantity_on_hand, 0) as quantity,
           p.units_per_box,
           p.boxes_per_pallet
-        FROM wms_inventory i
+        FROM inventory i
         JOIN products p ON i.product_sku = p.sku_code
         LEFT JOIN wms_locations l ON i.location_id = l.location_id
         WHERE i.warehouse_id = $1 AND i.quantity_on_hand > 0
@@ -379,7 +379,7 @@ export const getInventoryReport = async (req: AuthRequest, res: Response) => {
           p.boxes_per_pallet,
           COUNT(DISTINCT i.location_id) as location_count
         FROM products p
-        LEFT JOIN wms_inventory i ON p.product_sku = i.sku_code AND i.warehouse_id = $1
+        LEFT JOIN inventory i ON p.product_sku = i.sku_code AND i.warehouse_id = $1
         WHERE i.quantity_on_hand > 0 OR i.quantity_on_hand IS NULL
         GROUP BY p.product_sku, p.product_name, p.barcode, p.units_per_box, p.boxes_per_pallet
         HAVING SUM(COALESCE(i.quantity_on_hand, 0)) > 0

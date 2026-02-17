@@ -144,7 +144,7 @@ export const createTransaction = async (req: Request, res: Response) => {
       let product_sku = item.sku_code;
 
       // Resolve barcode to SKU if needed
-      if (item.barcode && !sku_code) {
+      if (item.barcode && !product_sku) {
         const product = productByBarcode.get(item.barcode);
         if (!product) {
           await client.query('ROLLBACK');
@@ -162,7 +162,7 @@ export const createTransaction = async (req: Request, res: Response) => {
         await client.query('ROLLBACK');
         return res.status(404).json({
           success: false,
-          error: `Product not found: ${sku_code}`,
+          error: `Product not found: ${product_sku}`,
         } as ApiResponse);
       }
 
@@ -185,7 +185,7 @@ export const createTransaction = async (req: Request, res: Response) => {
           await client.query('ROLLBACK');
           return res.status(400).json({
             success: false,
-            error: `Insufficient stock for ${sku_code}. Available: ${currentStock}, Requested: ${quantity_each}`,
+            error: `Insufficient stock for ${product_sku}. Available: ${currentStock}, Requested: ${quantity_each}`,
           } as ApiResponse);
         }
       }
@@ -207,14 +207,15 @@ export const createTransaction = async (req: Request, res: Response) => {
       // Check if inventory record exists for this SKU + warehouse + location
       const existingInventory = await client.query(
         `SELECT inventory_id, quantity_each FROM inventory
-         WHERE product_sku = $1 AND warehouse_id = $2 AND location_id = $3`,
+         WHERE product_sku = $1 AND warehouse_id = $2 AND location_id = $3
+         FOR UPDATE`,
         [product_sku, warehouse_id, location_id]
       );
 
       if (existingInventory.rows.length > 0) {
         // Update existing inventory
         await client.query(
-          `UPDATE wms_inventory
+          `UPDATE inventory
            SET quantity_each = quantity_each + $1, last_updated = NOW()
            WHERE inventory_id = $2`,
           [inventoryDelta, existingInventory.rows[0].inventory_id]
@@ -223,7 +224,7 @@ export const createTransaction = async (req: Request, res: Response) => {
         // Insert new inventory record (only for IN transactions)
         if (transaction_type === 'IN') {
           await client.query(
-            `INSERT INTO wms_inventory (product_sku, warehouse_id, location_id, quantity_each, quantity_box, quantity_pallet)
+            `INSERT INTO inventory (product_sku, warehouse_id, location_id, quantity_each, quantity_box, quantity_pallet)
              VALUES ($1, $2, $3, $4, 0, 0)`,
             [product_sku, warehouse_id, location_id, quantity_each]
           );
