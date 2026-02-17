@@ -24,12 +24,22 @@ export const useSSO = () => {
 
   // Token'ı URL'den veya localStorage'dan al
   const getAccessToken = (): string | null => {
-    // URL'den token geliyorsa (ilk login)
+    // Hash fragment'tan token oku (daha güvenli - sunucuya gönderilmez)
+    const hash = window.location.hash;
+    if (hash) {
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const hashToken = hashParams.get('token');
+      if (hashToken) {
+        window.history.replaceState({}, '', window.location.pathname);
+        return hashToken;
+      }
+    }
+
+    // Query param'dan token oku (fallback)
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
 
     if (urlToken) {
-      // URL'i temizle
       window.history.replaceState({}, '', window.location.pathname);
       return urlToken;
     }
