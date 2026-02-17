@@ -10,7 +10,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "strict": false
+    "strict": false,
+    "noEmitOnError": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
