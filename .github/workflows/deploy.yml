@@ -7,6 +7,9 @@ on:
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
 
     steps:
       - name: Checkout
@@ -17,28 +20,30 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: wms-frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        working-directory: wms-frontend
         run: npm ci
 
       - name: Build
-        working-directory: wms-frontend
         run: npm run build
 
-      - name: Deploy frontend to server
+      - name: Deploy frontend
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "wms-frontend/dist/*"
+          port: 2222
+          source: "frontend/dist/*"
           target: "/var/www/swiftstock/frontend"
           strip_components: 2
 
   deploy-backend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
 
     steps:
       - name: Checkout
@@ -49,33 +54,33 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: wms-backend/package-lock.json
+          cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        working-directory: wms-backend
         run: npm ci
 
       - name: Build
-        working-directory: wms-backend
         run: npm run build
 
-      - name: Deploy backend to server
+      - name: Deploy backend
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "wms-backend/dist/*,wms-backend/package.json,wms-backend/package-lock.json"
-          target: "/var/www/swiftstock/backend"
+          port: 2222
+          source: "backend/dist/*,backend/package.json,backend/package-lock.json"
+          target: "/var/www/swiftstock-backend"
           strip_components: 1
 
-      - name: Restart backend service
+      - name: Restart backend
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 2222
           script: |
-            cd /var/www/swiftstock/backend
+            cd /var/www/swiftstock-backend
             npm ci --production
-            pm2 restart swiftstock-backend || pm2 start dist/index.js --name swiftstock-backend
+            pm2 restart swiftstock-backend
