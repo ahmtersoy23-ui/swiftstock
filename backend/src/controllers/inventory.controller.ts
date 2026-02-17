@@ -60,7 +60,7 @@ export const getInventoryBySku = async (req: Request, res: Response) => {
        LEFT JOIN wms_locations l ON i.location_id = l.location_id
        WHERE i.product_sku = $1 AND i.quantity_each > 0
        ORDER BY w.code`,
-      [sku_code]
+      [product_sku]
     );
 
     if (result.rows.length === 0) {

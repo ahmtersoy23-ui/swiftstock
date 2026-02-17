@@ -43,7 +43,7 @@ export const getAllShipments = async (req: Request, res: Response) => {
     console.error('Error getting shipments:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };
@@ -89,7 +89,7 @@ export const getShipmentById = async (req: Request, res: Response) => {
     console.error('Error getting shipment:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };
@@ -136,7 +136,7 @@ export const createShipment = async (req: Request, res: Response) => {
     console.error('Error creating shipment:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };
@@ -201,7 +201,7 @@ export const createBox = async (req: Request, res: Response) => {
     console.error('Error creating box:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };
@@ -255,7 +255,7 @@ export const getBoxByBarcode = async (req: Request, res: Response) => {
     console.error('Error getting box:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };
@@ -350,7 +350,7 @@ export const addItemToBox = async (req: Request, res: Response) => {
     console.error('Error adding item to box:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };
@@ -397,7 +397,7 @@ export const removeItemFromBox = async (req: Request, res: Response) => {
     console.error('Error removing item from box:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };
@@ -451,7 +451,7 @@ export const closeBox = async (req: Request, res: Response) => {
     console.error('Error closing box:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };
@@ -507,7 +507,7 @@ export const updateBoxDestination = async (req: Request, res: Response) => {
     console.error('Error updating box destination:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };
@@ -561,7 +561,7 @@ export const closeShipment = async (req: Request, res: Response) => {
     console.error('Error closing shipment:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };
@@ -614,7 +614,7 @@ export const shipShipment = async (req: Request, res: Response) => {
     console.error('Error shipping shipment:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };
@@ -660,7 +660,7 @@ export const getShipmentBoxes = async (req: Request, res: Response) => {
     console.error('Error getting shipment boxes:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Internal server error',
     });
   }
 };

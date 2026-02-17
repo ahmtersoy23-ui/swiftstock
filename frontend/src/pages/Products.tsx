@@ -569,20 +569,31 @@ function Products() {
                 const container = document.getElementById('labels-container');
                 container.classList.remove('hidden');
 
-                // Generate label HTML for each serial
-                let labelsHTML = '';
+                // Generate labels using safe DOM manipulation (no innerHTML)
+                container.textContent = '';
                 serials.forEach((s, i) => {
-                  labelsHTML += \`
-                    <div class="label">
-                      <div class="product-name">\${PRODUCT_NAME}</div>
-                      <div class="barcode-container">
-                        <svg id="barcode-\${i}"></svg>
-                      </div>
-                      <div class="serial-code">\${s.full_barcode}</div>
-                    </div>
-                  \`;
+                  const label = document.createElement('div');
+                  label.className = 'label';
+
+                  const nameDiv = document.createElement('div');
+                  nameDiv.className = 'product-name';
+                  nameDiv.textContent = PRODUCT_NAME;
+                  label.appendChild(nameDiv);
+
+                  const barcodeDiv = document.createElement('div');
+                  barcodeDiv.className = 'barcode-container';
+                  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                  svg.setAttribute('id', 'barcode-' + i);
+                  barcodeDiv.appendChild(svg);
+                  label.appendChild(barcodeDiv);
+
+                  const serialDiv = document.createElement('div');
+                  serialDiv.className = 'serial-code';
+                  serialDiv.textContent = s.full_barcode;
+                  label.appendChild(serialDiv);
+
+                  container.appendChild(label);
                 });
-                container.innerHTML = labelsHTML;
 
                 // Generate barcodes
                 serials.forEach((s, i) => {

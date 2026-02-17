@@ -101,7 +101,7 @@ export const generateSerialNumbers = async (req: Request, res: Response) => {
     console.error('Generate serial numbers error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to generate serial numbers',
+      error: 'Internal server error',
     });
   }
 };
@@ -151,7 +151,7 @@ export const getSerialNumbers = async (req: Request, res: Response) => {
     console.error('Get serial numbers error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get serial numbers',
+      error: 'Internal server error',
     });
   }
 };
@@ -187,7 +187,7 @@ export const lookupSerialBarcode = async (req: Request, res: Response) => {
     console.error('Lookup serial barcode error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to lookup serial barcode',
+      error: 'Internal server error',
     });
   }
 };
@@ -233,7 +233,7 @@ export const updateSerialStatus = async (req: Request, res: Response) => {
     console.error('Update serial status error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to update serial status',
+      error: 'Internal server error',
     });
   }
 };
@@ -274,7 +274,7 @@ export const getSerialStats = async (req: Request, res: Response) => {
     console.error('Get serial stats error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get serial stats',
+      error: 'Internal server error',
     });
   }
 };
@@ -390,7 +390,7 @@ export const getSerialHistory = async (req: Request, res: Response) => {
     console.error('Get serial history error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get serial history',
+      error: 'Internal server error',
     });
   }
 };

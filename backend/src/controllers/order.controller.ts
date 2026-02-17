@@ -336,7 +336,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
     console.error('Create order error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
-      error: error.message || ERROR_MESSAGES.INTERNAL_ERROR,
+      error: ERROR_MESSAGES.INTERNAL_ERROR,
     });
   } finally {
     client.release();

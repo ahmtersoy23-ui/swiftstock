@@ -22,7 +22,7 @@ export const getAllOperationModes = async (req: Request, res: Response) => {
     console.error('Error getting operation modes:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get operation modes',
+      error: 'Internal server error',
     });
   }
 };
@@ -53,7 +53,7 @@ export const getOperationModeByCode = async (req: Request, res: Response) => {
     console.error('Error getting operation mode:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get operation mode',
+      error: 'Internal server error',
     });
   }
 };
@@ -152,7 +152,7 @@ export const createScanSession = async (req: Request, res: Response) => {
     console.error('Error creating scan session:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to create scan session',
+      error: 'Internal server error',
     });
   }
 };
@@ -186,7 +186,7 @@ export const getScanSession = async (req: Request, res: Response) => {
     console.error('Error getting scan session:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get scan session',
+      error: 'Internal server error',
     });
   }
 };
@@ -229,7 +229,7 @@ export const getActiveScanSession = async (req: Request, res: Response) => {
     console.error('Error getting active scan session:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get active scan session',
+      error: 'Internal server error',
     });
   }
 };
@@ -265,7 +265,7 @@ export const completeScanSession = async (req: Request, res: Response) => {
     console.error('Error completing scan session:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to complete scan session',
+      error: 'Internal server error',
     });
   }
 };
@@ -301,7 +301,7 @@ export const cancelScanSession = async (req: Request, res: Response) => {
     console.error('Error cancelling scan session:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to cancel scan session',
+      error: 'Internal server error',
     });
   }
 };
@@ -383,7 +383,7 @@ export const addScanOperation = async (req: Request, res: Response) => {
     console.error('Error adding scan operation:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to add scan operation',
+      error: 'Internal server error',
     });
   }
 };
@@ -421,7 +421,7 @@ export const getSessionOperations = async (req: Request, res: Response) => {
     console.error('Error getting session operations:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get session operations',
+      error: 'Internal server error',
     });
   }
 };

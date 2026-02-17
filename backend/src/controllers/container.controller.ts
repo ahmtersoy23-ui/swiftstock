@@ -86,7 +86,7 @@ export const createContainer = async (req: Request, res: Response) => {
     console.error('Error creating container:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to create container',
+      error: 'Internal server error',
     });
   } finally {
     client.release();
@@ -135,7 +135,7 @@ export const getContainerByBarcode = async (req: Request, res: Response) => {
     console.error('Error getting container:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get container',
+      error: 'Internal server error',
     });
   }
 };
@@ -240,7 +240,7 @@ export const openContainer = async (req: Request, res: Response) => {
     console.error('Error opening container:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to open container',
+      error: 'Internal server error',
     });
   } finally {
     client.release();
@@ -322,7 +322,7 @@ export const getAllContainers = async (req: Request, res: Response) => {
     console.error('Error getting containers:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get containers',
+      error: 'Internal server error',
     });
   }
 };

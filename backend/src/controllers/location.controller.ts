@@ -42,7 +42,7 @@ export const getAllLocations = async (req: Request, res: Response) => {
     console.error('Error getting locations:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get locations',
+      error: 'Internal server error',
     });
   }
 };
@@ -79,7 +79,7 @@ export const getLocationById = async (req: Request, res: Response) => {
     console.error('Error getting location:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get location',
+      error: 'Internal server error',
     });
   }
 };
@@ -116,7 +116,7 @@ export const getLocationByCode = async (req: Request, res: Response) => {
     console.error('Error getting location:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get location',
+      error: 'Internal server error',
     });
   }
 };
@@ -205,7 +205,7 @@ export const createLocation = async (req: Request, res: Response) => {
     }
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to create location',
+      error: 'Internal server error',
     });
   }
 };
@@ -257,7 +257,7 @@ export const updateLocation = async (req: Request, res: Response) => {
     console.error('Error updating location:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to update location',
+      error: 'Internal server error',
     });
   }
 };
@@ -304,7 +304,7 @@ export const deleteLocation = async (req: Request, res: Response) => {
     console.error('Error deleting location:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to delete location',
+      error: 'Internal server error',
     });
   }
 };
@@ -343,7 +343,7 @@ export const getLocationInventory = async (req: Request, res: Response) => {
     console.error('Error getting location inventory:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get location inventory',
+      error: 'Internal server error',
     });
   }
 };

@@ -484,7 +484,7 @@ export const googleLogin = async (req: AuthRequest, res: Response): Promise<void
     const refreshToken = generateRefreshToken(authUser);
 
     // Store refresh token in database
-    const tokenHash = await bcrypt.hash(refreshToken, 5);
+    const tokenHash = await bcrypt.hash(refreshToken, SALT_ROUNDS);
     await client.query(
       `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, device_id)
        VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '7 days', $3)`,

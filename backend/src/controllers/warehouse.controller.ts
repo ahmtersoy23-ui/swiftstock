@@ -23,7 +23,7 @@ export const getAllWarehouses = async (req: Request, res: Response) => {
     console.error('Error getting warehouses:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get warehouses',
+      error: 'Internal server error',
     });
   }
 };
@@ -54,7 +54,7 @@ export const getWarehouseByCode = async (req: Request, res: Response) => {
     console.error('Error getting warehouse:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get warehouse',
+      error: 'Internal server error',
     });
   }
 };
@@ -85,7 +85,7 @@ export const getWarehouseById = async (req: Request, res: Response) => {
     console.error('Error getting warehouse:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get warehouse',
+      error: 'Internal server error',
     });
   }
 };
