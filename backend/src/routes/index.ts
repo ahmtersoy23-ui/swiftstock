@@ -48,7 +48,7 @@ const router = Router();
 // ============================================
 // AUTHENTICATION ROUTES (Public)
 // ============================================
-router.post('/auth/login', loginRateLimiter, validateBody(loginSchema), authController.login);
+// Local login removed (Phase 3) — SSO-only authentication via Google OAuth
 router.post('/auth/google', loginRateLimiter, authController.googleLogin);
 router.post('/auth/logout', optionalAuth, authController.logout);
 router.post('/auth/refresh', refreshTokenRateLimiter, validateBody(refreshTokenSchema), authController.refreshAccessToken);
