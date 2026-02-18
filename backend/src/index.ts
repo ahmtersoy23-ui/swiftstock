@@ -7,8 +7,9 @@ dotenv.config();
 
 import { createApp } from './app';
 import pool from './config/database';
+import logger from './config/logger';
 
-console.log('🔍 Loading WMS Backend...');
+logger.info('🔍 Loading WMS Backend...');
 
 // ============================================
 // TYPE DEFINITIONS
@@ -207,26 +208,26 @@ const PORT = process.env.PORT || 3000;
 async function startServer() {
   try {
     // Test database connection
-    console.log('🔌 Testing database connection...');
+    logger.info('🔌 Testing database connection...');
     await pool.query('SELECT NOW()');
-    console.log('✅ Database connection successful');
+    logger.info('✅ Database connection successful');
 
     // Start Express server
     app.listen(PORT, () => {
-      console.log('');
-      console.log('╔══════════════════════════════════════╗');
-      console.log('║   🚀 WMS Backend Server Started     ║');
-      console.log('╚══════════════════════════════════════╝');
-      console.log('');
-      console.log(`📡 Server running on: http://localhost:${PORT}`);
-      console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
-      console.log(`📚 API Base: http://localhost:${PORT}/api`);
-      console.log('');
-      console.log('Press CTRL+C to stop');
-      console.log('');
+      logger.info('');
+      logger.info('╔══════════════════════════════════════╗');
+      logger.info('║   🚀 WMS Backend Server Started     ║');
+      logger.info('╚══════════════════════════════════════╝');
+      logger.info('');
+      logger.info(`📡 Server running on: http://localhost:${PORT}`);
+      logger.info(`🏥 Health check: http://localhost:${PORT}/api/health`);
+      logger.info(`📚 API Base: http://localhost:${PORT}/api`);
+      logger.info('');
+      logger.info('Press CTRL+C to stop');
+      logger.info('');
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    logger.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 }

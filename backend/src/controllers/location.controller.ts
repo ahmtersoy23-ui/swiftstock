@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
-import { ApiResponse } from '../index';
+import logger from '../config/logger';
+import { ApiResponse } from '../types';
 
 // ============================================
 // GET ALL LOCATIONS
@@ -47,7 +48,7 @@ export const getAllLocations = async (req: Request, res: Response) => {
 
     const result = await pool.query(query, [...params, limitNum, offset]);
 
-    const response: ApiResponse = {
+    const response: ApiResponse<any> = {
       success: true,
       data: result.rows,
       pagination: {
@@ -60,7 +61,7 @@ export const getAllLocations = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting locations:', error);
+    logger.error('Error getting locations:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -90,14 +91,14 @@ export const getLocationById = async (req: Request, res: Response) => {
       });
     }
 
-    const response: ApiResponse = {
+    const response: ApiResponse<any> = {
       success: true,
       data: result.rows[0],
     };
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting location:', error);
+    logger.error('Error getting location:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -127,14 +128,14 @@ export const getLocationByCode = async (req: Request, res: Response) => {
       });
     }
 
-    const response: ApiResponse = {
+    const response: ApiResponse<any> = {
       success: true,
       data: result.rows[0],
     };
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting location:', error);
+    logger.error('Error getting location:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -208,7 +209,7 @@ export const createLocation = async (req: Request, res: Response) => {
       ]
     );
 
-    const response: ApiResponse = {
+    const response: ApiResponse<any> = {
       success: true,
       data: result.rows[0],
       message: 'Location created successfully',
@@ -216,7 +217,7 @@ export const createLocation = async (req: Request, res: Response) => {
 
     res.status(201).json(response);
   } catch (error: any) {
-    console.error('Error creating location:', error);
+    logger.error('Error creating location:', error);
     if (error.code === '23505') {
       // Unique constraint violation
       return res.status(409).json({
@@ -267,7 +268,7 @@ export const updateLocation = async (req: Request, res: Response) => {
       });
     }
 
-    const response: ApiResponse = {
+    const response: ApiResponse<any> = {
       success: true,
       data: result.rows[0],
       message: 'Location updated successfully',
@@ -275,7 +276,7 @@ export const updateLocation = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error updating location:', error);
+    logger.error('Error updating location:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -315,14 +316,14 @@ export const deleteLocation = async (req: Request, res: Response) => {
       });
     }
 
-    const response: ApiResponse = {
+    const response: ApiResponse<any> = {
       success: true,
       message: 'Location deleted successfully',
     };
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error deleting location:', error);
+    logger.error('Error deleting location:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -353,7 +354,7 @@ export const getLocationInventory = async (req: Request, res: Response) => {
       [location_id]
     );
 
-    const response: ApiResponse = {
+    const response: ApiResponse<any> = {
       success: true,
       data: result.rows,
       message: `Found ${result.rows.length} products in location`,
@@ -361,7 +362,7 @@ export const getLocationInventory = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting location inventory:', error);
+    logger.error('Error getting location inventory:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',

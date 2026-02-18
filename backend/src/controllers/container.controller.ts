@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -90,7 +91,7 @@ export const createContainer = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Error creating container:', error);
+    logger.error('Error creating container:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -139,7 +140,7 @@ export const getContainerByBarcode = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Error getting container:', error);
+    logger.error('Error getting container:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -248,7 +249,7 @@ export const openContainer = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Error opening container:', error);
+    logger.error('Error opening container:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -352,7 +353,7 @@ export const getAllContainers = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Error getting containers:', error);
+    logger.error('Error getting containers:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',

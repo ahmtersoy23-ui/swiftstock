@@ -1,5 +1,6 @@
 // ============================================
 // RATE LIMITER MIDDLEWARE
+import logger from '../config/logger';
 // ============================================
 
 import rateLimit from 'express-rate-limit';

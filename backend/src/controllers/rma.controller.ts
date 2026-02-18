@@ -1,5 +1,6 @@
 // ============================================
 // RMA (RETURNS) CONTROLLER
+import logger from '../config/logger';
 // ============================================
 
 import { Response } from 'express';
@@ -58,7 +59,7 @@ export const getAllRMAs = async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Get RMAs error:', error);
+    logger.error('Get RMAs error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -111,7 +112,7 @@ export const getRMAById = async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Get RMA error:', error);
+    logger.error('Get RMA error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -203,7 +204,7 @@ export const createRMA = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Create RMA error:', error);
+    logger.error('Create RMA error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -259,7 +260,7 @@ export const approveRMA = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Approve RMA error:', error);
+    logger.error('Approve RMA error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -348,7 +349,7 @@ export const receiveReturn = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Receive return error:', error);
+    logger.error('Receive return error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -403,7 +404,7 @@ export const completeRMA = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Complete RMA error:', error);
+    logger.error('Complete RMA error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,

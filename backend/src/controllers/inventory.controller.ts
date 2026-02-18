@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import logger from '../config/logger';
 import { ApiResponse } from '../types';
 
 /**
@@ -48,7 +49,7 @@ export const getInventorySummary = async (req: Request, res: Response) => {
     } as ApiResponse);
 
   } catch (error) {
-    console.error('Get inventory summary error:', error);
+    logger.error('Get inventory summary error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -110,7 +111,7 @@ export const getInventoryBySku = async (req: Request, res: Response) => {
     } as ApiResponse);
 
   } catch (error) {
-    console.error('Get inventory by SKU error:', error);
+    logger.error('Get inventory by SKU error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -177,7 +178,7 @@ export const getLowStock = async (req: Request, res: Response) => {
     } as ApiResponse);
 
   } catch (error) {
-    console.error('Get low stock error:', error);
+    logger.error('Get low stock error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -225,7 +226,7 @@ export const searchInventory = async (req: Request, res: Response) => {
     } as ApiResponse);
 
   } catch (error) {
-    console.error('Search inventory error:', error);
+    logger.error('Search inventory error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',

@@ -70,7 +70,7 @@ export function generateTestToken(user: TestUser): string {
       role: user.role,
       warehouse_code: user.warehouse_code,
     },
-    JWT_SECRET,
+    JWT_SECRET!,
     { expiresIn: '1h' }
   );
 }

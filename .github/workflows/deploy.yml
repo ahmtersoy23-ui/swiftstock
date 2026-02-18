@@ -60,7 +60,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npx tsc || true
+        run: npx tsc
 
       - name: Deploy backend
         uses: appleboy/scp-action@v0.1.7

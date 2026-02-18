@@ -1,5 +1,6 @@
 // ============================================
 // SHIPMENT ORDERS CONTROLLER (USA Warehouse Picking)
+import logger from '../config/logger';
 // ============================================
 
 import { Response } from 'express';
@@ -100,7 +101,7 @@ export const getAllOrders = async (req: AuthRequest, res: Response): Promise<voi
       },
     });
   } catch (error) {
-    console.error('Get all orders error:', error);
+    logger.error('Get all orders error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -161,7 +162,7 @@ export const getOrderById = async (req: AuthRequest, res: Response): Promise<voi
       data: order,
     });
   } catch (error) {
-    console.error('Get order by ID error:', error);
+    logger.error('Get order by ID error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -333,7 +334,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Create order error:', error);
+    logger.error('Create order error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -385,7 +386,7 @@ export const assignPicker = async (req: AuthRequest, res: Response): Promise<voi
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Assign picker error:', error);
+    logger.error('Assign picker error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -444,7 +445,7 @@ export const startPicking = async (req: AuthRequest, res: Response): Promise<voi
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Start picking error:', error);
+    logger.error('Start picking error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -466,7 +467,7 @@ export const recordPick = async (req: AuthRequest, res: Response): Promise<void>
     const { order_id } = req.params;
     const { item_id, product_sku, location_id, quantity_picked, device_uuid, notes } = req.body;
 
-    if (!item_id || !sku_code || quantity_picked <= 0) {
+    if (!item_id || !product_sku || quantity_picked <= 0) {
       res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         error: 'Geçersiz toplama bilgisi.',
@@ -522,7 +523,7 @@ export const recordPick = async (req: AuthRequest, res: Response): Promise<void>
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Record pick error:', error);
+    logger.error('Record pick error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -577,7 +578,7 @@ export const completePicking = async (req: AuthRequest, res: Response): Promise<
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Complete picking error:', error);
+    logger.error('Complete picking error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -621,7 +622,7 @@ export const cancelOrder = async (req: AuthRequest, res: Response): Promise<void
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Cancel order error:', error);
+    logger.error('Cancel order error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -665,7 +666,7 @@ export const getPickerPerformance = async (req: AuthRequest, res: Response): Pro
       data: result.rows[0],
     });
   } catch (error) {
-    console.error('Get picker performance error:', error);
+    logger.error('Get picker performance error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,

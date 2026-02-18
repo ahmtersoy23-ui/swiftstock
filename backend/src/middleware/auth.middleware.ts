@@ -1,5 +1,6 @@
 // ============================================
 // AUTHENTICATION MIDDLEWARE - SSO INTEGRATED
+import logger from '../config/logger';
 // ============================================
 
 import { Request, Response, NextFunction } from 'express';
@@ -11,11 +12,11 @@ import pool from '../config/database';
 // JWT_SECRET is required - fail fast if not provided
 export const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET environment variable is required');
+  logger.error('FATAL: JWT_SECRET environment variable is required');
   process.exit(1);
 }
 
-const JWT_EXPIRES_IN: string | number = process.env.JWT_EXPIRES_IN || '24h';
+const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '24h';
 const SSO_BASE_URL = process.env.SSO_BASE_URL || 'https://apps.iwa.web.tr';
 const APP_CODE = 'swiftstock';
 
@@ -66,7 +67,7 @@ const verifySSOToken = async (token: string): Promise<{
 
     return response.data;
   } catch (error) {
-    console.error('SSO token verification failed:', error);
+    logger.error('SSO token verification failed:', error);
     return null;
   }
 };
@@ -181,12 +182,12 @@ export const authenticateToken = async (
       email: user.email,
       full_name: user.full_name,
       role: user.role,
-      warehouse_id: user.warehouse_id,
+      warehouse_code: user.warehouse_code,
     };
 
     next();
   } catch (error: unknown) {
-    console.error('Authentication error:', error);
+    logger.error('Authentication error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -260,7 +261,7 @@ export const requirePermission = (permissionType: string, resource?: string) => 
 
       next();
     } catch (error) {
-      console.error('Permission check error:', error);
+      logger.error('Permission check error:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -370,7 +371,7 @@ export const generateToken = (user: AuthUser): string => {
     role: user.role,
     warehouse_code: user.warehouse_code,
   };
-  // @ts-ignore - JWT_EXPIRES_IN is valid but TypeScript is strict
+  // @ts-expect-error - JWT library types don't accept string directly for expiresIn, but it's valid at runtime
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 

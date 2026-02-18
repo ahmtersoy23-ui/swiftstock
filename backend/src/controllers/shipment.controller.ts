@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import logger from '../config/logger';
 
 // ============================================
 // GET ALL SHIPMENTS
@@ -60,7 +61,7 @@ export const getAllShipments = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Error getting shipments:', error);
+    logger.error('Error getting shipments:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -106,7 +107,7 @@ export const getShipmentById = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Error getting shipment:', error);
+    logger.error('Error getting shipment:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -153,7 +154,7 @@ export const createShipment = async (req: Request, res: Response) => {
       message: 'Shipment created successfully',
     });
   } catch (error: any) {
-    console.error('Error creating shipment:', error);
+    logger.error('Error creating shipment:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -218,7 +219,7 @@ export const createBox = async (req: Request, res: Response) => {
       message: 'Box created successfully',
     });
   } catch (error: any) {
-    console.error('Error creating box:', error);
+    logger.error('Error creating box:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -258,7 +259,7 @@ export const getBoxByBarcode = async (req: Request, res: Response) => {
         p.product_name,
         p.barcode as product_barcode
       FROM shipment_box_contents sbc
-      JOIN products p ON sbc.product_sku = p.sku_code
+      JOIN products p ON sbc.product_sku = p.product_sku
       WHERE sbc.box_id = $1
       ORDER BY sbc.added_at`,
       [boxResult.rows[0].box_id]
@@ -272,7 +273,7 @@ export const getBoxByBarcode = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Error getting box:', error);
+    logger.error('Error getting box:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -288,7 +289,7 @@ export const addItemToBox = async (req: Request, res: Response) => {
     const { box_id } = req.params;
     const { product_sku, quantity, added_by } = req.body;
 
-    if (!sku_code || !quantity || !added_by) {
+    if (!product_sku || !quantity || !added_by) {
       return res.status(400).json({
         success: false,
         error: 'product_sku, quantity and added_by are required',
@@ -328,7 +329,7 @@ export const addItemToBox = async (req: Request, res: Response) => {
 
     const productResult = await pool.query(
       'SELECT * FROM products WHERE product_sku = $1',
-      [sku_code]
+      [product_sku]
     );
 
     if (productResult.rows.length === 0) {
@@ -340,7 +341,7 @@ export const addItemToBox = async (req: Request, res: Response) => {
 
     const existingContent = await pool.query(
       'SELECT * FROM shipment_box_contents WHERE box_id = $1 AND product_sku = $2',
-      [box_id, sku_code]
+      [box_id, product_sku]
     );
 
     let result;
@@ -350,7 +351,7 @@ export const addItemToBox = async (req: Request, res: Response) => {
          SET quantity = quantity + $1, added_at = CURRENT_TIMESTAMP, added_by = $2
          WHERE box_id = $3 AND product_sku = $4
          RETURNING *`,
-        [quantity, added_by, box_id, sku_code]
+        [quantity, added_by, box_id, product_sku]
       );
     } else {
       result = await pool.query(
@@ -367,7 +368,7 @@ export const addItemToBox = async (req: Request, res: Response) => {
       message: 'Item added to box',
     });
   } catch (error: any) {
-    console.error('Error adding item to box:', error);
+    logger.error('Error adding item to box:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -414,7 +415,7 @@ export const removeItemFromBox = async (req: Request, res: Response) => {
       message: 'Item removed from box',
     });
   } catch (error: any) {
-    console.error('Error removing item from box:', error);
+    logger.error('Error removing item from box:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -468,7 +469,7 @@ export const closeBox = async (req: Request, res: Response) => {
       message: 'Box closed successfully',
     });
   } catch (error: any) {
-    console.error('Error closing box:', error);
+    logger.error('Error closing box:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -524,7 +525,7 @@ export const updateBoxDestination = async (req: Request, res: Response) => {
       message: 'Box destination updated',
     });
   } catch (error: any) {
-    console.error('Error updating box destination:', error);
+    logger.error('Error updating box destination:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -578,7 +579,7 @@ export const closeShipment = async (req: Request, res: Response) => {
       message: 'Shipment closed successfully',
     });
   } catch (error: any) {
-    console.error('Error closing shipment:', error);
+    logger.error('Error closing shipment:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -631,7 +632,7 @@ export const shipShipment = async (req: Request, res: Response) => {
       message: 'Shipment marked as shipped',
     });
   } catch (error: any) {
-    console.error('Error shipping shipment:', error);
+    logger.error('Error shipping shipment:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -651,12 +652,12 @@ export const getShipmentBoxes = async (req: Request, res: Response) => {
       SELECT sb.*,
         (SELECT json_agg(json_build_object(
           'content_id', sbc.content_id,
-          'sku_code', sbc.product_sku,
+          'product_sku', sbc.product_sku,
           'quantity', sbc.quantity,
           'product_name', p.product_name
         ))
         FROM shipment_box_contents sbc
-        JOIN products p ON sbc.product_sku = p.sku_code
+        JOIN products p ON sbc.product_sku = p.product_sku
         WHERE sbc.box_id = sb.box_id) as contents
       FROM shipment_boxes sb
       WHERE sb.shipment_id = $1
@@ -677,7 +678,7 @@ export const getShipmentBoxes = async (req: Request, res: Response) => {
       data: result.rows,
     });
   } catch (error: any) {
-    console.error('Error getting shipment boxes:', error);
+    logger.error('Error getting shipment boxes:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',

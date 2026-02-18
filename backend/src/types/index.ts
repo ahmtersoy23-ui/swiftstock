@@ -207,10 +207,19 @@ export interface ScanResponse {
 export interface TransactionCreateRequest {
   transaction_type: 'IN' | 'OUT' | 'ADJUST' | 'TRANSFER';
   warehouse_id: number;
+  warehouse_code?: string;
   location_id?: number;
+  location_qr?: string;
+  reference_no?: string;
+  notes?: string;
+  created_by?: string;
+  device_id?: string;
   items: {
     product_sku: string;
+    sku_code?: string;
+    barcode?: string;
     quantity: number;
+    unit_type?: string;
   }[];
 }
 

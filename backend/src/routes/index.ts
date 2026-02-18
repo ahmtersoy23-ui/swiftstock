@@ -21,7 +21,7 @@ import {
   passwordRateLimiter,
   refreshTokenRateLimiter,
 } from '../middleware/rateLimiter.middleware';
-import { validateBody } from '../middleware/validate.middleware';
+import { validateBody, validateParams } from '../middleware/validate.middleware';
 import {
   loginSchema,
   changePasswordSchema,
@@ -41,6 +41,29 @@ import {
   addScanOperationSchema,
   generateSerialsSchema,
   updateSerialStatusSchema,
+  createOrderSchema,
+  assignPickerSchema,
+  recordPickSchema,
+  cancelOrderSchema,
+  createCycleCountSchema,
+  recordCountSchema,
+  createRMASchema,
+  approveRMASchema,
+  receiveReturnSchema,
+  createShipmentSchema,
+  createBoxSchema,
+  addItemToBoxSchema,
+  updateBoxDestinationSchema,
+  shipShipmentSchema,
+  saveCountReportSchema,
+  orderIdParamSchema,
+  transactionIdParamSchema,
+  sessionIdParamSchema,
+  itemIdParamSchema,
+  rmaIdParamSchema,
+  shipmentIdParamSchema,
+  boxIdParamSchema,
+  barcodeParamSchema,
 } from '../validators/schemas';
 
 const router = Router();
@@ -70,13 +93,13 @@ router.get('/users/:user_id/audit-logs', authenticateToken, requireRole('ADMIN',
 // SHIPMENT ORDERS ROUTES (USA Warehouse)
 // ============================================
 router.get('/orders', authenticateToken, orderController.getAllOrders);
-router.get('/orders/:order_id', authenticateToken, orderController.getOrderById);
-router.post('/orders', authenticateToken, requireRole('ADMIN', 'MANAGER'), orderController.createOrder);
-router.post('/orders/:order_id/assign-picker', authenticateToken, requireRole('ADMIN', 'MANAGER'), orderController.assignPicker);
-router.post('/orders/:order_id/start-picking', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), orderController.startPicking);
-router.post('/orders/:order_id/record-pick', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), orderController.recordPick);
-router.post('/orders/:order_id/complete-picking', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), orderController.completePicking);
-router.post('/orders/:order_id/cancel', authenticateToken, requireRole('ADMIN', 'MANAGER'), orderController.cancelOrder);
+router.get('/orders/:order_id', authenticateToken, validateParams(orderIdParamSchema), orderController.getOrderById);
+router.post('/orders', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateBody(createOrderSchema), orderController.createOrder);
+router.post('/orders/:order_id/assign-picker', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateParams(orderIdParamSchema), validateBody(assignPickerSchema), orderController.assignPicker);
+router.post('/orders/:order_id/start-picking', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(orderIdParamSchema), orderController.startPicking);
+router.post('/orders/:order_id/record-pick', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(orderIdParamSchema), validateBody(recordPickSchema), orderController.recordPick);
+router.post('/orders/:order_id/complete-picking', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(orderIdParamSchema), orderController.completePicking);
+router.post('/orders/:order_id/cancel', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateParams(orderIdParamSchema), validateBody(cancelOrderSchema), orderController.cancelOrder);
 router.get('/orders/picker/:picker_id/performance', authenticateToken, orderController.getPickerPerformance);
 
 // ============================================
@@ -90,8 +113,8 @@ router.get('/lookup', authenticateToken, scanController.lookupBySku);
 // ============================================
 router.post('/transactions', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateBody(createTransactionSchema), transactionController.createTransaction);
 router.get('/transactions', authenticateToken, transactionController.getRecentTransactions);
-router.get('/transactions/:transaction_id', authenticateToken, transactionController.getTransactionDetails);
-router.post('/transactions/:transaction_id/undo', authenticateToken, requireRole('ADMIN', 'MANAGER'), transactionController.undoTransaction);
+router.get('/transactions/:transaction_id', authenticateToken, validateParams(transactionIdParamSchema), transactionController.getTransactionDetails);
+router.post('/transactions/:transaction_id/undo', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateParams(transactionIdParamSchema), transactionController.undoTransaction);
 
 // ============================================
 // INVENTORY ROUTES
@@ -116,8 +139,8 @@ router.delete('/products/:sku_code', authenticateToken, requireRole('ADMIN'), pr
 // ============================================
 router.post('/containers', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateBody(createContainerSchema), containerController.createContainer);
 router.get('/containers', authenticateToken, containerController.getAllContainers);
-router.get('/containers/:barcode', authenticateToken, containerController.getContainerByBarcode);
-router.post('/containers/:barcode/open', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateBody(openContainerSchema), containerController.openContainer);
+router.get('/containers/:barcode', authenticateToken, validateParams(barcodeParamSchema), containerController.getContainerByBarcode);
+router.post('/containers/:barcode/open', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(barcodeParamSchema), validateBody(openContainerSchema), containerController.openContainer);
 
 // ============================================
 // WAREHOUSE ROUTES
@@ -148,10 +171,10 @@ router.get('/operation-modes/:mode_code', authenticateToken, operationController
 // ============================================
 router.post('/scan-sessions', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateBody(createScanSessionSchema), operationController.createScanSession);
 router.get('/scan-sessions/active', authenticateToken, operationController.getActiveScanSession);
-router.get('/scan-sessions/:session_id', authenticateToken, operationController.getScanSession);
-router.post('/scan-sessions/:session_id/complete', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), operationController.completeScanSession);
-router.post('/scan-sessions/:session_id/cancel', authenticateToken, requireRole('ADMIN', 'MANAGER'), operationController.cancelScanSession);
-router.get('/scan-sessions/:session_id/operations', authenticateToken, operationController.getSessionOperations);
+router.get('/scan-sessions/:session_id', authenticateToken, validateParams(sessionIdParamSchema), operationController.getScanSession);
+router.post('/scan-sessions/:session_id/complete', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(sessionIdParamSchema), operationController.completeScanSession);
+router.post('/scan-sessions/:session_id/cancel', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateParams(sessionIdParamSchema), operationController.cancelScanSession);
+router.get('/scan-sessions/:session_id/operations', authenticateToken, validateParams(sessionIdParamSchema), operationController.getSessionOperations);
 
 // ============================================
 // SCAN OPERATION ROUTES
@@ -162,21 +185,21 @@ router.post('/scan-operations', authenticateToken, requireRole('ADMIN', 'MANAGER
 // CYCLE COUNT ROUTES
 // ============================================
 router.get('/cycle-counts', authenticateToken, cyclecountController.getAllSessions);
-router.get('/cycle-counts/:session_id', authenticateToken, cyclecountController.getSessionById);
-router.post('/cycle-counts', authenticateToken, requireRole('ADMIN', 'MANAGER'), cyclecountController.createSession);
-router.post('/cycle-counts/:session_id/start', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), cyclecountController.startSession);
-router.post('/cycle-counts/items/:item_id/count', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), cyclecountController.recordCount);
-router.post('/cycle-counts/:session_id/complete', authenticateToken, requireRole('ADMIN', 'MANAGER'), cyclecountController.completeSession);
+router.get('/cycle-counts/:session_id', authenticateToken, validateParams(sessionIdParamSchema), cyclecountController.getSessionById);
+router.post('/cycle-counts', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateBody(createCycleCountSchema), cyclecountController.createSession);
+router.post('/cycle-counts/:session_id/start', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(sessionIdParamSchema), cyclecountController.startSession);
+router.post('/cycle-counts/items/:item_id/count', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(itemIdParamSchema), validateBody(recordCountSchema), cyclecountController.recordCount);
+router.post('/cycle-counts/:session_id/complete', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateParams(sessionIdParamSchema), cyclecountController.completeSession);
 
 // ============================================
 // RETURNS/RMA ROUTES
 // ============================================
 router.get('/rma', authenticateToken, rmaController.getAllRMAs);
-router.get('/rma/:rma_id', authenticateToken, rmaController.getRMAById);
-router.post('/rma', authenticateToken, requireRole('ADMIN', 'MANAGER'), rmaController.createRMA);
-router.post('/rma/:rma_id/approve', authenticateToken, requireRole('ADMIN', 'MANAGER'), rmaController.approveRMA);
-router.post('/rma/items/:item_id/receive', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), rmaController.receiveReturn);
-router.post('/rma/:rma_id/complete', authenticateToken, requireRole('ADMIN', 'MANAGER'), rmaController.completeRMA);
+router.get('/rma/:rma_id', authenticateToken, validateParams(rmaIdParamSchema), rmaController.getRMAById);
+router.post('/rma', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateBody(createRMASchema), rmaController.createRMA);
+router.post('/rma/:rma_id/approve', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateParams(rmaIdParamSchema), validateBody(approveRMASchema), rmaController.approveRMA);
+router.post('/rma/items/:item_id/receive', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(itemIdParamSchema), validateBody(receiveReturnSchema), rmaController.receiveReturn);
+router.post('/rma/:rma_id/complete', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateParams(rmaIdParamSchema), rmaController.completeRMA);
 
 // ============================================
 // SERIAL NUMBER ROUTES
@@ -191,7 +214,7 @@ router.get('/serials/stats/:sku_code', authenticateToken, serialController.getSe
 // ============================================
 // REPORT ROUTES
 // ============================================
-router.post('/reports/count', authenticateToken, reportController.saveCountReport);
+router.post('/reports/count', authenticateToken, validateBody(saveCountReportSchema), reportController.saveCountReport);
 router.get('/reports/count', authenticateToken, reportController.getAllCountReports);
 router.get('/reports/count/:report_id', authenticateToken, reportController.getCountReportById);
 router.delete('/reports/count/:report_id', authenticateToken, requireRole('ADMIN', 'MANAGER'), reportController.deleteCountReport);
@@ -201,19 +224,19 @@ router.get('/reports/inventory/:warehouse_id', authenticateToken, reportControll
 // VIRTUAL SHIPMENT ROUTES (Sevkiyat)
 // ============================================
 router.get('/shipments', authenticateToken, shipmentController.getAllShipments);
-router.get('/shipments/:shipment_id', authenticateToken, shipmentController.getShipmentById);
-router.post('/shipments', authenticateToken, requireRole('ADMIN', 'MANAGER'), shipmentController.createShipment);
-router.post('/shipments/:shipment_id/boxes', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), shipmentController.createBox);
-router.get('/shipments/:shipment_id/boxes', authenticateToken, shipmentController.getShipmentBoxes);
-router.post('/shipments/:shipment_id/close', authenticateToken, requireRole('ADMIN', 'MANAGER'), shipmentController.closeShipment);
-router.post('/shipments/:shipment_id/ship', authenticateToken, requireRole('ADMIN', 'MANAGER'), shipmentController.shipShipment);
+router.get('/shipments/:shipment_id', authenticateToken, validateParams(shipmentIdParamSchema), shipmentController.getShipmentById);
+router.post('/shipments', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateBody(createShipmentSchema), shipmentController.createShipment);
+router.post('/shipments/:shipment_id/boxes', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(shipmentIdParamSchema), validateBody(createBoxSchema), shipmentController.createBox);
+router.get('/shipments/:shipment_id/boxes', authenticateToken, validateParams(shipmentIdParamSchema), shipmentController.getShipmentBoxes);
+router.post('/shipments/:shipment_id/close', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateParams(shipmentIdParamSchema), shipmentController.closeShipment);
+router.post('/shipments/:shipment_id/ship', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateParams(shipmentIdParamSchema), validateBody(shipShipmentSchema), shipmentController.shipShipment);
 
 // Box operations
-router.get('/boxes/:barcode', authenticateToken, shipmentController.getBoxByBarcode);
-router.post('/boxes/:box_id/items', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), shipmentController.addItemToBox);
+router.get('/boxes/:barcode', authenticateToken, validateParams(barcodeParamSchema), shipmentController.getBoxByBarcode);
+router.post('/boxes/:box_id/items', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(boxIdParamSchema), validateBody(addItemToBoxSchema), shipmentController.addItemToBox);
 router.delete('/boxes/contents/:content_id', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), shipmentController.removeItemFromBox);
-router.post('/boxes/:box_id/close', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), shipmentController.closeBox);
-router.put('/boxes/:box_id/destination', authenticateToken, requireRole('ADMIN', 'MANAGER'), shipmentController.updateBoxDestination);
+router.post('/boxes/:box_id/close', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(boxIdParamSchema), shipmentController.closeBox);
+router.put('/boxes/:box_id/destination', authenticateToken, requireRole('ADMIN', 'MANAGER'), validateParams(boxIdParamSchema), validateBody(updateBoxDestinationSchema), shipmentController.updateBoxDestination);
 
 // ============================================
 // HEALTH CHECK

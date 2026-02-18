@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import logger from '../config/logger';
 import { ApiResponse } from '../types';
 
 /**
@@ -84,7 +85,7 @@ export const getAllProducts = async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Get all products error:', error);
+    logger.error('Get all products error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -118,7 +119,7 @@ export const getProductBySku = async (req: Request, res: Response) => {
     } as ApiResponse<Product>);
 
   } catch (error) {
-    console.error('Get product by SKU error:', error);
+    logger.error('Get product by SKU error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -161,7 +162,7 @@ export const searchProducts = async (req: Request, res: Response) => {
     } as ApiResponse<Product[]>);
 
   } catch (error) {
-    console.error('Search products error:', error);
+    logger.error('Search products error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',

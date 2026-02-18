@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import logger from '../config/logger';
 import { TransactionCreateRequest, ApiResponse } from '../types';
 
 /**
@@ -245,7 +246,7 @@ export const createTransaction = async (req: Request, res: Response) => {
 
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Transaction error:', error);
+    logger.error('Transaction error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error during transaction',
@@ -296,7 +297,7 @@ export const getRecentTransactions = async (req: Request, res: Response) => {
     } as ApiResponse);
 
   } catch (error) {
-    console.error('Get transactions error:', error);
+    logger.error('Get transactions error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -346,7 +347,7 @@ export const getTransactionDetails = async (req: Request, res: Response) => {
     } as ApiResponse);
 
   } catch (error) {
-    console.error('Get transaction details error:', error);
+    logger.error('Get transaction details error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -442,7 +443,7 @@ export const undoTransaction = async (req: Request, res: Response) => {
 
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Undo transaction error:', error);
+    logger.error('Undo transaction error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error during undo',

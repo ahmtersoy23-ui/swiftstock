@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import logger from '../config/logger';
 import { ApiResponse } from '../index';
 
 // ============================================
@@ -19,7 +20,7 @@ export const getAllOperationModes = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting operation modes:', error);
+    logger.error('Error getting operation modes:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -50,7 +51,7 @@ export const getOperationModeByCode = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting operation mode:', error);
+    logger.error('Error getting operation mode:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -149,7 +150,7 @@ export const createScanSession = async (req: Request, res: Response) => {
 
     res.status(201).json(response);
   } catch (error: any) {
-    console.error('Error creating scan session:', error);
+    logger.error('Error creating scan session:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -183,7 +184,7 @@ export const getScanSession = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting scan session:', error);
+    logger.error('Error getting scan session:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -226,7 +227,7 @@ export const getActiveScanSession = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting active scan session:', error);
+    logger.error('Error getting active scan session:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -262,7 +263,7 @@ export const completeScanSession = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error completing scan session:', error);
+    logger.error('Error completing scan session:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -298,7 +299,7 @@ export const cancelScanSession = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error cancelling scan session:', error);
+    logger.error('Error cancelling scan session:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -380,7 +381,7 @@ export const addScanOperation = async (req: Request, res: Response) => {
 
     res.status(201).json(response);
   } catch (error: any) {
-    console.error('Error adding scan operation:', error);
+    logger.error('Error adding scan operation:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -418,7 +419,7 @@ export const getSessionOperations = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting session operations:', error);
+    logger.error('Error getting session operations:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',

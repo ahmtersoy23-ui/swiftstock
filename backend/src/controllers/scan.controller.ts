@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import logger from '../config/logger';
 import { ScanRequest, ScanResponse, ApiResponse } from '../types';
 import { parseSerialBarcode } from './serial.controller';
 
@@ -61,12 +62,12 @@ export const scanCode = async (req: Request, res: Response) => {
 
       return res.json({
         success: true,
+        type: 'PRODUCT',
         data: {
-          type: 'PRODUCT',
           product,
           inventory,
         },
-      } as ApiResponse<ScanResponse>);
+      } as ScanResponse);
     }
 
     // Check if it's a container barcode (KOL-xxxxx or PAL-xxxxx)
@@ -253,12 +254,12 @@ export const scanCode = async (req: Request, res: Response) => {
 
       return res.json({
         success: true,
+        type: 'PRODUCT',
         data: {
-          type: 'PRODUCT',
           product,
           inventory,
         },
-      } as ApiResponse<ScanResponse>);
+      } as ScanResponse);
     }
 
     // Code not found
@@ -269,7 +270,7 @@ export const scanCode = async (req: Request, res: Response) => {
     } as ApiResponse);
 
   } catch (error) {
-    console.error('Scan error:', error);
+    logger.error('Scan error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error during scan',
@@ -320,7 +321,7 @@ export const lookupBySku = async (req: Request, res: Response) => {
     } as ApiResponse);
 
   } catch (error) {
-    console.error('Lookup error:', error);
+    logger.error('Lookup error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error during lookup',

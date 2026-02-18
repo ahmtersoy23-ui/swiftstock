@@ -14,7 +14,7 @@ import {
   generateToken,
   generateRefreshToken,
 } from '../middleware/auth.middleware';
-import { logger } from '../utils/logger';
+import logger from '../config/logger';
 
 const SALT_ROUNDS = 12;
 

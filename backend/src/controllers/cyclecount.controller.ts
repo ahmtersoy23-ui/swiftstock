@@ -1,5 +1,6 @@
 // ============================================
 // CYCLE COUNT CONTROLLER
+import logger from '../config/logger';
 // ============================================
 
 import { Response } from 'express';
@@ -58,7 +59,7 @@ export const getAllSessions = async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Get cycle count sessions error:', error);
+    logger.error('Get cycle count sessions error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -113,7 +114,7 @@ export const getSessionById = async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Get cycle count session error:', error);
+    logger.error('Get cycle count session error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -209,7 +210,7 @@ export const createSession = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Create cycle count session error:', error);
+    logger.error('Create cycle count session error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -248,7 +249,7 @@ export const startSession = async (req: AuthRequest, res: Response) => {
       message: 'Sayım başlatıldı',
     });
   } catch (error) {
-    console.error('Start cycle count error:', error);
+    logger.error('Start cycle count error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -319,7 +320,7 @@ export const recordCount = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Record count error:', error);
+    logger.error('Record count error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -435,7 +436,7 @@ export const completeSession = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Complete cycle count error:', error);
+    logger.error('Complete cycle count error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,

@@ -1,5 +1,6 @@
 // ============================================
 // REPORT CONTROLLER
+import logger from '../config/logger';
 // ============================================
 
 import { Response } from 'express';
@@ -185,7 +186,7 @@ export const saveCountReport = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Save count report error:', error);
+    logger.error('Save count report error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -266,7 +267,7 @@ export const getAllCountReports = async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Get count reports error:', error);
+    logger.error('Get count reports error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -331,7 +332,7 @@ export const getCountReportById = async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Get count report error:', error);
+    logger.error('Get count report error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -439,7 +440,7 @@ export const getInventoryReport = async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Get inventory report error:', error);
+    logger.error('Get inventory report error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -472,7 +473,7 @@ export const deleteCountReport = async (req: AuthRequest, res: Response) => {
       message: 'Rapor silindi',
     });
   } catch (error) {
-    console.error('Delete count report error:', error);
+    logger.error('Delete count report error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,

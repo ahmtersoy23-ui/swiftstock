@@ -1,5 +1,6 @@
 // ============================================
 // VALIDATION MIDDLEWARE
+import logger from '../config/logger';
 // ============================================
 
 import { Request, Response, NextFunction } from 'express';

@@ -1,5 +1,6 @@
 // ============================================
 // SERIAL NUMBER CONTROLLER
+import logger from '../config/logger';
 // ============================================
 
 import { Request, Response } from 'express';
@@ -98,7 +99,7 @@ export const generateSerialNumbers = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Generate serial numbers error:', error);
+    logger.error('Generate serial numbers error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -148,7 +149,7 @@ export const getSerialNumbers = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Get serial numbers error:', error);
+    logger.error('Get serial numbers error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -184,7 +185,7 @@ export const lookupSerialBarcode = async (req: Request, res: Response) => {
       data: result.rows[0],
     });
   } catch (error: any) {
-    console.error('Lookup serial barcode error:', error);
+    logger.error('Lookup serial barcode error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -230,7 +231,7 @@ export const updateSerialStatus = async (req: Request, res: Response) => {
       data: result.rows[0],
     });
   } catch (error: any) {
-    console.error('Update serial status error:', error);
+    logger.error('Update serial status error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -271,7 +272,7 @@ export const getSerialStats = async (req: Request, res: Response) => {
       data: stats,
     });
   } catch (error: any) {
-    console.error('Get serial stats error:', error);
+    logger.error('Get serial stats error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -387,7 +388,7 @@ export const getSerialHistory = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Get serial history error:', error);
+    logger.error('Get serial history error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -438,7 +439,7 @@ export const addSerialHistoryEntry = async (
     );
     return true;
   } catch (error) {
-    console.error('Failed to add serial history entry:', error);
+    logger.error('Failed to add serial history entry:', error);
     return false;
   }
 };

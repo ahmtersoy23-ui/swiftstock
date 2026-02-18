@@ -235,3 +235,162 @@ export type UpdateLocationInput = z.infer<typeof updateLocationSchema>;
 export type CreateContainerInput = z.infer<typeof createContainerSchema>;
 export type ScanInput = z.infer<typeof scanSchema>;
 export type CreateScanSessionInput = z.infer<typeof createScanSessionSchema>;
+
+// ============================================
+// ORDER SCHEMAS
+// ============================================
+
+export const createOrderSchema = z.object({
+  order_number: z.string().min(1, 'Sipariş numarası gerekli').max(100),
+  marketplace: z.string().max(50).optional(),
+  customer_name: z.string().max(200).optional(),
+  warehouse_code: z.string().min(1, 'Depo kodu gerekli').max(20),
+  priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']).default('NORMAL'),
+  notes: z.string().max(1000).optional(),
+  items: z.array(z.object({
+    product_sku: z.string().min(1, 'SKU gerekli'),
+    quantity: z.number().int().positive('Miktar pozitif olmalı'),
+  })).min(1, 'En az bir ürün gerekli'),
+});
+
+export const assignPickerSchema = z.object({
+  user_id: z.number().int().positive('Kullanıcı ID gerekli'),
+});
+
+export const recordPickSchema = z.object({
+  product_sku: z.string().min(1, 'SKU gerekli'),
+  quantity_picked: z.number().int().positive('Toplanan miktar pozitif olmalı'),
+  location_id: z.number().int().positive().optional(),
+});
+
+export const cancelOrderSchema = z.object({
+  reason: z.string().max(500).optional(),
+});
+
+// ============================================
+// CYCLE COUNT SCHEMAS
+// ============================================
+
+export const createCycleCountSchema = z.object({
+  warehouse_code: z.string().min(1, 'Depo kodu gerekli').max(20),
+  count_type: z.enum(['FULL', 'PARTIAL', 'SPOT']).default('PARTIAL'),
+  location_ids: z.array(z.number().int().positive()).min(1, 'En az bir lokasyon gerekli').optional(),
+  product_skus: z.array(z.string()).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+export const recordCountSchema = z.object({
+  counted_quantity: z.number().int().min(0, 'Sayım miktarı negatif olamaz'),
+  notes: z.string().max(500).optional(),
+});
+
+// ============================================
+// RMA SCHEMAS
+// ============================================
+
+export const createRMASchema = z.object({
+  order_number: z.string().min(1, 'Sipariş numarası gerekli').max(100),
+  customer_name: z.string().max(200).optional(),
+  reason: z.string().min(1, 'İade nedeni gerekli').max(500),
+  warehouse_code: z.string().min(1, 'Depo kodu gerekli').max(20),
+  notes: z.string().max(1000).optional(),
+  items: z.array(z.object({
+    product_sku: z.string().min(1, 'SKU gerekli'),
+    quantity: z.number().int().positive('Miktar pozitif olmalı'),
+    reason: z.string().max(200).optional(),
+  })).min(1, 'En az bir ürün gerekli'),
+});
+
+export const approveRMASchema = z.object({
+  approved: z.boolean(),
+  notes: z.string().max(500).optional(),
+});
+
+export const receiveReturnSchema = z.object({
+  quantity_received: z.number().int().positive('Alınan miktar pozitif olmalı'),
+  condition: z.enum(['GOOD', 'DAMAGED', 'DEFECTIVE']).default('GOOD'),
+  location_id: z.number().int().positive().optional(),
+  notes: z.string().max(500).optional(),
+});
+
+// ============================================
+// SHIPMENT SCHEMAS
+// ============================================
+
+export const createShipmentSchema = z.object({
+  order_id: z.number().int().positive('Sipariş ID gerekli').optional(),
+  warehouse_code: z.string().min(1, 'Depo kodu gerekli').max(20),
+  carrier: z.string().max(100).optional(),
+  tracking_number: z.string().max(100).optional(),
+  destination_country: z.string().max(50).optional(),
+  notes: z.string().max(1000).optional(),
+});
+
+export const createBoxSchema = z.object({
+  box_number: z.string().min(1, 'Kutu numarası gerekli').max(50),
+  weight_kg: z.number().positive().optional(),
+  dimensions_cm: z.string().max(50).optional(),
+});
+
+export const addItemToBoxSchema = z.object({
+  product_sku: z.string().min(1, 'SKU gerekli'),
+  quantity: z.number().int().positive('Miktar pozitif olmalı'),
+});
+
+export const updateBoxDestinationSchema = z.object({
+  destination_country: z.string().min(1, 'Hedef ülke gerekli').max(50),
+  destination_address: z.string().max(500).optional(),
+});
+
+export const shipShipmentSchema = z.object({
+  carrier: z.string().min(1, 'Kargo firması gerekli').max(100),
+  tracking_number: z.string().min(1, 'Takip numarası gerekli').max(100),
+  shipped_date: z.string().optional(),
+});
+
+// ============================================
+// REPORT SCHEMAS
+// ============================================
+
+export const saveCountReportSchema = z.object({
+  report_type: z.enum(['CYCLE_COUNT', 'INVENTORY', 'DISCREPANCY']),
+  warehouse_code: z.string().min(1, 'Depo kodu gerekli').max(20),
+  data: z.record(z.string(), z.unknown()),
+  notes: z.string().max(1000).optional(),
+});
+
+// ============================================
+// PARAM SCHEMAS
+// ============================================
+
+export const orderIdParamSchema = z.object({
+  order_id: z.coerce.number().int().positive('Geçersiz sipariş ID'),
+});
+
+export const transactionIdParamSchema = z.object({
+  transaction_id: z.coerce.number().int().positive('Geçersiz işlem ID'),
+});
+
+export const sessionIdParamSchema = z.object({
+  session_id: z.coerce.number().int().positive('Geçersiz oturum ID'),
+});
+
+export const itemIdParamSchema = z.object({
+  item_id: z.coerce.number().int().positive('Geçersiz öğe ID'),
+});
+
+export const rmaIdParamSchema = z.object({
+  rma_id: z.coerce.number().int().positive('Geçersiz RMA ID'),
+});
+
+export const shipmentIdParamSchema = z.object({
+  shipment_id: z.coerce.number().int().positive('Geçersiz sevkiyat ID'),
+});
+
+export const boxIdParamSchema = z.object({
+  box_id: z.coerce.number().int().positive('Geçersiz kutu ID'),
+});
+
+export const barcodeParamSchema = z.object({
+  barcode: z.string().min(1, 'Barkod gerekli').max(200),
+});

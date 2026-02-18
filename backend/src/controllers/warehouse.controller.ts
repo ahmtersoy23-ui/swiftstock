@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import logger from '../config/logger';
 import { ApiResponse } from '../index';
 
 // ============================================
@@ -20,7 +21,7 @@ export const getAllWarehouses = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting warehouses:', error);
+    logger.error('Error getting warehouses:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -51,7 +52,7 @@ export const getWarehouseByCode = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting warehouse:', error);
+    logger.error('Error getting warehouse:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
@@ -82,7 +83,7 @@ export const getWarehouseById = async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error getting warehouse:', error);
+    logger.error('Error getting warehouse:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',

@@ -1,5 +1,6 @@
 // ============================================
 // USER MANAGEMENT CONTROLLER
+import logger from '../config/logger';
 // ============================================
 
 import { Response } from 'express';
@@ -96,7 +97,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       },
     });
   } catch (error) {
-    console.error('Get all users error:', error);
+    logger.error('Get all users error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -152,7 +153,7 @@ export const getUserById = async (req: AuthRequest, res: Response): Promise<void
       data: userResult.rows[0],
     });
   } catch (error) {
-    console.error('Get user by ID error:', error);
+    logger.error('Get user by ID error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -274,7 +275,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Create user error:', error);
+    logger.error('Create user error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -434,7 +435,7 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Update user error:', error);
+    logger.error('Update user error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -513,7 +514,7 @@ export const deleteUser = async (req: AuthRequest, res: Response): Promise<void>
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Delete user error:', error);
+    logger.error('Delete user error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -595,7 +596,7 @@ export const resetUserPassword = async (req: AuthRequest, res: Response): Promis
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Reset password error:', error);
+    logger.error('Reset password error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -634,7 +635,7 @@ export const getUserAuditLogs = async (req: AuthRequest, res: Response): Promise
       data: logsResult.rows,
     });
   } catch (error) {
-    console.error('Get audit logs error:', error);
+    logger.error('Get audit logs error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
