@@ -7,25 +7,44 @@ import { ApiResponse } from '../types';
  */
 export const getInventorySummary = async (req: Request, res: Response) => {
   try {
-    const { warehouse_code } = req.query;
+    const { warehouse_code, page = '1', limit = '50' } = req.query;
 
-    let query = `
-      SELECT * FROM v_inventory_summary
-    `;
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit as string) || 50));
+    const offset = (pageNum - 1) * limitNum;
 
+    let whereClause = '';
     const params: any[] = [];
     if (warehouse_code) {
-      query += ' WHERE warehouse_code = $1';
+      whereClause = ' WHERE warehouse_code = $1';
       params.push(warehouse_code);
     }
 
-    query += ' ORDER BY warehouse_code, product_name';
+    // Get total count
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM v_inventory_summary${whereClause}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0].count);
 
-    const result = await pool.query(query, params);
+    // Get paginated data
+    const query = `
+      SELECT * FROM v_inventory_summary${whereClause}
+      ORDER BY warehouse_code, product_name
+      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+    `;
+
+    const result = await pool.query(query, [...params, limitNum, offset]);
 
     return res.json({
       success: true,
       data: result.rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+      },
     } as ApiResponse);
 
   } catch (error) {
@@ -104,10 +123,32 @@ export const getInventoryBySku = async (req: Request, res: Response) => {
  */
 export const getLowStock = async (req: Request, res: Response) => {
   try {
-    const { warehouse_code, threshold = 10 } = req.query;
+    const { warehouse_code, threshold = 10, page = '1', limit = '50' } = req.query;
 
-    let query = `
-      SELECT 
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit as string) || 50));
+    const offset = (pageNum - 1) * limitNum;
+
+    let whereClause = 'WHERE i.quantity_each <= $1 AND i.quantity_each > 0';
+    const countParams: any[] = [threshold];
+
+    if (warehouse_code) {
+      whereClause += ' AND w.code = $2';
+      countParams.push(warehouse_code);
+    }
+
+    // Get total count
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM inventory i
+       JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
+       ${whereClause}`,
+      countParams
+    );
+    const total = parseInt(countResult.rows[0].count);
+
+    // Get paginated data
+    const query = `
+      SELECT
         i.*,
         p.product_name,
         p.barcode,
@@ -117,23 +158,22 @@ export const getLowStock = async (req: Request, res: Response) => {
       JOIN products p ON i.product_sku = p.sku_code
       JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
       LEFT JOIN wms_locations l ON i.location_id = l.location_id
-      WHERE i.quantity_each <= $1 AND i.quantity_each > 0
+      ${whereClause}
+      ORDER BY i.quantity_each ASC
+      LIMIT $${countParams.length + 1} OFFSET $${countParams.length + 2}
     `;
 
-    const params: any[] = [threshold];
-
-    if (warehouse_code) {
-      query += ' AND w.code = $2';
-      params.push(warehouse_code);
-    }
-
-    query += ' ORDER BY i.quantity_each ASC';
-
-    const result = await pool.query(query, params);
+    const result = await pool.query(query, [...countParams, limitNum, offset]);
 
     return res.json({
       success: true,
       data: result.rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+      },
     } as ApiResponse);
 
   } catch (error) {

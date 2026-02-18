@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
-import { useAuthStore } from '../stores/authStore';
+import { useSSOStore } from '../stores/ssoStore';
 import { translations } from '../i18n/translations';
 import './Admin.css';
 
@@ -41,7 +41,7 @@ const emptyForm: UserForm = {
 function Admin() {
   const navigate = useNavigate();
   const { language } = useStore();
-  const { user: currentUser } = useAuthStore();
+  const { wmsUser: currentUser } = useSSOStore();
   const t = translations[language];
 
   const [users, setUsers] = useState<User[]>([]);

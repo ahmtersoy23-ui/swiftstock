@@ -408,20 +408,27 @@ export const undoTransaction = async (req: Request, res: Response) => {
 
     const reverseTransaction = reverseTransactionResult.rows[0];
 
-    // Reverse all items
-    for (const item of itemsResult.rows) {
-      await client.query(
-        `INSERT INTO transaction_items 
-         (transaction_id, product_sku, quantity, unit_type, quantity_each, to_location_id)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
+    // Reverse all items (batched INSERT)
+    if (itemsResult.rows.length > 0) {
+      const valuesClauses: string[] = [];
+      const insertParams: any[] = [];
+      itemsResult.rows.forEach((item: any, idx: number) => {
+        const offset = idx * 6;
+        valuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`);
+        insertParams.push(
           reverseTransaction.transaction_id,
           item.product_sku,
           item.quantity,
           item.unit_type,
           item.quantity_each,
           item.to_location_id,
-        ]
+        );
+      });
+      await client.query(
+        `INSERT INTO transaction_items
+         (transaction_id, product_sku, quantity, unit_type, quantity_each, to_location_id)
+         VALUES ${valuesClauses.join(', ')}`,
+        insertParams
       );
     }
 

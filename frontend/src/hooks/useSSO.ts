@@ -1,4 +1,5 @@
 import { useSSOStore } from '../stores/ssoStore';
+import { authApi } from '../lib/api/auth';
 
 const SSO_BASE_URL = 'https://apps.iwa.web.tr';
 const APP_CODE = 'swiftstock';
@@ -20,7 +21,7 @@ interface VerifyResponse {
 }
 
 export const useSSO = () => {
-  const { user, role, accessToken, setUser, setRole, setAccessToken, clearAuth } = useSSOStore();
+  const { user, role, accessToken, wmsUser, setUser, setRole, setAccessToken, setWMSUser, clearAuth } = useSSOStore();
 
   // Token'ı URL'den veya localStorage'dan al
   const getAccessToken = (): string | null => {
@@ -88,6 +89,16 @@ export const useSSO = () => {
     if (result?.success && result.data) {
       setUser(result.data.user);
       setRole(result.data.role);
+
+      // Fetch WMS user profile from backend
+      try {
+        const profileRes = await authApi.getProfile();
+        if (profileRes.success && profileRes.data) {
+          setWMSUser(profileRes.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch WMS profile:', err);
+      }
     } else {
       // Token geçersiz - SSO'ya yönlendir
       clearAuth();
@@ -130,6 +141,7 @@ export const useSSO = () => {
     user,
     role,
     accessToken,
+    wmsUser,
     isAuthenticated: !!user && !!accessToken,
     initAuth,
     logout,

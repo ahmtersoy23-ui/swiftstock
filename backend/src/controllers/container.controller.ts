@@ -61,12 +61,19 @@ export const createContainer = async (req: Request, res: Response) => {
 
     const container = containerResult.rows[0];
 
-    // Add items to container
-    for (const item of containerItems) {
+    // Add items to container (batched INSERT)
+    if (containerItems.length > 0) {
+      const valuesClauses: string[] = [];
+      const insertParams: any[] = [];
+      containerItems.forEach((item: any, idx: number) => {
+        const offset = idx * 3;
+        valuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
+        insertParams.push(container.container_id, item.product_sku, item.quantity);
+      });
       await client.query(
         `INSERT INTO wms_container_contents (container_id, product_sku, quantity)
-         VALUES ($1, $2, $3)`,
-        [container.container_id, item.product_sku, item.quantity]
+         VALUES ${valuesClauses.join(', ')}`,
+        insertParams
       );
     }
 
@@ -204,17 +211,21 @@ export const openContainer = async (req: Request, res: Response) => {
 
     const transaction_id = transactionResult.rows[0].transaction_id;
 
-    // Add transaction items and update inventory
-    for (const content of contentsResult.rows) {
-      // Add to transaction_items
+    // Add transaction items (batched INSERT) - inventory update handled by trigger
+    if (contentsResult.rows.length > 0) {
+      const valuesClauses: string[] = [];
+      const insertParams: any[] = [];
+      contentsResult.rows.forEach((content: any, idx: number) => {
+        const offset = idx * 4;
+        valuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, 'EACH', $${offset + 4})`);
+        insertParams.push(transaction_id, content.product_sku, content.quantity, content.quantity);
+      });
       await client.query(
         `INSERT INTO transaction_items
          (transaction_id, product_sku, quantity, unit_type, quantity_each)
-         VALUES ($1, $2, $3, 'EACH', $4)`,
-        [transaction_id, content.product_sku, content.quantity, content.quantity]
+         VALUES ${valuesClauses.join(', ')}`,
+        insertParams
       );
-
-      // Update inventory (will be handled by trigger)
     }
 
     // Update container status
@@ -253,9 +264,51 @@ export const openContainer = async (req: Request, res: Response) => {
  */
 export const getAllContainers = async (req: Request, res: Response) => {
   try {
-    const { warehouse_code, status, type, search } = req.query;
+    const { warehouse_code, status, type, search, page = '1', limit = '50' } = req.query;
 
-    let query = `
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit as string) || 50));
+    const offset = (pageNum - 1) * limitNum;
+
+    let whereClause = ' WHERE 1=1';
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (warehouse_code) {
+      whereClause += ` AND w.code = $${paramCount}`;
+      params.push(warehouse_code);
+      paramCount++;
+    }
+
+    if (status) {
+      whereClause += ` AND c.status = $${paramCount}`;
+      params.push(status);
+      paramCount++;
+    }
+
+    if (type) {
+      whereClause += ` AND c.container_type = $${paramCount}`;
+      params.push(type);
+      paramCount++;
+    }
+
+    if (search) {
+      whereClause += ` AND (c.barcode ILIKE $${paramCount} OR c.notes ILIKE $${paramCount})`;
+      params.push(`%${search}%`);
+      paramCount++;
+    }
+
+    // Get total count
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM wms_containers c
+       JOIN wms_warehouses w ON c.warehouse_id = w.warehouse_id
+       ${whereClause}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0].count);
+
+    // Get paginated data
+    const query = `
       SELECT
         c.*,
         w.code as warehouse_code,
@@ -281,42 +334,22 @@ export const getAllContainers = async (req: Request, res: Response) => {
         FROM wms_container_contents
         GROUP BY container_id
       ) cc ON c.container_id = cc.container_id
-      WHERE 1=1
+      ${whereClause}
+      ORDER BY c.created_at DESC
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}
     `;
-    const params: any[] = [];
-    let paramCount = 1;
 
-    if (warehouse_code) {
-      query += ` AND w.code = $${paramCount}`;
-      params.push(warehouse_code);
-      paramCount++;
-    }
-
-    if (status) {
-      query += ` AND c.status = $${paramCount}`;
-      params.push(status);
-      paramCount++;
-    }
-
-    if (type) {
-      query += ` AND c.container_type = $${paramCount}`;
-      params.push(type);
-      paramCount++;
-    }
-
-    if (search) {
-      query += ` AND (c.barcode ILIKE $${paramCount} OR c.notes ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-      paramCount++;
-    }
-
-    query += ` ORDER BY c.created_at DESC LIMIT 200`;
-
-    const result = await pool.query(query, params);
+    const result = await pool.query(query, [...params, limitNum, offset]);
 
     res.json({
       success: true,
       data: result.rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+      },
     });
   } catch (error: any) {
     console.error('Error getting containers:', error);

@@ -54,15 +54,15 @@ CREATE TABLE IF NOT EXISTS shipment_boxes (
 CREATE TABLE IF NOT EXISTS shipment_box_contents (
   content_id SERIAL PRIMARY KEY,
   box_id INTEGER NOT NULL,
-  sku_code VARCHAR(50) NOT NULL,
+  product_sku VARCHAR(50) NOT NULL,
   quantity INTEGER NOT NULL,
   added_by VARCHAR(50) NOT NULL,
   added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT fk_content_box FOREIGN KEY (box_id)
     REFERENCES shipment_boxes(box_id) ON DELETE CASCADE,
-  CONSTRAINT fk_content_sku FOREIGN KEY (sku_code)
-    REFERENCES products(sku_code) ON DELETE RESTRICT,
+  CONSTRAINT fk_content_sku FOREIGN KEY (product_sku)
+    REFERENCES products(product_sku) ON DELETE RESTRICT,
   CONSTRAINT chk_quantity CHECK (quantity > 0)
 );
 
@@ -81,7 +81,7 @@ CREATE INDEX IF NOT EXISTS idx_boxes_destination ON shipment_boxes(destination);
 CREATE INDEX IF NOT EXISTS idx_boxes_status ON shipment_boxes(status);
 
 CREATE INDEX IF NOT EXISTS idx_box_contents_box ON shipment_box_contents(box_id);
-CREATE INDEX IF NOT EXISTS idx_box_contents_sku ON shipment_box_contents(sku_code);
+CREATE INDEX IF NOT EXISTS idx_box_contents_sku ON shipment_box_contents(product_sku);
 
 -- ============================================
 -- TRIGGERS

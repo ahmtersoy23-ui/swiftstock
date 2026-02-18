@@ -11,19 +11,35 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'swiftstock_db',
   user: process.env.DB_USER || 'swiftstock',
   password: process.env.DB_PASSWORD,
+  // Pool configuration (configurable via env vars, see constants.ts)
   max: DB_MAX_CONNECTIONS,
   idleTimeoutMillis: DB_IDLE_TIMEOUT_MS,
   connectionTimeoutMillis: DB_CONNECTION_TIMEOUT_MS,
+  // Allow the pool to remove idle connections down to 0 when not under load
+  allowExitOnIdle: false,
 });
 
-// Test connection
+// Log connection events
 pool.on('connect', () => {
-  console.log('✅ Database connected successfully');
+  console.log('[DB] New client connected to pool');
 });
 
-pool.on('error', (err) => {
-  console.error('❌ Unexpected database error:', err);
-  process.exit(-1);
+// Pool-level error handler for idle clients
+// This catches errors on idle clients sitting in the pool (e.g., server restart, network drop).
+// We log but do NOT exit -- pg Pool will remove the errored client and create a new one on demand.
+pool.on('error', (err: Error) => {
+  console.error('[DB] Unexpected error on idle database client:', err.message);
+  // Only exit on truly fatal errors (e.g., authentication failures that will never recover)
+  if (err.message.includes('password authentication failed') ||
+      err.message.includes('database') && err.message.includes('does not exist')) {
+    console.error('[DB] Fatal database configuration error. Shutting down.');
+    process.exit(1);
+  }
+  // For transient errors (network issues, server restarts), the pool will self-heal
+});
+
+pool.on('remove', () => {
+  console.log('[DB] Client removed from pool');
 });
 
 export default pool;

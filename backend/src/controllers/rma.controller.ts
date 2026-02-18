@@ -171,12 +171,19 @@ export const createRMA = async (req: AuthRequest, res: Response) => {
 
     const rma = rmaResult.rows[0];
 
-    // Add items
-    for (const item of items) {
+    // Add items (batched INSERT)
+    if (items.length > 0) {
+      const valuesClauses: string[] = [];
+      const insertParams: any[] = [];
+      items.forEach((item: any, idx: number) => {
+        const offset = idx * 5;
+        valuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5})`);
+        insertParams.push(rma.rma_id, item.product_sku, item.quantity_requested, item.unit_price || null, item.action);
+      });
       await client.query(
         `INSERT INTO rma_items (rma_id, product_sku, quantity_requested, unit_price, action)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [rma.rma_id, item.product_sku, item.quantity_requested, item.unit_price || null, item.action]
+         VALUES ${valuesClauses.join(', ')}`,
+        insertParams
       );
     }
 

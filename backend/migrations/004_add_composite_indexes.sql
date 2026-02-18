@@ -5,27 +5,27 @@
 
 -- Products table - Active products by category (for getAllProducts with filters)
 CREATE INDEX IF NOT EXISTS idx_products_active_category
-  ON products(is_active, category, product_name);
+  ON products(is_active, category, name);
 
 -- Products table - Active products search optimization
 CREATE INDEX IF NOT EXISTS idx_products_active_search
-  ON products(is_active, product_name);
+  ON products(is_active, name);
 
 -- Inventory table - SKU and warehouse lookup (most common query)
 CREATE INDEX IF NOT EXISTS idx_inventory_sku_warehouse
-  ON inventory(sku_code, warehouse_id, location_id);
+  ON inventory(product_sku, warehouse_id, location_id);
 
 -- Inventory table - Warehouse and location lookup
 CREATE INDEX IF NOT EXISTS idx_inventory_warehouse_location
-  ON inventory(warehouse_id, location_id, sku_code);
+  ON inventory(warehouse_id, location_id, product_sku);
 
 -- Location inventory table - Location and SKU lookup
 CREATE INDEX IF NOT EXISTS idx_location_inventory_location_sku
-  ON location_inventory(location_id, sku_code);
+  ON location_inventory(location_id, product_sku);
 
 -- Location inventory table - SKU across locations
 CREATE INDEX IF NOT EXISTS idx_location_inventory_sku
-  ON location_inventory(sku_code, location_id);
+  ON location_inventory(product_sku, location_id);
 
 -- Transactions table - Date range queries with warehouse filter
 CREATE INDEX IF NOT EXISTS idx_transactions_warehouse_date
@@ -33,11 +33,11 @@ CREATE INDEX IF NOT EXISTS idx_transactions_warehouse_date
 
 -- Transaction items table - Transaction lookup
 CREATE INDEX IF NOT EXISTS idx_transaction_items_transaction
-  ON transaction_items(transaction_id, sku_code);
+  ON transaction_items(transaction_id, product_sku);
 
 -- Container contents - Container lookup
 CREATE INDEX IF NOT EXISTS idx_container_contents_container
-  ON container_contents(container_id, sku_code);
+  ON container_contents(container_id, product_sku);
 
 -- Locations table - Warehouse and zone lookup (for location filtering)
 CREATE INDEX IF NOT EXISTS idx_locations_warehouse_zone

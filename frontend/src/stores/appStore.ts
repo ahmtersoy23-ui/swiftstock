@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware';
 // APP STORE - Uygulama geneli state yönetimi
 // ============================================
 // Bu store, kimlik doğrulama dışındaki tüm uygulama
-// state'lerini yönetir. Kimlik için authStore kullanılır.
+// state'lerini yönetir. Kimlik için ssoStore kullanılır.
 
 interface PendingTransactionItem {
   sku_code?: string;

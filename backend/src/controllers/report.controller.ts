@@ -72,15 +72,16 @@ export const saveCountReport = async (req: AuthRequest, res: Response) => {
 
     const report = reportResult.rows[0];
 
-    // Add location details
-    for (const loc of locations) {
-      const locResult = await client.query(
-        `INSERT INTO count_report_locations
-          (report_id, location_id, location_code, location_qr, total_expected, total_counted,
-           total_variance, unexpected_count)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING report_location_id`,
-        [
+    // Add location details (batch location inserts)
+    if (locations.length > 0) {
+      const locValuesClauses: string[] = [];
+      const locParams: any[] = [];
+      locations.forEach((loc: any, idx: number) => {
+        const offset = idx * 8;
+        locValuesClauses.push(
+          `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8})`
+        );
+        locParams.push(
           report.report_id,
           loc.location?.location_id || null,
           loc.location?.location_code || loc.location?.qr_code || 'Unknown',
@@ -89,20 +90,34 @@ export const saveCountReport = async (req: AuthRequest, res: Response) => {
           loc.totalCounted || 0,
           loc.totalVariance || 0,
           loc.unexpectedItems?.length || 0,
-        ]
+        );
+      });
+
+      const locInsertResult = await client.query(
+        `INSERT INTO count_report_locations
+          (report_id, location_id, location_code, location_qr, total_expected, total_counted,
+           total_variance, unexpected_count)
+         VALUES ${locValuesClauses.join(', ')}
+         RETURNING report_location_id`,
+        locParams
       );
 
-      const reportLocationId = locResult.rows[0].report_location_id;
+      // Collect all items across all locations for batch insert
+      const allItemValuesClauses: string[] = [];
+      const allItemParams: any[] = [];
+      let itemParamOffset = 0;
 
-      // Add expected items
-      if (loc.items && Array.isArray(loc.items)) {
-        for (const item of loc.items) {
-          await client.query(
-            `INSERT INTO count_report_items
-              (report_id, report_location_id, product_sku, product_name, expected_quantity,
-               counted_quantity, variance, is_unexpected, scanned_barcodes)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [
+      locations.forEach((loc: any, locIdx: number) => {
+        const reportLocationId = locInsertResult.rows[locIdx].report_location_id;
+
+        // Add expected items
+        if (loc.items && Array.isArray(loc.items)) {
+          for (const item of loc.items) {
+            const offset = itemParamOffset * 9;
+            allItemValuesClauses.push(
+              `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`
+            );
+            allItemParams.push(
               report.report_id,
               reportLocationId,
               item.product_sku,
@@ -112,32 +127,43 @@ export const saveCountReport = async (req: AuthRequest, res: Response) => {
               item.variance || 0,
               false,
               item.scanned_barcodes || [],
-            ]
-          );
+            );
+            itemParamOffset++;
+          }
         }
-      }
 
-      // Add unexpected items
-      if (loc.unexpectedItems && Array.isArray(loc.unexpectedItems)) {
-        for (const item of loc.unexpectedItems) {
-          await client.query(
-            `INSERT INTO count_report_items
-              (report_id, report_location_id, product_sku, product_name, expected_quantity,
-               counted_quantity, variance, is_unexpected, scanned_barcodes)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [
+        // Add unexpected items
+        if (loc.unexpectedItems && Array.isArray(loc.unexpectedItems)) {
+          for (const item of loc.unexpectedItems) {
+            const offset = itemParamOffset * 9;
+            allItemValuesClauses.push(
+              `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`
+            );
+            allItemParams.push(
               report.report_id,
               reportLocationId,
               item.product_sku,
               item.product_name || null,
-              0, // unexpected items have no expected quantity
+              0,
               item.counted_quantity || 0,
-              item.counted_quantity || 0, // variance = counted for unexpected
+              item.counted_quantity || 0,
               true,
               item.scanned_barcodes || [],
-            ]
-          );
+            );
+            itemParamOffset++;
+          }
         }
+      });
+
+      // Batch insert all report items at once
+      if (allItemValuesClauses.length > 0) {
+        await client.query(
+          `INSERT INTO count_report_items
+            (report_id, report_location_id, product_sku, product_name, expected_quantity,
+             counted_quantity, variance, is_unexpected, scanned_barcodes)
+           VALUES ${allItemValuesClauses.join(', ')}`,
+          allItemParams
+        );
       }
     }
 

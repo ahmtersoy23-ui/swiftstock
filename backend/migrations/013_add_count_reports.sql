@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS count_report_items (
   report_item_id SERIAL PRIMARY KEY,
   report_id INTEGER NOT NULL,
   report_location_id INTEGER NOT NULL,
-  sku_code VARCHAR(50) NOT NULL,
+  product_sku VARCHAR(50) NOT NULL,
   product_name VARCHAR(255),
   expected_quantity INTEGER NOT NULL DEFAULT 0,
   counted_quantity INTEGER NOT NULL DEFAULT 0,
@@ -63,8 +63,8 @@ CREATE TABLE IF NOT EXISTS count_report_items (
     REFERENCES count_reports(report_id) ON DELETE CASCADE,
   CONSTRAINT fk_cri_location FOREIGN KEY (report_location_id)
     REFERENCES count_report_locations(report_location_id) ON DELETE CASCADE,
-  CONSTRAINT fk_cri_product FOREIGN KEY (sku_code)
-    REFERENCES products(sku_code) ON DELETE CASCADE
+  CONSTRAINT fk_cri_product FOREIGN KEY (product_sku)
+    REFERENCES products(product_sku) ON DELETE CASCADE
 );
 
 -- ============================================
@@ -81,7 +81,7 @@ CREATE INDEX IF NOT EXISTS idx_crl_location ON count_report_locations(location_i
 
 CREATE INDEX IF NOT EXISTS idx_cri_report ON count_report_items(report_id);
 CREATE INDEX IF NOT EXISTS idx_cri_location ON count_report_items(report_location_id);
-CREATE INDEX IF NOT EXISTS idx_cri_sku ON count_report_items(sku_code);
+CREATE INDEX IF NOT EXISTS idx_cri_sku ON count_report_items(product_sku);
 
 COMMENT ON TABLE count_reports IS 'Stores completed count report summaries from Operations page';
 COMMENT ON TABLE count_report_locations IS 'Stores per-location count details for each report';

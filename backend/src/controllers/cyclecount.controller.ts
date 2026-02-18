@@ -169,25 +169,35 @@ export const createSession = async (req: AuthRequest, res: Response) => {
 
     const session = sessionResult.rows[0];
 
-    // Add items to session if provided
+    // Add items to session if provided (batched approach)
     if (items && Array.isArray(items) && items.length > 0) {
-      for (const item of items) {
-        // Get current quantity from inventory
-        const invResult = await client.query(
-          `SELECT quantity_on_hand FROM inventory
-           WHERE product_sku = $1 AND warehouse_id = $2`,
-          [item.product_sku, warehouse_id]
-        );
+      // Batch-fetch all inventory quantities in one query
+      const skuList = items.map((item: any) => item.product_sku);
+      const invResult = await client.query(
+        `SELECT product_sku, quantity_on_hand FROM inventory
+         WHERE product_sku = ANY($1) AND warehouse_id = $2`,
+        [skuList, warehouse_id]
+      );
+      const invMap = new Map<string, number>();
+      invResult.rows.forEach((row: any) => {
+        invMap.set(row.product_sku, row.quantity_on_hand);
+      });
 
-        const expectedQty = item.expected_quantity ?? invResult.rows[0]?.quantity_on_hand ?? 0;
-
-        await client.query(
-          `INSERT INTO cycle_count_items
-            (session_id, product_sku, location_id, expected_quantity, status)
-          VALUES ($1, $2, $3, $4, $5)`,
-          [session.session_id, item.product_sku, item.location_id || null, expectedQty, 'PENDING']
-        );
-      }
+      // Batch INSERT all items
+      const valuesClauses: string[] = [];
+      const insertParams: any[] = [];
+      items.forEach((item: any, idx: number) => {
+        const expectedQty = item.expected_quantity ?? invMap.get(item.product_sku) ?? 0;
+        const offset = idx * 5;
+        valuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5})`);
+        insertParams.push(session.session_id, item.product_sku, item.location_id || null, expectedQty, 'PENDING');
+      });
+      await client.query(
+        `INSERT INTO cycle_count_items
+          (session_id, product_sku, location_id, expected_quantity, status)
+         VALUES ${valuesClauses.join(', ')}`,
+        insertParams
+      );
     }
 
     await client.query('COMMIT');
@@ -352,15 +362,19 @@ export const completeSession = async (req: AuthRequest, res: Response) => {
       [session_id]
     );
 
-    // Create adjustment records
-    for (const item of itemsResult.rows) {
-      const adjustmentType = item.variance > 0 ? 'INCREASE' : 'DECREASE';
+    // Create adjustment records (batched INSERT)
+    if (itemsResult.rows.length > 0) {
+      const adjustValuesClauses: string[] = [];
+      const adjustParams: any[] = [];
+      const adjustedBy = req.user?.username || 'system';
 
-      await client.query(
-        `INSERT INTO cycle_count_adjustments
-          (item_id, session_id, product_sku, location_id, old_quantity, new_quantity, variance, adjustment_type, adjusted_by)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [
+      itemsResult.rows.forEach((item: any, idx: number) => {
+        const adjustmentType = item.variance > 0 ? 'INCREASE' : 'DECREASE';
+        const offset = idx * 9;
+        adjustValuesClauses.push(
+          `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`
+        );
+        adjustParams.push(
           item.item_id,
           session_id,
           item.product_sku,
@@ -369,22 +383,34 @@ export const completeSession = async (req: AuthRequest, res: Response) => {
           item.counted_quantity,
           item.variance,
           adjustmentType,
-          req.user?.username || 'system',
-        ]
+          adjustedBy,
+        );
+      });
+
+      await client.query(
+        `INSERT INTO cycle_count_adjustments
+          (item_id, session_id, product_sku, location_id, old_quantity, new_quantity, variance, adjustment_type, adjusted_by)
+         VALUES ${adjustValuesClauses.join(', ')}`,
+        adjustParams
       );
 
-      // If auto_adjust is true, update inventory
+      // If auto_adjust is true, update inventory and item statuses in batch
       if (auto_adjust) {
-        await client.query(
-          `UPDATE inventory
-           SET quantity_on_hand = $1, updated_at = CURRENT_TIMESTAMP
-           WHERE product_sku = $2 AND warehouse_id = (SELECT warehouse_id FROM cycle_count_sessions WHERE session_id = $3)`,
-          [item.counted_quantity, item.product_sku, session_id]
-        );
+        // Update inventory for each item (these need individual updates due to different values per row)
+        for (const item of itemsResult.rows) {
+          await client.query(
+            `UPDATE inventory
+             SET quantity_on_hand = $1, updated_at = CURRENT_TIMESTAMP
+             WHERE product_sku = $2 AND warehouse_id = (SELECT warehouse_id FROM cycle_count_sessions WHERE session_id = $3)`,
+            [item.counted_quantity, item.product_sku, session_id]
+          );
+        }
 
+        // Batch update all counted items to ADJUSTED status
+        const itemIds = itemsResult.rows.map((item: any) => item.item_id);
         await client.query(
-          `UPDATE cycle_count_items SET status = 'ADJUSTED' WHERE item_id = $1`,
-          [item.item_id]
+          `UPDATE cycle_count_items SET status = 'ADJUSTED' WHERE item_id = ANY($1)`,
+          [itemIds]
         );
       }
     }

@@ -38,13 +38,15 @@ CREATE TABLE locations (
 CREATE INDEX idx_locations_qr ON locations(qr_code);
 
 -- ============================================
--- 3. SKU CATALOG
+-- 3. SKU CATALOG (pricelab-uyumlu schema)
 -- ============================================
 CREATE TABLE products (
-    sku_code VARCHAR(50) PRIMARY KEY,
-    product_name VARCHAR(200) NOT NULL,
-    description TEXT,
-    barcode VARCHAR(100) UNIQUE NOT NULL,  -- Product barcode
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    product_sku VARCHAR(50) UNIQUE NOT NULL,  -- iwasku (pricelab: product_sku)
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(100),
+    base_cost DECIMAL(12, 4),
+    barcode VARCHAR(100) UNIQUE,  -- Product barcode (WMS-specific)
     base_unit VARCHAR(20) DEFAULT 'EACH',  -- 'EACH', 'BOX', 'PALLET'
     units_per_box INTEGER DEFAULT 1,
     boxes_per_pallet INTEGER DEFAULT 1,
@@ -55,8 +57,9 @@ CREATE TABLE products (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Index for barcode scanning
+-- Indexes
 CREATE INDEX idx_products_barcode ON products(barcode);
+CREATE INDEX idx_products_product_sku ON products(product_sku);
 
 -- ============================================
 -- 4. CONTAINERS (Koliler ve Paletler)
@@ -85,10 +88,10 @@ CREATE INDEX idx_containers_status ON containers(status);
 CREATE TABLE container_contents (
     content_id SERIAL PRIMARY KEY,
     container_id INTEGER REFERENCES containers(container_id) ON DELETE CASCADE,
-    sku_code VARCHAR(50) REFERENCES products(sku_code),
+    product_sku VARCHAR(50) REFERENCES products(product_sku),
     quantity INTEGER NOT NULL,
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(container_id, sku_code)
+    UNIQUE(container_id, product_sku)
 );
 
 -- Index for faster queries
@@ -99,17 +102,17 @@ CREATE INDEX idx_container_contents_container ON container_contents(container_id
 -- ============================================
 CREATE TABLE inventory (
     inventory_id SERIAL PRIMARY KEY,
-    sku_code VARCHAR(50) REFERENCES products(sku_code),
+    product_sku VARCHAR(50) REFERENCES products(product_sku),
     warehouse_id INTEGER REFERENCES warehouses(warehouse_id),
     location_id INTEGER REFERENCES locations(location_id),
     quantity_each INTEGER DEFAULT 0,  -- En küçük birim cinsinden
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_by VARCHAR(100),
-    UNIQUE(sku_code, warehouse_id, location_id)
+    UNIQUE(product_sku, warehouse_id, location_id)
 );
 
 -- Indexes for inventory queries
-CREATE INDEX idx_inventory_sku ON inventory(sku_code);
+CREATE INDEX idx_inventory_sku ON inventory(product_sku);
 CREATE INDEX idx_inventory_warehouse ON inventory(warehouse_id);
 CREATE INDEX idx_inventory_location ON inventory(location_id);
 
@@ -141,7 +144,7 @@ CREATE INDEX idx_transactions_date ON transactions(created_at DESC);
 CREATE TABLE transaction_items (
     item_id SERIAL PRIMARY KEY,
     transaction_id INTEGER REFERENCES transactions(transaction_id) ON DELETE CASCADE,
-    sku_code VARCHAR(50) REFERENCES products(sku_code),
+    product_sku VARCHAR(50) REFERENCES products(product_sku),
     quantity INTEGER NOT NULL,
     unit_type VARCHAR(20) DEFAULT 'EACH',  -- 'EACH', 'BOX', 'PALLET'
     quantity_each INTEGER NOT NULL,  -- En küçük birime çevrilmiş miktar
@@ -151,7 +154,7 @@ CREATE TABLE transaction_items (
 
 -- Index for transaction item queries
 CREATE INDEX idx_transaction_items_transaction ON transaction_items(transaction_id);
-CREATE INDEX idx_transaction_items_sku ON transaction_items(sku_code);
+CREATE INDEX idx_transaction_items_sku ON transaction_items(product_sku);
 
 -- ============================================
 -- 9. USERS (Basit kullanıcı yönetimi)
@@ -190,9 +193,9 @@ BEGIN
             
             -- Update or insert inventory
             IF trans_type = 'IN' THEN
-                INSERT INTO inventory (sku_code, warehouse_id, location_id, quantity_each)
-                VALUES (NEW.sku_code, trans_warehouse_id, trans_location_id, NEW.quantity_each)
-                ON CONFLICT (sku_code, warehouse_id, location_id)
+                INSERT INTO inventory (product_sku, warehouse_id, location_id, quantity_each)
+                VALUES (NEW.product_sku, trans_warehouse_id, trans_location_id, NEW.quantity_each)
+                ON CONFLICT (product_sku, warehouse_id, location_id)
                 DO UPDATE SET 
                     quantity_each = inventory.quantity_each + NEW.quantity_each,
                     last_updated = CURRENT_TIMESTAMP;
@@ -202,7 +205,7 @@ BEGIN
                 SET 
                     quantity_each = quantity_each - NEW.quantity_each,
                     last_updated = CURRENT_TIMESTAMP
-                WHERE sku_code = NEW.sku_code 
+                WHERE product_sku = NEW.product_sku
                     AND warehouse_id = trans_warehouse_id
                     AND location_id = trans_location_id;
             END IF;
@@ -246,8 +249,8 @@ SELECT
     i.warehouse_id,
     w.code as warehouse_code,
     w.name as warehouse_name,
-    i.sku_code,
-    p.product_name,
+    i.product_sku,
+    p.name as product_name,
     p.barcode,
     i.quantity_each,
     FLOOR(i.quantity_each / NULLIF(p.units_per_box, 0)) as quantity_boxes,
@@ -255,11 +258,11 @@ SELECT
     l.qr_code as location_code,
     i.last_updated
 FROM inventory i
-JOIN products p ON i.sku_code = p.sku_code
+JOIN products p ON i.product_sku = p.product_sku
 JOIN warehouses w ON i.warehouse_id = w.warehouse_id
 LEFT JOIN locations l ON i.location_id = l.location_id
 WHERE i.quantity_each > 0
-ORDER BY w.code, p.product_name;
+ORDER BY w.code, p.name;
 
 -- Recent transactions with details
 CREATE VIEW v_recent_transactions AS
@@ -272,11 +275,11 @@ SELECT
     t.created_by,
     t.created_at,
     COUNT(ti.item_id) as item_count,
-    STRING_AGG(DISTINCT p.product_name, ', ') as products
+    STRING_AGG(DISTINCT p.name, ', ') as products
 FROM transactions t
 JOIN warehouses w ON t.warehouse_id = w.warehouse_id
 LEFT JOIN transaction_items ti ON t.transaction_id = ti.transaction_id
-LEFT JOIN products p ON ti.sku_code = p.sku_code
+LEFT JOIN products p ON ti.product_sku = p.product_sku
 GROUP BY t.transaction_id, w.code
 ORDER BY t.created_at DESC;
 
@@ -291,11 +294,11 @@ SELECT
     c.created_at,
     COUNT(cc.content_id) as item_types,
     SUM(cc.quantity) as total_quantity,
-    STRING_AGG(p.product_name || ' (' || cc.quantity || ')', ', ') as contents
+    STRING_AGG(p.name || ' (' || cc.quantity || ')', ', ') as contents
 FROM containers c
 JOIN warehouses w ON c.warehouse_id = w.warehouse_id
 LEFT JOIN container_contents cc ON c.container_id = cc.container_id
-LEFT JOIN products p ON cc.sku_code = p.sku_code
+LEFT JOIN products p ON cc.product_sku = p.product_sku
 GROUP BY c.container_id, w.code;
 
 -- ============================================
@@ -304,7 +307,7 @@ GROUP BY c.container_id, w.code;
 
 -- Function to convert units
 CREATE OR REPLACE FUNCTION convert_to_each(
-    p_sku_code VARCHAR(50),
+    p_product_sku VARCHAR(50),
     p_quantity INTEGER,
     p_unit_type VARCHAR(20)
 )
@@ -314,10 +317,10 @@ DECLARE
     v_boxes_per_pallet INTEGER;
     v_result INTEGER;
 BEGIN
-    SELECT units_per_box, boxes_per_pallet 
+    SELECT units_per_box, boxes_per_pallet
     INTO v_units_per_box, v_boxes_per_pallet
-    FROM products 
-    WHERE sku_code = p_sku_code;
+    FROM products
+    WHERE product_sku = p_product_sku;
     
     CASE p_unit_type
         WHEN 'EACH' THEN v_result := p_quantity;
@@ -336,7 +339,7 @@ $$ LANGUAGE plpgsql;
 
 COMMENT ON TABLE warehouses IS 'Physical warehouse locations (USA, TUR)';
 COMMENT ON TABLE locations IS 'Storage locations within warehouses (QR code based)';
-COMMENT ON TABLE products IS 'SKU catalog with barcode information';
+COMMENT ON TABLE products IS 'SKU catalog - pricelab-compatible schema with WMS extensions';
 COMMENT ON TABLE containers IS 'Boxes and pallets that contain multiple products';
 COMMENT ON TABLE container_contents IS 'Products inside containers';
 COMMENT ON TABLE inventory IS 'Current stock levels by location';

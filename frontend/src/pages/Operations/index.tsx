@@ -5,7 +5,7 @@ import { apiClient, reportApi } from '../../lib/api';
 import { useStore } from '../../stores/appStore';
 import { translations } from '../../i18n/translations';
 import type { ScanResponse, OperationMode, Product, Location, Container } from '../../types';
-import { useAuthStore } from '../../stores/authStore';
+import { useSSOStore } from '../../stores/ssoStore';
 
 // Local imports
 import { playScanSound } from './utils/audio';
@@ -23,7 +23,7 @@ import '../Operations.css';
 function Operations() {
   const navigate = useNavigate();
   const { currentWarehouse, setLastScannedBarcode, language } = useStore();
-  const { user } = useAuthStore();
+  const { wmsUser: user } = useSSOStore();
   const currentUser = user?.username || 'system';
   const t = translations[language];
 

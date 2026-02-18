@@ -241,16 +241,21 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
 
     const newUser = newUserResult.rows[0];
 
-    // Add permissions if provided
+    // Add permissions if provided (batched INSERT)
     if (permissions && permissions.length > 0) {
-      for (const perm of permissions) {
-        await client.query(
-          `INSERT INTO user_permissions (user_id, permission_type, resource)
-           VALUES ($1, $2, $3)
-           ON CONFLICT (user_id, permission_type, resource) DO NOTHING`,
-          [newUser.user_id, perm.permission_type, perm.resource]
-        );
-      }
+      const permValuesClauses: string[] = [];
+      const permParams: any[] = [];
+      permissions.forEach((perm: any, idx: number) => {
+        const offset = idx * 3;
+        permValuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
+        permParams.push(newUser.user_id, perm.permission_type, perm.resource);
+      });
+      await client.query(
+        `INSERT INTO user_permissions (user_id, permission_type, resource)
+         VALUES ${permValuesClauses.join(', ')}
+         ON CONFLICT (user_id, permission_type, resource) DO NOTHING`,
+        permParams
+      );
     }
 
     // Log audit event
@@ -376,15 +381,20 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
         [user_id]
       );
 
-      // Add new permissions
+      // Add new permissions (batched INSERT)
       if (permissions.length > 0) {
-        for (const perm of permissions) {
-          await client.query(
-            `INSERT INTO user_permissions (user_id, permission_type, resource)
-             VALUES ($1, $2, $3)`,
-            [user_id, perm.permission_type, perm.resource]
-          );
-        }
+        const permValuesClauses: string[] = [];
+        const permParams: any[] = [];
+        permissions.forEach((perm: any, idx: number) => {
+          const offset = idx * 3;
+          permValuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
+          permParams.push(user_id, perm.permission_type, perm.resource);
+        });
+        await client.query(
+          `INSERT INTO user_permissions (user_id, permission_type, resource)
+           VALUES ${permValuesClauses.join(', ')}`,
+          permParams
+        );
       }
     }
 

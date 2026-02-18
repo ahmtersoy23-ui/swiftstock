@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS shipment_order_items (
   item_id SERIAL PRIMARY KEY,
   order_id INTEGER NOT NULL,
   line_number INTEGER NOT NULL,
-  sku_code VARCHAR(50) NOT NULL,
+  product_sku VARCHAR(50) NOT NULL,
   product_name VARCHAR(255),
   barcode VARCHAR(100),
   quantity_ordered INTEGER NOT NULL,
@@ -67,8 +67,8 @@ CREATE TABLE IF NOT EXISTS shipment_order_items (
   )),
   CONSTRAINT fk_item_order FOREIGN KEY (order_id)
     REFERENCES shipment_orders(order_id) ON DELETE CASCADE,
-  CONSTRAINT fk_item_sku FOREIGN KEY (sku_code)
-    REFERENCES products(sku_code) ON DELETE RESTRICT,
+  CONSTRAINT fk_item_sku FOREIGN KEY (product_sku)
+    REFERENCES products(product_sku) ON DELETE RESTRICT,
   CONSTRAINT fk_item_location FOREIGN KEY (location_id)
     REFERENCES locations(location_id) ON DELETE SET NULL,
   CONSTRAINT fk_item_picker FOREIGN KEY (picked_by)
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS pick_confirmations (
   order_id INTEGER NOT NULL,
   item_id INTEGER NOT NULL,
   pick_list_id INTEGER,
-  sku_code VARCHAR(50) NOT NULL,
+  product_sku VARCHAR(50) NOT NULL,
   location_id INTEGER,
   quantity_picked INTEGER NOT NULL,
   picked_by INTEGER NOT NULL,
@@ -146,8 +146,8 @@ CREATE TABLE IF NOT EXISTS pick_confirmations (
     REFERENCES shipment_order_items(item_id) ON DELETE CASCADE,
   CONSTRAINT fk_conf_picklist FOREIGN KEY (pick_list_id)
     REFERENCES pick_lists(pick_list_id) ON DELETE SET NULL,
-  CONSTRAINT fk_conf_sku FOREIGN KEY (sku_code)
-    REFERENCES products(sku_code) ON DELETE RESTRICT,
+  CONSTRAINT fk_conf_sku FOREIGN KEY (product_sku)
+    REFERENCES products(product_sku) ON DELETE RESTRICT,
   CONSTRAINT fk_conf_location FOREIGN KEY (location_id)
     REFERENCES locations(location_id) ON DELETE SET NULL,
   CONSTRAINT fk_conf_picker FOREIGN KEY (picked_by)
@@ -187,7 +187,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_ship_date ON shipment_orders(requested_shi
 
 -- Order items indexes
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON shipment_order_items(order_id);
-CREATE INDEX IF NOT EXISTS idx_order_items_sku ON shipment_order_items(sku_code);
+CREATE INDEX IF NOT EXISTS idx_order_items_sku ON shipment_order_items(product_sku);
 CREATE INDEX IF NOT EXISTS idx_order_items_location ON shipment_order_items(location_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_status ON shipment_order_items(status);
 
@@ -205,7 +205,7 @@ CREATE INDEX IF NOT EXISTS idx_plo_order ON pick_list_orders(order_id);
 CREATE INDEX IF NOT EXISTS idx_conf_order ON pick_confirmations(order_id);
 CREATE INDEX IF NOT EXISTS idx_conf_item ON pick_confirmations(item_id);
 CREATE INDEX IF NOT EXISTS idx_conf_picker ON pick_confirmations(picked_by, picked_at DESC);
-CREATE INDEX IF NOT EXISTS idx_conf_sku ON pick_confirmations(sku_code, picked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_conf_sku ON pick_confirmations(product_sku, picked_at DESC);
 
 -- Packing records indexes
 CREATE INDEX IF NOT EXISTS idx_pack_order ON packing_records(order_id);

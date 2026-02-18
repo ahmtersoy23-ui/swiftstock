@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS rma_requests (
 CREATE TABLE IF NOT EXISTS rma_items (
   item_id SERIAL PRIMARY KEY,
   rma_id INTEGER NOT NULL,
-  sku_code VARCHAR(50) NOT NULL,
+  product_sku VARCHAR(50) NOT NULL,
   quantity_requested INTEGER NOT NULL,
   quantity_received INTEGER DEFAULT 0,
   quantity_approved INTEGER DEFAULT 0,
@@ -50,8 +50,8 @@ CREATE TABLE IF NOT EXISTS rma_items (
 
   CONSTRAINT fk_rma_item_rma FOREIGN KEY (rma_id)
     REFERENCES rma_requests(rma_id) ON DELETE CASCADE,
-  CONSTRAINT fk_rma_item_product FOREIGN KEY (sku_code)
-    REFERENCES products(sku_code) ON DELETE CASCADE,
+  CONSTRAINT fk_rma_item_product FOREIGN KEY (product_sku)
+    REFERENCES products(product_sku) ON DELETE CASCADE,
   CONSTRAINT chk_rma_item_condition CHECK (condition IN ('NEW', 'LIKE_NEW', 'GOOD', 'FAIR', 'POOR', 'DAMAGED', 'DEFECTIVE')),
   CONSTRAINT chk_rma_item_action CHECK (action IN ('REFUND', 'REPLACE', 'REPAIR', 'CREDIT', 'DISPOSE'))
 );
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS return_receipts (
   receipt_id SERIAL PRIMARY KEY,
   rma_id INTEGER NOT NULL,
   item_id INTEGER NOT NULL,
-  sku_code VARCHAR(50) NOT NULL,
+  product_sku VARCHAR(50) NOT NULL,
   quantity_received INTEGER NOT NULL,
   condition VARCHAR(20) NOT NULL,
   location_id INTEGER,
@@ -75,8 +75,8 @@ CREATE TABLE IF NOT EXISTS return_receipts (
     REFERENCES rma_requests(rma_id) ON DELETE CASCADE,
   CONSTRAINT fk_receipt_item FOREIGN KEY (item_id)
     REFERENCES rma_items(item_id) ON DELETE CASCADE,
-  CONSTRAINT fk_receipt_product FOREIGN KEY (sku_code)
-    REFERENCES products(sku_code) ON DELETE CASCADE,
+  CONSTRAINT fk_receipt_product FOREIGN KEY (product_sku)
+    REFERENCES products(product_sku) ON DELETE CASCADE,
   CONSTRAINT fk_receipt_location FOREIGN KEY (location_id)
     REFERENCES locations(location_id) ON DELETE SET NULL,
   CONSTRAINT fk_receipt_transaction FOREIGN KEY (transaction_id)
@@ -112,7 +112,7 @@ CREATE INDEX IF NOT EXISTS idx_rma_requests_dates ON rma_requests(requested_date
 
 -- RMA items indexes
 CREATE INDEX IF NOT EXISTS idx_rma_items_rma ON rma_items(rma_id);
-CREATE INDEX IF NOT EXISTS idx_rma_items_sku ON rma_items(sku_code);
+CREATE INDEX IF NOT EXISTS idx_rma_items_sku ON rma_items(product_sku);
 CREATE INDEX IF NOT EXISTS idx_rma_items_action ON rma_items(action);
 
 -- Return receipts indexes

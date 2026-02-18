@@ -7,34 +7,55 @@ import { ApiResponse } from '../index';
 // ============================================
 export const getAllLocations = async (req: Request, res: Response) => {
   try {
-    const { warehouse_code, zone } = req.query;
+    const { warehouse_code, zone, page = '1', limit = '50' } = req.query;
 
-    let query = `
-      SELECT l.*, w.code as warehouse_code, w.name as warehouse_name
-      FROM wms_locations l
-      JOIN wms_warehouses w ON l.warehouse_id = w.warehouse_id
-      WHERE 1=1
-    `;
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit as string) || 50));
+    const offset = (pageNum - 1) * limitNum;
+
+    let whereClause = ' WHERE 1=1';
     const params: any[] = [];
 
     if (warehouse_code) {
       params.push(warehouse_code);
-      query += ` AND w.code = $${params.length}`;
+      whereClause += ` AND w.code = $${params.length}`;
     }
 
     if (zone) {
       params.push(zone);
-      query += ` AND l.zone = $${params.length}`;
+      whereClause += ` AND l.zone = $${params.length}`;
     }
 
-    query += ' ORDER BY l.location_code';
+    // Get total count
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM wms_locations l
+       JOIN wms_warehouses w ON l.warehouse_id = w.warehouse_id
+       ${whereClause}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0].count);
 
-    const result = await pool.query(query, params);
+    // Get paginated data
+    const query = `
+      SELECT l.*, w.code as warehouse_code, w.name as warehouse_name
+      FROM wms_locations l
+      JOIN wms_warehouses w ON l.warehouse_id = w.warehouse_id
+      ${whereClause}
+      ORDER BY l.location_code
+      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+    `;
+
+    const result = await pool.query(query, [...params, limitNum, offset]);
 
     const response: ApiResponse = {
       success: true,
       data: result.rows,
-      message: `Found ${result.rows.length} locations`,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+      },
     };
 
     res.json(response);

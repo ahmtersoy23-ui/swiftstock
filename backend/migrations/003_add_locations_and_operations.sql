@@ -28,7 +28,7 @@ CREATE INDEX idx_locations_active ON locations(is_active);
 CREATE TABLE IF NOT EXISTS location_inventory (
   location_inventory_id SERIAL PRIMARY KEY,
   location_code VARCHAR(50) NOT NULL REFERENCES locations(location_code) ON DELETE CASCADE,
-  sku_code VARCHAR(50) NOT NULL REFERENCES products(sku_code) ON DELETE CASCADE,
+  product_sku VARCHAR(50) NOT NULL REFERENCES products(product_sku) ON DELETE CASCADE,
   quantity_each INTEGER DEFAULT 0,
   quantity_box INTEGER DEFAULT 0,
   quantity_pallet INTEGER DEFAULT 0,
@@ -36,11 +36,11 @@ CREATE TABLE IF NOT EXISTS location_inventory (
   last_moved_at TIMESTAMP DEFAULT NOW(),
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(location_code, sku_code)
+  UNIQUE(location_code, product_sku)
 );
 
 CREATE INDEX idx_location_inventory_location ON location_inventory(location_code);
-CREATE INDEX idx_location_inventory_sku ON location_inventory(sku_code);
+CREATE INDEX idx_location_inventory_sku ON location_inventory(product_sku);
 
 -- ============================================
 -- OPERATION MODES (trigger barkodları)
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS scan_operations (
   operation_id SERIAL PRIMARY KEY,
   session_id INTEGER NOT NULL REFERENCES scan_sessions(session_id) ON DELETE CASCADE,
   operation_type VARCHAR(20) NOT NULL,  -- SCAN_PRODUCT, SCAN_LOCATION, SCAN_MODE, QUANTITY_INPUT
-  sku_code VARCHAR(50) REFERENCES products(sku_code),
+  product_sku VARCHAR(50) REFERENCES products(product_sku),
   location_code VARCHAR(50) REFERENCES locations(location_code),
   from_location VARCHAR(50),
   to_location VARCHAR(50),
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS scan_operations (
 );
 
 CREATE INDEX idx_scan_operations_session ON scan_operations(session_id);
-CREATE INDEX idx_scan_operations_sku ON scan_operations(sku_code);
+CREATE INDEX idx_scan_operations_sku ON scan_operations(product_sku);
 CREATE INDEX idx_scan_operations_location ON scan_operations(location_code);
 
 -- ============================================

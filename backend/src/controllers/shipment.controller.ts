@@ -6,8 +6,33 @@ import pool from '../config/database';
 // ============================================
 export const getAllShipments = async (req: Request, res: Response) => {
   try {
-    const { status, warehouse_id } = req.query;
+    const { status, warehouse_id, page = '1', limit = '50' } = req.query;
 
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit as string) || 50));
+    const offset = (pageNum - 1) * limitNum;
+
+    let whereClause = ' WHERE 1=1';
+    const params: any[] = [];
+
+    if (status) {
+      params.push(status);
+      whereClause += ` AND vs.status = $${params.length}`;
+    }
+
+    if (warehouse_id) {
+      params.push(warehouse_id);
+      whereClause += ` AND vs.source_warehouse_id = $${params.length}`;
+    }
+
+    // Get total count
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM virtual_shipments vs ${whereClause}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0].count);
+
+    // Get paginated data
     let query = `
       SELECT
         vs.*,
@@ -17,27 +42,22 @@ export const getAllShipments = async (req: Request, res: Response) => {
         (SELECT COUNT(*) FROM shipment_boxes sb WHERE sb.shipment_id = vs.shipment_id AND sb.destination = 'FBA') as fba_boxes
       FROM virtual_shipments vs
       JOIN wms_warehouses w ON vs.source_warehouse_id = w.warehouse_id
-      WHERE 1=1
+      ${whereClause}
+      ORDER BY vs.created_at DESC
+      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
-    const params: any[] = [];
 
-    if (status) {
-      params.push(status);
-      query += ` AND vs.status = $${params.length}`;
-    }
-
-    if (warehouse_id) {
-      params.push(warehouse_id);
-      query += ` AND vs.source_warehouse_id = $${params.length}`;
-    }
-
-    query += ` ORDER BY vs.created_at DESC`;
-
-    const result = await pool.query(query, params);
+    const result = await pool.query(query, [...params, limitNum, offset]);
 
     res.json({
       success: true,
       data: result.rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+      },
     });
   } catch (error: any) {
     console.error('Error getting shipments:', error);

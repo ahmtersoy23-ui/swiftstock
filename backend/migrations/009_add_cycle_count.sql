@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS cycle_count_sessions (
 CREATE TABLE IF NOT EXISTS cycle_count_items (
   item_id SERIAL PRIMARY KEY,
   session_id INTEGER NOT NULL,
-  sku_code VARCHAR(50) NOT NULL,
+  product_sku VARCHAR(50) NOT NULL,
   location_id INTEGER,
   expected_quantity INTEGER,
   counted_quantity INTEGER,
@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS cycle_count_items (
 
   CONSTRAINT fk_cci_session FOREIGN KEY (session_id)
     REFERENCES cycle_count_sessions(session_id) ON DELETE CASCADE,
-  CONSTRAINT fk_cci_product FOREIGN KEY (sku_code)
-    REFERENCES products(sku_code) ON DELETE CASCADE,
+  CONSTRAINT fk_cci_product FOREIGN KEY (product_sku)
+    REFERENCES products(product_sku) ON DELETE CASCADE,
   CONSTRAINT fk_cci_location FOREIGN KEY (location_id)
     REFERENCES locations(location_id) ON DELETE SET NULL,
   CONSTRAINT chk_cci_status CHECK (status IN ('PENDING', 'COUNTED', 'VERIFIED', 'ADJUSTED'))
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS cycle_count_adjustments (
   adjustment_id SERIAL PRIMARY KEY,
   item_id INTEGER NOT NULL,
   session_id INTEGER NOT NULL,
-  sku_code VARCHAR(50) NOT NULL,
+  product_sku VARCHAR(50) NOT NULL,
   location_id INTEGER,
   old_quantity INTEGER NOT NULL,
   new_quantity INTEGER NOT NULL,
@@ -69,8 +69,8 @@ CREATE TABLE IF NOT EXISTS cycle_count_adjustments (
     REFERENCES cycle_count_items(item_id) ON DELETE CASCADE,
   CONSTRAINT fk_cca_session FOREIGN KEY (session_id)
     REFERENCES cycle_count_sessions(session_id) ON DELETE CASCADE,
-  CONSTRAINT fk_cca_product FOREIGN KEY (sku_code)
-    REFERENCES products(sku_code) ON DELETE CASCADE,
+  CONSTRAINT fk_cca_product FOREIGN KEY (product_sku)
+    REFERENCES products(product_sku) ON DELETE CASCADE,
   CONSTRAINT fk_cca_location FOREIGN KEY (location_id)
     REFERENCES locations(location_id) ON DELETE SET NULL,
   CONSTRAINT fk_cca_transaction FOREIGN KEY (transaction_id)
@@ -90,14 +90,14 @@ CREATE INDEX IF NOT EXISTS idx_cc_sessions_assigned ON cycle_count_sessions(assi
 
 -- Cycle count items indexes
 CREATE INDEX IF NOT EXISTS idx_cc_items_session ON cycle_count_items(session_id, status);
-CREATE INDEX IF NOT EXISTS idx_cc_items_sku ON cycle_count_items(sku_code);
+CREATE INDEX IF NOT EXISTS idx_cc_items_sku ON cycle_count_items(product_sku);
 CREATE INDEX IF NOT EXISTS idx_cc_items_location ON cycle_count_items(location_id, status);
 CREATE INDEX IF NOT EXISTS idx_cc_items_status ON cycle_count_items(status);
 
 -- Cycle count adjustments indexes
 CREATE INDEX IF NOT EXISTS idx_cc_adj_session ON cycle_count_adjustments(session_id);
 CREATE INDEX IF NOT EXISTS idx_cc_adj_item ON cycle_count_adjustments(item_id);
-CREATE INDEX IF NOT EXISTS idx_cc_adj_sku ON cycle_count_adjustments(sku_code);
+CREATE INDEX IF NOT EXISTS idx_cc_adj_sku ON cycle_count_adjustments(product_sku);
 CREATE INDEX IF NOT EXISTS idx_cc_adj_created ON cycle_count_adjustments(created_at);
 
 -- ============================================

@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { shipmentApi, apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
-import { useAuthStore } from '../stores/authStore';
+import { useSSOStore } from '../stores/ssoStore';
 import type { VirtualShipment, ShipmentBox, Warehouse } from '../types';
 import './Shipments.css';
 
 function Shipments() {
   const navigate = useNavigate();
   const { language } = useStore();
-  const { user } = useAuthStore();
+  const { wmsUser: user } = useSSOStore();
 
   const [shipments, setShipments] = useState<VirtualShipment[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);

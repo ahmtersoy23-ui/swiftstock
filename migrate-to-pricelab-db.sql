@@ -16,7 +16,18 @@ GRANT USAGE ON SCHEMA public TO swiftstock;
 GRANT SELECT ON products TO swiftstock;
 GRANT SELECT ON sku_master TO swiftstock;
 
--- 3. SwiftStock-specific tables (wms_ prefix)
+-- 3. Add WMS-specific columns to shared products table
+ALTER TABLE products ADD COLUMN IF NOT EXISTS barcode VARCHAR(100);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS base_unit VARCHAR(20) DEFAULT 'EACH';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS units_per_box INTEGER DEFAULT 1;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS boxes_per_pallet INTEGER DEFAULT 1;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS weight_kg DECIMAL(10, 2);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS dimensions_cm VARCHAR(50);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+
+CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
+
+-- 4. SwiftStock-specific tables (wms_ prefix)
 
 -- Warehouses
 CREATE TABLE wms_warehouses (

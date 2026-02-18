@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
-import { useAuthStore } from '../stores/authStore';
+import { useSSOStore } from '../stores/ssoStore';
 import { translations } from '../i18n/translations';
 import './Home.css';
 
@@ -87,7 +87,7 @@ const modules: ModuleCard[] = [
 
 function Home() {
   const { language, currentWarehouse } = useStore();
-  const { user } = useAuthStore();
+  const { wmsUser: user } = useSSOStore();
   const t = translations[language];
   const [health, setHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
