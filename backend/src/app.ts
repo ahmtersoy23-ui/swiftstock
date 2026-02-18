@@ -60,10 +60,19 @@ export function createApp(): Application {
 
   app.use(cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, tests, etc.)
-      if (!origin) return callback(null, true);
+      // Reject requests without origin in production
+      if (!origin) {
+        if (process.env.NODE_ENV === 'production') {
+          return callback(new Error('Origin header required in production'));
+        }
+        // Allow in development/test for tools like Postman
+        return callback(null, true);
+      }
 
-      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+        // Only allow all origins in non-production environments
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));

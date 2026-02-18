@@ -10,9 +10,12 @@ build/
 
 # Environment files
 .env
+.env.*
 .env.local
 .env.*.local
 !.env.example
+.env.production.backup
+*.backup
 
 # IDE
 .idea/
