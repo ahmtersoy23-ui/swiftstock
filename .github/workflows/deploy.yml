@@ -38,7 +38,9 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: 2222
-          script: rm -rf /var/www/swiftstock/frontend/assets/*
+          script: |
+            rm -rf /var/www/swiftstock/frontend/assets
+            rm -f /var/www/swiftstock/frontend/index.html
 
       - name: Deploy frontend
         uses: appleboy/scp-action@v0.1.7
