@@ -71,9 +71,6 @@ export function createApp(): Application {
 
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
-      } else if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
-        // Only allow all origins in non-production environments
-        callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
       }
