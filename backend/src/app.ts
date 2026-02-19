@@ -17,6 +17,9 @@ import { requestLoggerMiddleware } from './middleware/requestLogger.middleware';
 export function createApp(): Application {
   const app: Application = express();
 
+  // Trust first proxy (nginx) — required for rate limiting & correct req.ip
+  app.set('trust proxy', 1);
+
   // ============================================
   // SECURITY & PERFORMANCE MIDDLEWARE
   // ============================================
@@ -60,12 +63,8 @@ export function createApp(): Application {
 
   app.use(cors({
     origin: (origin, callback) => {
-      // Reject requests without origin in production
+      // Allow requests without origin (server-to-server, health checks, Postman)
       if (!origin) {
-        if (process.env.NODE_ENV === 'production') {
-          return callback(new Error('Origin header required in production'));
-        }
-        // Allow in development/test for tools like Postman
         return callback(null, true);
       }
 

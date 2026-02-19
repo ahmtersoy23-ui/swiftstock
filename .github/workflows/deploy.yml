@@ -104,5 +104,5 @@ jobs:
           port: 2222
           script: |
             cd /var/www/swiftstock-backend
-            npm ci --production
+            npm ci --omit=dev
             pm2 restart swiftstock-backend

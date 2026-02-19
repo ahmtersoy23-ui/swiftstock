@@ -16,7 +16,7 @@ if (!JWT_SECRET) {
   process.exit(1);
 }
 
-const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '24h';
+const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '1h';
 const SSO_BASE_URL = process.env.SSO_BASE_URL || 'https://apps.iwa.web.tr';
 const APP_CODE = 'swiftstock';
 
@@ -67,7 +67,7 @@ const verifySSOToken = async (token: string): Promise<{
 
     return response.data;
   } catch (error) {
-    logger.error('SSO token verification failed:', error);
+    logger.error(`SSO token verification failed: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 };
@@ -187,7 +187,7 @@ export const authenticateToken = async (
 
     next();
   } catch (error: unknown) {
-    logger.error('Authentication error:', error);
+    logger.error(`Authentication error: ${error instanceof Error ? error.message : String(error)}`);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -261,7 +261,7 @@ export const requirePermission = (permissionType: string, resource?: string) => 
 
       next();
     } catch (error) {
-      logger.error('Permission check error:', error);
+      logger.error(`Permission check error: ${error instanceof Error ? error.message : String(error)}`);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: ERROR_MESSAGES.INTERNAL_ERROR,

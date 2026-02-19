@@ -6,9 +6,9 @@ module.exports = {
     exec_mode: 'cluster',
 
     // Environment variables
-    env_production: {
+    env: {
       NODE_ENV: 'production',
-      PORT: 3001,
+      PORT: 3006,
     },
 
     // Auto restart configuration
