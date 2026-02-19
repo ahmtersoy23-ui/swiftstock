@@ -15,10 +15,10 @@ export const getInventorySummary = async (req: Request, res: Response) => {
     const offset = (pageNum - 1) * limitNum;
 
     let whereClause = '';
-    const params: any[] = [];
+    const params: (string | number | boolean | null)[] = [];
     if (warehouse_code) {
       whereClause = ' WHERE warehouse_code = $1';
-      params.push(warehouse_code);
+      params.push(warehouse_code as string);
     }
 
     // Get total count
@@ -131,11 +131,11 @@ export const getLowStock = async (req: Request, res: Response) => {
     const offset = (pageNum - 1) * limitNum;
 
     let whereClause = 'WHERE i.quantity_each <= $1 AND i.quantity_each > 0';
-    const countParams: any[] = [threshold];
+    const countParams: (string | number | boolean | null)[] = [threshold as string | number];
 
     if (warehouse_code) {
       whereClause += ' AND w.code = $2';
-      countParams.push(warehouse_code);
+      countParams.push(warehouse_code as string);
     }
 
     // Get total count
@@ -209,11 +209,11 @@ export const searchInventory = async (req: Request, res: Response) => {
       )
     `;
 
-    const params: any[] = [`%${query}%`];
+    const params: (string | number | boolean | null)[] = [`%${query}%`];
 
     if (warehouse_code) {
       sql += ' AND warehouse_code = $2';
-      params.push(warehouse_code);
+      params.push(warehouse_code as string);
     }
 
     sql += ' ORDER BY product_name LIMIT 50';

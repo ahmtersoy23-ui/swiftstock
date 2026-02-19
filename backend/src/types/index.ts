@@ -147,7 +147,7 @@ export interface TransactionItem {
 // API RESPONSE TYPES
 // ============================================
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -200,7 +200,7 @@ export interface AddToContainerRequest {
 export interface ScanResponse {
   success: boolean;
   type: 'PRODUCT' | 'LOCATION' | 'CONTAINER' | 'MODE';
-  data?: any;
+  data?: Record<string, unknown>;
   message?: string;
 }
 

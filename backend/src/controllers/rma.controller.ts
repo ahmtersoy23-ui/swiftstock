@@ -27,17 +27,17 @@ export const getAllRMAs = async (req: AuthRequest, res: Response) => {
       LEFT JOIN rma_items i ON r.rma_id = i.rma_id
       WHERE 1=1
     `;
-    const params: any[] = [];
+    const params: (string | number | boolean | null)[] = [];
     let paramIndex = 1;
 
     if (warehouse_id) {
       query += ` AND r.warehouse_id = $${paramIndex++}`;
-      params.push(warehouse_id);
+      params.push(warehouse_id as string);
     }
 
     if (status) {
       query += ` AND r.status = $${paramIndex++}`;
-      params.push(status);
+      params.push(status as string);
     }
 
     query += `
@@ -45,7 +45,7 @@ export const getAllRMAs = async (req: AuthRequest, res: Response) => {
       ORDER BY r.created_at DESC
       LIMIT $${paramIndex++} OFFSET $${paramIndex++}
     `;
-    params.push(limit, offset);
+    params.push(limit as string | number, offset as string | number);
 
     const result = await pool.query(query, params);
 
@@ -175,11 +175,11 @@ export const createRMA = async (req: AuthRequest, res: Response) => {
     // Add items (batched INSERT)
     if (items.length > 0) {
       const valuesClauses: string[] = [];
-      const insertParams: any[] = [];
-      items.forEach((item: any, idx: number) => {
+      const insertParams: (string | number | boolean | null)[] = [];
+      items.forEach((item: Record<string, unknown>, idx: number) => {
         const offset = idx * 5;
         valuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5})`);
-        insertParams.push(rma.rma_id, item.product_sku, item.quantity_requested, item.unit_price || null, item.action);
+        insertParams.push(rma.rma_id, item.product_sku as string, item.quantity_requested as number, (item.unit_price as number) || null, item.action as string);
       });
       await client.query(
         `INSERT INTO rma_items (rma_id, product_sku, quantity_requested, unit_price, action)
@@ -202,7 +202,7 @@ export const createRMA = async (req: AuthRequest, res: Response) => {
       data: rma,
       message: 'RMA talebi oluşturuldu',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error('Create RMA error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -258,7 +258,7 @@ export const approveRMA = async (req: AuthRequest, res: Response) => {
       data: result.rows[0],
       message: 'RMA onaylandı',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error('Approve RMA error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -347,7 +347,7 @@ export const receiveReturn = async (req: AuthRequest, res: Response) => {
       success: true,
       message: 'İade alındı',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error('Receive return error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -402,7 +402,7 @@ export const completeRMA = async (req: AuthRequest, res: Response) => {
       data: result.rows[0],
       message: 'RMA tamamlandı',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error('Complete RMA error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({

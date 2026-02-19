@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiClient, reportApi } from '../../lib/api';
 import { useStore } from '../../stores/appStore';
 import { translations } from '../../i18n/translations';
-import type { ScanResponse, OperationMode, Product, Location, Container } from '../../types';
+import type { ScanResponse, OperationMode, Product, Location, Container, Inventory } from '../../types';
 import { useSSOStore } from '../../stores/ssoStore';
 
 // Local imports
@@ -150,9 +150,10 @@ function Operations() {
           default:
             setError(t.errorUnknownBarcode);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         playScanSound.error();
-        setError(err.error || err.message || t.errorScanFailed);
+        const errorObj = err as { error?: string; message?: string };
+        setError(errorObj.error || errorObj.message || t.errorScanFailed);
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
       } finally {
         setLoading(false);
@@ -307,7 +308,7 @@ function Operations() {
       try {
         const response = await apiClient.getLocationInventory(location.location_id);
         if (response.success && response.data) {
-          const inventoryItems = response.data as any[];
+          const inventoryItems = response.data as Array<{ sku_code: string; product_name?: string; quantity_each?: number }>;
           const countItems: CountItem[] = inventoryItems.map((inv) => ({
             sku_code: inv.sku_code,
             product_name: inv.product_name || inv.sku_code,
@@ -333,7 +334,7 @@ function Operations() {
     }
   };
 
-  const handleProductScan = (product: Product, inventory: any, serial: any, currentWorkflow: WorkflowState) => {
+  const handleProductScan = (product: Product, inventory: Inventory | Inventory[] | undefined, serial: { serial_no: string; full_barcode: string; status: string } | undefined, currentWorkflow: WorkflowState) => {
     const latestWorkflow = workflowRef.current;
     if (!currentWorkflow.mode && !latestWorkflow.mode) {
       playScanSound.error();
@@ -406,7 +407,8 @@ function Operations() {
 
     // Stock check for picking
     if (activeMode?.mode_type === 'PICKING') {
-      const currentStock = inventory?.quantity_each || 0;
+      const singleInventory = Array.isArray(inventory) ? inventory[0] : inventory;
+      const currentStock = singleInventory?.quantity_each || 0;
       const alreadyPicked = activeWorkflow.items.filter((i) => i.product.sku_code === product.sku_code).length;
       if (alreadyPicked >= currentStock) {
         playScanSound.error();
@@ -437,7 +439,7 @@ function Operations() {
     setSuccess(`${t.successAdded}: ${product.sku_code}`);
   };
 
-  const handleContainerScan = (container: Container, contents: any[], currentWorkflow: WorkflowState) => {
+  const handleContainerScan = (container: Container, contents: Array<{ sku_code: string; product_name?: string; product_barcode?: string; quantity: number }>, currentWorkflow: WorkflowState) => {
     if (!currentWorkflow.mode) {
       playScanSound.error();
       setError(t.errorSelectModeFirst);
@@ -463,7 +465,7 @@ function Operations() {
     }
 
     let addedCount = 0;
-    contents.forEach((item: any) => {
+    contents.forEach((item) => {
       const product: Product = {
         sku_code: item.sku_code,
         product_name: item.product_name || item.sku_code,
@@ -533,9 +535,9 @@ function Operations() {
         playScanSound.error();
         setError(response.message || t.errorTransactionFailed);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       playScanSound.error();
-      setError(err.error || t.errorTransactionError);
+      setError((err as { error?: string }).error || t.errorTransactionError);
     } finally {
       setLoading(false);
     }
@@ -583,9 +585,9 @@ function Operations() {
         playScanSound.error();
         setError(response.message || t.errorContainerCreateFailed);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       playScanSound.error();
-      setError(err.error || t.errorContainerCreateFailed);
+      setError((err as { error?: string }).error || t.errorContainerCreateFailed);
     } finally {
       setLoading(false);
     }
@@ -668,10 +670,10 @@ function Operations() {
       } else {
         throw new Error(response.error || 'Rapor kaydedilemedi');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Save count report error:', err);
       playScanSound.error();
-      setError(err.message || 'Rapor kaydedilirken hata oluştu');
+      setError(err instanceof Error ? err.message : 'Rapor kaydedilirken hata oluştu');
     } finally {
       setLoading(false);
     }

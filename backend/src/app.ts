@@ -11,7 +11,7 @@ import swaggerUi from 'swagger-ui-express';
 import routes from './routes';
 import { swaggerSpec } from './config/swagger';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, ERROR_MESSAGES } from './constants';
-import logger, { logError } from './config/logger';
+import { logError } from './config/logger';
 import { requestLoggerMiddleware } from './middleware/requestLogger.middleware';
 
 export function createApp(): Application {
@@ -101,7 +101,7 @@ export function createApp(): Application {
     }));
 
     // Swagger JSON endpoint
-    app.get('/api-docs.json', (req, res) => {
+    app.get('/api-docs.json', (_req, res) => {
       res.setHeader('Content-Type', 'application/json');
       res.send(swaggerSpec);
     });
@@ -114,7 +114,7 @@ export function createApp(): Application {
   app.use('/api', routes);
 
   // Root endpoint
-  app.get('/', (req, res) => {
+  app.get('/', (_req, res) => {
     res.json({
       success: true,
       message: 'WMS Backend API',
@@ -133,7 +133,7 @@ export function createApp(): Application {
   });
 
   // Error handling middleware with Winston logging
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  app.use((err: Error & { status?: number }, req: express.Request, res: express.Response, _next: express.NextFunction) => {
     // Log error with Winston
     logError(err, {
       method: req.method,

@@ -89,7 +89,7 @@ function Home() {
   const { language, currentWarehouse } = useStore();
   const { wmsUser: user } = useSSOStore();
   const t = translations[language];
-  const [health, setHealth] = useState<any>(null);
+  const [health, setHealth] = useState<{ success: boolean; data?: { database?: string } } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';
@@ -143,8 +143,8 @@ function Home() {
           >
             <div className="module-icon">{module.icon}</div>
             <div className="module-info">
-              <h3 className="module-title">{(t as any)[module.titleKey] || module.titleKey}</h3>
-              <p className="module-desc">{(t as any)[module.descKey] || module.descKey}</p>
+              <h3 className="module-title">{(t as Record<string, string>)[module.titleKey] || module.titleKey}</h3>
+              <p className="module-desc">{(t as Record<string, string>)[module.descKey] || module.descKey}</p>
             </div>
             <div className="module-arrow">→</div>
           </Link>

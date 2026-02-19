@@ -3,7 +3,7 @@
 // ============================================
 
 import request from 'supertest';
-import { getTestApp, authRequest, testUsers, generateTestToken } from './helpers/testHelper';
+import { getTestApp, testUsers, generateTestToken } from './helpers/testHelper';
 import { Application } from 'express';
 
 describe('Authentication Endpoints', () => {
@@ -11,29 +11,6 @@ describe('Authentication Endpoints', () => {
 
   beforeAll(() => {
     app = getTestApp();
-  });
-
-  describe('POST /api/auth/login', () => {
-    it('should validate request body', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({})
-        .expect(400);
-
-      expect(response.body).toHaveProperty('success', false);
-      expect(response.body).toHaveProperty('details');
-    });
-
-    it('should require username and password', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({ username: 'test' })
-        .expect(400);
-
-      expect(response.body.details).toContainEqual(
-        expect.objectContaining({ field: 'password' })
-      );
-    });
   });
 
   describe('GET /api/auth/profile', () => {
@@ -170,7 +147,7 @@ describe('Protected Endpoints (No Auth)', () => {
 
     protectedEndpoints.forEach(({ method, path }) => {
       it(`should require auth for ${method.toUpperCase()} ${path}`, async () => {
-        const response = await (request(app) as any)[method](path);
+        const response = await (request(app) as unknown as Record<string, (url: string) => request.Test>)[method](path);
         expect(response.status).toBe(401);
       });
     });

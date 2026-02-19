@@ -6,7 +6,7 @@ import logger from '../config/logger';
 import { Response } from 'express';
 import bcrypt from 'bcrypt';
 import pool from '../config/database';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../constants';
+import { HTTP_STATUS, ERROR_MESSAGES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../constants';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 const SALT_ROUNDS = 10;
@@ -31,17 +31,17 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
 
     // Build query
     let whereConditions: string[] = [];
-    let queryParams: any[] = [];
+    let queryParams: (string | number | boolean | null)[] = [];
     let paramIndex = 1;
 
     if (role) {
       whereConditions.push(`u.role = $${paramIndex++}`);
-      queryParams.push(role);
+      queryParams.push(role as string);
     }
 
     if (warehouse_id) {
       whereConditions.push(`u.warehouse_id = $${paramIndex++}`);
-      queryParams.push(warehouse_id);
+      queryParams.push(warehouse_id as string);
     }
 
     if (is_active !== undefined) {
@@ -245,11 +245,11 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     // Add permissions if provided (batched INSERT)
     if (permissions && permissions.length > 0) {
       const permValuesClauses: string[] = [];
-      const permParams: any[] = [];
-      permissions.forEach((perm: any, idx: number) => {
+      const permParams: (string | number | boolean | null)[] = [];
+      permissions.forEach((perm: Record<string, unknown>, idx: number) => {
         const offset = idx * 3;
         permValuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
-        permParams.push(newUser.user_id, perm.permission_type, perm.resource);
+        permParams.push(newUser.user_id, perm.permission_type as string, perm.resource as string);
       });
       await client.query(
         `INSERT INTO user_permissions (user_id, permission_type, resource)
@@ -336,7 +336,7 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
 
     // Build update query
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | boolean | null)[] = [];
     let paramIndex = 1;
 
     if (email !== undefined) {
@@ -385,11 +385,11 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
       // Add new permissions (batched INSERT)
       if (permissions.length > 0) {
         const permValuesClauses: string[] = [];
-        const permParams: any[] = [];
-        permissions.forEach((perm: any, idx: number) => {
+        const permParams: (string | number | boolean | null)[] = [];
+        permissions.forEach((perm: Record<string, unknown>, idx: number) => {
           const offset = idx * 3;
           permValuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
-          permParams.push(user_id, perm.permission_type, perm.resource);
+          permParams.push(user_id, perm.permission_type as string, perm.resource as string);
         });
         await client.query(
           `INSERT INTO user_permissions (user_id, permission_type, resource)

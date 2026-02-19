@@ -66,7 +66,7 @@ function Transactions() {
       if (response.success && response.data) {
         setTransactions(response.data as TransactionWithDetails[]);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(t.failedToLoadTransactions);
     } finally {
       setLoading(false);

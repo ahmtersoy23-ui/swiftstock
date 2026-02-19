@@ -133,7 +133,7 @@ export interface ScanResponse {
   container?: Container;
   location?: Location;
   inventory?: Inventory | Inventory[];
-  contents?: any[];
+  contents?: Record<string, unknown>[];
 }
 
 export interface TransactionCreateRequest {
@@ -178,7 +178,7 @@ export interface InventorySummary {
 // API RESPONSE TYPES
 // ============================================
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;

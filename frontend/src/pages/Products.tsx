@@ -87,7 +87,7 @@ function Products() {
       loadProducts();
 
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to delete products');
     }
   };
@@ -110,8 +110,9 @@ function Products() {
       loadProducts();
 
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to delete product');
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: string } } };
+      setError(errorObj.response?.data?.error || 'Failed to delete product');
     }
   };
 
@@ -178,7 +179,7 @@ function Products() {
       loadProducts();
 
       setTimeout(() => setSuccess(null), 5000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to delete all products');
     } finally {
       setLoading(false);
@@ -252,7 +253,7 @@ function Products() {
           setTotalProducts(data.pagination.total);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load products:', err);
       setError('Failed to load products');
     } finally {
@@ -291,8 +292,9 @@ function Products() {
       loadProducts();
 
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to add product');
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: string } } };
+      setError(errorObj.response?.data?.error || 'Failed to add product');
     }
   };
 
@@ -318,10 +320,10 @@ function Products() {
           const workbook = XLSX.read(data, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][];
 
           // Skip header row if present
-          const startIndex = jsonData[0]?.some((cell: any) =>
+          const startIndex = jsonData[0]?.some((cell: unknown) =>
             String(cell).toLowerCase().includes('iwasku') ||
             String(cell).toLowerCase().includes('sku')
           ) ? 1 : 0;
@@ -391,10 +393,11 @@ function Products() {
             if ((i + 1) % 100 === 0) {
               setSuccess(`Processing... ${i + 1}/${rows.length} (${successCount} added, ${skipCount} skipped)`);
             }
-          } catch (err: any) {
+          } catch (err: unknown) {
             // Check if it's a duplicate key error
-            if (err.response?.data?.error?.includes('duplicate') ||
-                err.response?.data?.error?.includes('already exists')) {
+            const errorObj = err as { response?: { data?: { error?: string } } };
+            if (errorObj.response?.data?.error?.includes('duplicate') ||
+                errorObj.response?.data?.error?.includes('already exists')) {
               skipCount++;
             } else {
               errorCount++;

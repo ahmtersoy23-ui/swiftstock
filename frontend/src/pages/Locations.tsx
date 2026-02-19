@@ -108,7 +108,7 @@ function Locations() {
       if (warehousesResponse.success) {
         setWarehouses(warehousesResponse.data || []);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to load data');
     } finally {
       setLoading(false);
@@ -141,8 +141,9 @@ function Locations() {
         loadData();
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create location');
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: string } } };
+      setError(errorObj.response?.data?.error || 'Failed to create location');
     }
   };
 

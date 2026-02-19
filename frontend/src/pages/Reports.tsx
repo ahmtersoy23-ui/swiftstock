@@ -21,6 +21,28 @@ interface CountReport {
   created_at: string;
 }
 
+interface CountReportDetailItem {
+  sku_code: string;
+  product_name?: string;
+  expected_quantity: number;
+  counted_quantity: number;
+  variance: number;
+}
+
+interface CountReportDetailLocation {
+  location_code: string;
+  total_expected: number;
+  total_counted: number;
+  total_variance: number;
+  items?: CountReportDetailItem[];
+  unexpectedItems?: CountReportDetailItem[];
+}
+
+interface CountReportDetail {
+  report: CountReport;
+  locations?: CountReportDetailLocation[];
+}
+
 interface InventoryReportItem {
   sku_code: string;
   product_name: string;
@@ -45,7 +67,7 @@ function Reports() {
     items: InventoryReportItem[];
   } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [selectedReport, setSelectedReport] = useState<CountReportDetail | null>(null);
 
   // Load count reports
   const loadCountReports = async () => {
@@ -90,7 +112,7 @@ function Reports() {
     try {
       const response = await reportApi.getCountReportById(reportId);
       if (response.success) {
-        setSelectedReport(response.data);
+        setSelectedReport(response.data as CountReportDetail | null);
       }
     } catch (err) {
       console.error('Failed to load report details:', err);
@@ -224,7 +246,7 @@ function Reports() {
                 <span>{language === 'tr' ? 'Lokasyonlar' : 'Locations'}</span>
                 <span className="locations-count">{selectedReport.locations?.length || 0}</span>
               </div>
-              {selectedReport.locations?.map((loc: any, locIdx: number) => (
+              {selectedReport.locations?.map((loc, locIdx) => (
                 <div key={locIdx} className="location-block">
                   <div className="location-row">
                     <span className="location-code">{loc.location_code}</span>
@@ -236,7 +258,7 @@ function Reports() {
                     </span>
                   </div>
                   {/* Items in location */}
-                  {loc.items?.map((item: any, itemIdx: number) => (
+                  {loc.items?.map((item, itemIdx) => (
                     <div key={itemIdx} className="item-row">
                       <div className="item-info">
                         <span className="item-name">{item.product_name || item.sku_code}</span>
@@ -253,12 +275,12 @@ function Reports() {
                     </div>
                   ))}
                   {/* Unexpected items */}
-                  {loc.unexpectedItems?.length > 0 && (
+                  {(loc.unexpectedItems?.length ?? 0) > 0 && (
                     <>
                       <div className="unexpected-header">
                         {language === 'tr' ? 'Beklenmeyen Urunler' : 'Unexpected Items'}
                       </div>
-                      {loc.unexpectedItems.map((item: any, itemIdx: number) => (
+                      {loc.unexpectedItems!.map((item, itemIdx) => (
                         <div key={itemIdx} className="item-row unexpected">
                           <div className="item-info">
                             <span className="item-name">{item.product_name || item.sku_code}</span>

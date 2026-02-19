@@ -35,9 +35,9 @@ export const saveCountReport = async (req: AuthRequest, res: Response) => {
     // Calculate totals
     let totalExpected = 0;
     let totalCounted = 0;
-    locations.forEach((loc: any) => {
-      totalExpected += loc.totalExpected || 0;
-      totalCounted += loc.totalCounted || 0;
+    locations.forEach((loc: Record<string, unknown>) => {
+      totalExpected += (loc.totalExpected as number) || 0;
+      totalCounted += (loc.totalCounted as number) || 0;
     });
     const totalVariance = totalCounted - totalExpected;
     const variancePct = totalExpected > 0 ? ((totalVariance / totalExpected) * 100).toFixed(2) : '0.00';
@@ -76,21 +76,23 @@ export const saveCountReport = async (req: AuthRequest, res: Response) => {
     // Add location details (batch location inserts)
     if (locations.length > 0) {
       const locValuesClauses: string[] = [];
-      const locParams: any[] = [];
-      locations.forEach((loc: any, idx: number) => {
+      const locParams: (string | number | boolean | null)[] = [];
+      locations.forEach((loc: Record<string, unknown>, idx: number) => {
         const offset = idx * 8;
         locValuesClauses.push(
           `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8})`
         );
+        const locObj = loc.location as Record<string, unknown> | undefined;
+        const unexpectedItems = loc.unexpectedItems as unknown[] | undefined;
         locParams.push(
           report.report_id,
-          loc.location?.location_id || null,
-          loc.location?.location_code || loc.location?.qr_code || 'Unknown',
-          loc.location?.qr_code || null,
-          loc.totalExpected || 0,
-          loc.totalCounted || 0,
-          loc.totalVariance || 0,
-          loc.unexpectedItems?.length || 0,
+          (locObj?.location_id as string) || null,
+          (locObj?.location_code as string) || (locObj?.qr_code as string) || 'Unknown',
+          (locObj?.qr_code as string) || null,
+          (loc.totalExpected as number) || 0,
+          (loc.totalCounted as number) || 0,
+          (loc.totalVariance as number) || 0,
+          unexpectedItems?.length || 0,
         );
       });
 
@@ -105,10 +107,10 @@ export const saveCountReport = async (req: AuthRequest, res: Response) => {
 
       // Collect all items across all locations for batch insert
       const allItemValuesClauses: string[] = [];
-      const allItemParams: any[] = [];
+      const allItemParams: (string | number | boolean | null | string[])[] = [];
       let itemParamOffset = 0;
 
-      locations.forEach((loc: any, locIdx: number) => {
+      locations.forEach((loc: Record<string, unknown>, locIdx: number) => {
         const reportLocationId = locInsertResult.rows[locIdx].report_location_id;
 
         // Add expected items
@@ -184,7 +186,7 @@ export const saveCountReport = async (req: AuthRequest, res: Response) => {
       },
       message: `Sayım raporu kaydedildi: ${reportNumber}`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error('Save count report error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -211,48 +213,48 @@ export const getAllCountReports = async (req: AuthRequest, res: Response) => {
       JOIN wms_warehouses w ON cr.warehouse_id = w.warehouse_id
       WHERE 1=1
     `;
-    const params: any[] = [];
+    const params: (string | number | boolean | null)[] = [];
     let paramIndex = 1;
 
     if (warehouse_id) {
       query += ` AND cr.warehouse_id = $${paramIndex++}`;
-      params.push(warehouse_id);
+      params.push(warehouse_id as string);
     }
 
     if (start_date) {
       query += ` AND cr.report_date >= $${paramIndex++}`;
-      params.push(start_date);
+      params.push(start_date as string);
     }
 
     if (end_date) {
       query += ` AND cr.report_date <= $${paramIndex++}`;
-      params.push(end_date);
+      params.push(end_date as string);
     }
 
     query += `
       ORDER BY cr.report_date DESC, cr.created_at DESC
       LIMIT $${paramIndex++} OFFSET $${paramIndex++}
     `;
-    params.push(limit, offset);
+    params.push(limit as string | number, offset as string | number);
 
     const result = await pool.query(query, params);
 
     // Get total count for pagination
     let countQuery = `SELECT COUNT(*) as total FROM count_reports cr WHERE 1=1`;
-    const countParams: any[] = [];
+    const countParams: (string | number | boolean | null)[] = [];
     let countParamIndex = 1;
 
     if (warehouse_id) {
       countQuery += ` AND cr.warehouse_id = $${countParamIndex++}`;
-      countParams.push(warehouse_id);
+      countParams.push(warehouse_id as string);
     }
     if (start_date) {
       countQuery += ` AND cr.report_date >= $${countParamIndex++}`;
-      countParams.push(start_date);
+      countParams.push(start_date as string);
     }
     if (end_date) {
       countQuery += ` AND cr.report_date <= $${countParamIndex++}`;
-      countParams.push(end_date);
+      countParams.push(end_date as string);
     }
 
     const countResult = await pool.query(countQuery, countParams);

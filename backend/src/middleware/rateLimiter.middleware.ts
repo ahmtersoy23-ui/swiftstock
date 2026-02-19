@@ -1,10 +1,10 @@
 // ============================================
 // RATE LIMITER MIDDLEWARE
-import logger from '../config/logger';
+
 // ============================================
 
 import rateLimit from 'express-rate-limit';
-import { HTTP_STATUS } from '../constants';
+
 
 /**
  * Login rate limiter - Brute force protection

@@ -28,27 +28,27 @@ export const getAllOrders = async (req: AuthRequest, res: Response): Promise<voi
     const offset = (pageNum - 1) * limitNum;
 
     let whereConditions: string[] = [];
-    let queryParams: any[] = [];
+    let queryParams: (string | number | boolean | null)[] = [];
     let paramIndex = 1;
 
     if (warehouse_code) {
       whereConditions.push(`so.warehouse_code = $${paramIndex++}`);
-      queryParams.push(warehouse_code);
+      queryParams.push(warehouse_code as string);
     }
 
     if (status) {
       whereConditions.push(`so.status = $${paramIndex++}`);
-      queryParams.push(status);
+      queryParams.push(status as string);
     }
 
     if (priority) {
       whereConditions.push(`so.priority = $${paramIndex++}`);
-      queryParams.push(priority);
+      queryParams.push(priority as string);
     }
 
     if (assigned_picker_id) {
       whereConditions.push(`so.assigned_picker_id = $${paramIndex++}`);
-      queryParams.push(assigned_picker_id);
+      queryParams.push(assigned_picker_id as string);
     }
 
     if (search) {
@@ -332,7 +332,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       data: completeOrder.rows[0],
       message: 'Sipariş başarıyla oluşturuldu.',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error('Create order error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -641,11 +641,11 @@ export const getPickerPerformance = async (req: AuthRequest, res: Response): Pro
     const { start_date, end_date } = req.query;
 
     let dateFilter = '';
-    const params: any[] = [picker_id];
+    const params: (string | number | boolean | null)[] = [picker_id];
 
     if (start_date && end_date) {
       dateFilter = `AND so.picking_completed_at BETWEEN $2 AND $3`;
-      params.push(start_date, end_date);
+      params.push(start_date as string, end_date as string);
     }
 
     const result = await pool.query(

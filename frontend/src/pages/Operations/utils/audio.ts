@@ -2,7 +2,7 @@
 
 const audioContext =
   typeof window !== 'undefined'
-    ? new (window.AudioContext || (window as any).webkitAudioContext)()
+    ? new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
     : null;
 
 export const playTone = (

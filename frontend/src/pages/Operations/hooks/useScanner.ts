@@ -20,7 +20,7 @@ interface UseScannerOptions {
 export function useScanner({ onScan, onError, translations }: UseScannerOptions) {
   const [cameraActive, setCameraActive] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const listenerRef = useRef<any>(null);
+  const listenerRef = useRef<{ remove: () => void } | null>(null);
   const scannerActiveRef = useRef(false);
   const scannerReadyRef = useRef(false);
   const scannerRetryCount = useRef(0);
@@ -96,7 +96,7 @@ export function useScanner({ onScan, onError, translations }: UseScannerOptions)
       setTimeout(() => {
         scannerReadyRef.current = true;
       }, SCANNER_STARTUP_DELAY);
-    } catch (err: any) {
+    } catch (err: unknown) {
       scannerActiveRef.current = false;
       scannerReadyRef.current = false;
 

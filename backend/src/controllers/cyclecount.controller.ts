@@ -27,17 +27,17 @@ export const getAllSessions = async (req: AuthRequest, res: Response) => {
       LEFT JOIN cycle_count_items i ON s.session_id = i.session_id
       WHERE 1=1
     `;
-    const params: any[] = [];
+    const params: (string | number | boolean | null)[] = [];
     let paramIndex = 1;
 
     if (warehouse_id) {
       query += ` AND s.warehouse_id = $${paramIndex++}`;
-      params.push(warehouse_id);
+      params.push(warehouse_id as string);
     }
 
     if (status) {
       query += ` AND s.status = $${paramIndex++}`;
-      params.push(status);
+      params.push(status as string);
     }
 
     query += `
@@ -45,7 +45,7 @@ export const getAllSessions = async (req: AuthRequest, res: Response) => {
       ORDER BY s.created_at DESC
       LIMIT $${paramIndex++} OFFSET $${paramIndex++}
     `;
-    params.push(limit, offset);
+    params.push(limit as string | number, offset as string | number);
 
     const result = await pool.query(query, params);
 
@@ -173,25 +173,25 @@ export const createSession = async (req: AuthRequest, res: Response) => {
     // Add items to session if provided (batched approach)
     if (items && Array.isArray(items) && items.length > 0) {
       // Batch-fetch all inventory quantities in one query
-      const skuList = items.map((item: any) => item.product_sku);
+      const skuList = items.map((item: Record<string, unknown>) => item.product_sku);
       const invResult = await client.query(
         `SELECT product_sku, quantity_on_hand FROM inventory
          WHERE product_sku = ANY($1) AND warehouse_id = $2`,
         [skuList, warehouse_id]
       );
       const invMap = new Map<string, number>();
-      invResult.rows.forEach((row: any) => {
-        invMap.set(row.product_sku, row.quantity_on_hand);
+      invResult.rows.forEach((row: Record<string, unknown>) => {
+        invMap.set(row.product_sku as string, row.quantity_on_hand as number);
       });
 
       // Batch INSERT all items
       const valuesClauses: string[] = [];
-      const insertParams: any[] = [];
-      items.forEach((item: any, idx: number) => {
-        const expectedQty = item.expected_quantity ?? invMap.get(item.product_sku) ?? 0;
+      const insertParams: (string | number | boolean | null)[] = [];
+      items.forEach((item: Record<string, unknown>, idx: number) => {
+        const expectedQty = (item.expected_quantity as number) ?? invMap.get(item.product_sku as string) ?? 0;
         const offset = idx * 5;
         valuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5})`);
-        insertParams.push(session.session_id, item.product_sku, item.location_id || null, expectedQty, 'PENDING');
+        insertParams.push(session.session_id, item.product_sku as string, (item.location_id as string) || null, expectedQty, 'PENDING');
       });
       await client.query(
         `INSERT INTO cycle_count_items
@@ -208,7 +208,7 @@ export const createSession = async (req: AuthRequest, res: Response) => {
       data: session,
       message: 'Sayım oturumu oluşturuldu',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error('Create cycle count session error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -318,7 +318,7 @@ export const recordCount = async (req: AuthRequest, res: Response) => {
       data: updateResult.rows[0],
       message: 'Sayım kaydedildi',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error('Record count error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -366,23 +366,23 @@ export const completeSession = async (req: AuthRequest, res: Response) => {
     // Create adjustment records (batched INSERT)
     if (itemsResult.rows.length > 0) {
       const adjustValuesClauses: string[] = [];
-      const adjustParams: any[] = [];
+      const adjustParams: (string | number | boolean | null)[] = [];
       const adjustedBy = req.user?.username || 'system';
 
-      itemsResult.rows.forEach((item: any, idx: number) => {
-        const adjustmentType = item.variance > 0 ? 'INCREASE' : 'DECREASE';
+      itemsResult.rows.forEach((item: Record<string, unknown>, idx: number) => {
+        const adjustmentType = (item.variance as number) > 0 ? 'INCREASE' : 'DECREASE';
         const offset = idx * 9;
         adjustValuesClauses.push(
           `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`
         );
         adjustParams.push(
-          item.item_id,
+          item.item_id as number,
           session_id,
-          item.product_sku,
-          item.location_id,
-          item.expected_quantity,
-          item.counted_quantity,
-          item.variance,
+          item.product_sku as string,
+          (item.location_id as number) || null,
+          item.expected_quantity as number,
+          item.counted_quantity as number,
+          item.variance as number,
           adjustmentType,
           adjustedBy,
         );
@@ -408,7 +408,7 @@ export const completeSession = async (req: AuthRequest, res: Response) => {
         }
 
         // Batch update all counted items to ADJUSTED status
-        const itemIds = itemsResult.rows.map((item: any) => item.item_id);
+        const itemIds = itemsResult.rows.map((item: Record<string, unknown>) => item.item_id);
         await client.query(
           `UPDATE cycle_count_items SET status = 'ADJUSTED' WHERE item_id = ANY($1)`,
           [itemIds]
@@ -434,7 +434,7 @@ export const completeSession = async (req: AuthRequest, res: Response) => {
         auto_adjusted: auto_adjust,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error('Complete cycle count error:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({

@@ -313,7 +313,7 @@ export const requireWarehouse = (req: AuthRequest, res: Response, next: NextFunc
  */
 export const optionalAuth = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
@@ -329,7 +329,7 @@ export const optionalAuth = async (
     const ssoResult = await verifySSOToken(token);
 
     if (ssoResult?.success && ssoResult.data) {
-      const { user: ssoUser, role: ssoRole } = ssoResult.data;
+      const { user: ssoUser, role: _ssoRole } = ssoResult.data;
 
       // DB lookup (simplified — no auto-create for optional auth)
       const userResult = await pool.query(

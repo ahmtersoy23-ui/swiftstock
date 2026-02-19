@@ -5,7 +5,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database';
-import { AuthUser, JWT_SECRET, generateToken, generateRefreshToken } from '../middleware/auth.middleware';
+import { AuthUser, generateToken } from '../middleware/auth.middleware';
 import logger from '../utils/logger';
 
 const BCRYPT_ROUNDS = 12;

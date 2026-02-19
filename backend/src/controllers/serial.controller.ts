@@ -98,7 +98,7 @@ export const generateSerialNumbers = async (req: Request, res: Response) => {
         })),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Generate serial numbers error:', error);
     res.status(500).json({
       success: false,
@@ -121,15 +121,15 @@ export const getSerialNumbers = async (req: Request, res: Response) => {
       LEFT JOIN wms_locations l ON l.location_id = sn.location_id
       WHERE sn.product_sku = $1
     `;
-    const params: any[] = [product_sku];
+    const params: (string | number | boolean | null)[] = [product_sku];
 
     if (status) {
       query += ` AND sn.status = $${params.length + 1}`;
-      params.push(status);
+      params.push(status as string);
     }
 
     query += ` ORDER BY sn.serial_id DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(limit, offset);
+    params.push(limit as string | number, offset as string | number);
 
     const result = await pool.query(query, params);
 
@@ -148,7 +148,7 @@ export const getSerialNumbers = async (req: Request, res: Response) => {
         offset: Number(offset),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Get serial numbers error:', error);
     res.status(500).json({
       success: false,
@@ -184,7 +184,7 @@ export const lookupSerialBarcode = async (req: Request, res: Response) => {
       success: true,
       data: result.rows[0],
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Lookup serial barcode error:', error);
     res.status(500).json({
       success: false,
@@ -230,7 +230,7 @@ export const updateSerialStatus = async (req: Request, res: Response) => {
       success: true,
       data: result.rows[0],
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Update serial status error:', error);
     res.status(500).json({
       success: false,
@@ -271,7 +271,7 @@ export const getSerialStats = async (req: Request, res: Response) => {
       success: true,
       data: stats,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Get serial stats error:', error);
     res.status(500).json({
       success: false,
@@ -387,7 +387,7 @@ export const getSerialHistory = async (req: Request, res: Response) => {
         scan_operations: scanOpsResult.rows,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Get serial history error:', error);
     res.status(500).json({
       success: false,

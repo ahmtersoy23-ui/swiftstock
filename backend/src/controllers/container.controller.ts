@@ -65,11 +65,11 @@ export const createContainer = async (req: Request, res: Response) => {
     // Add items to container (batched INSERT)
     if (containerItems.length > 0) {
       const valuesClauses: string[] = [];
-      const insertParams: any[] = [];
-      containerItems.forEach((item: any, idx: number) => {
+      const insertParams: (string | number | boolean | null)[] = [];
+      containerItems.forEach((item: Record<string, unknown>, idx: number) => {
         const offset = idx * 3;
         valuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
-        insertParams.push(container.container_id, item.product_sku, item.quantity);
+        insertParams.push(container.container_id, item.product_sku as string, item.quantity as number);
       });
       await client.query(
         `INSERT INTO wms_container_contents (container_id, product_sku, quantity)
@@ -89,7 +89,7 @@ export const createContainer = async (req: Request, res: Response) => {
       },
       message: `Container ${barcode} created successfully`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error('Error creating container:', error);
     res.status(500).json({
@@ -139,7 +139,7 @@ export const getContainerByBarcode = async (req: Request, res: Response) => {
         contents: contentsResult.rows,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting container:', error);
     res.status(500).json({
       success: false,
@@ -215,11 +215,11 @@ export const openContainer = async (req: Request, res: Response) => {
     // Add transaction items (batched INSERT) - inventory update handled by trigger
     if (contentsResult.rows.length > 0) {
       const valuesClauses: string[] = [];
-      const insertParams: any[] = [];
-      contentsResult.rows.forEach((content: any, idx: number) => {
+      const insertParams: (string | number | boolean | null)[] = [];
+      contentsResult.rows.forEach((content: Record<string, unknown>, idx: number) => {
         const offset = idx * 4;
         valuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, 'EACH', $${offset + 4})`);
-        insertParams.push(transaction_id, content.product_sku, content.quantity, content.quantity);
+        insertParams.push(transaction_id, content.product_sku as string, content.quantity as number, content.quantity as number);
       });
       await client.query(
         `INSERT INTO transaction_items
@@ -247,7 +247,7 @@ export const openContainer = async (req: Request, res: Response) => {
         items_returned: contentsResult.rows.length,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error('Error opening container:', error);
     res.status(500).json({
@@ -272,24 +272,24 @@ export const getAllContainers = async (req: Request, res: Response) => {
     const offset = (pageNum - 1) * limitNum;
 
     let whereClause = ' WHERE 1=1';
-    const params: any[] = [];
+    const params: (string | number | boolean | null)[] = [];
     let paramCount = 1;
 
     if (warehouse_code) {
       whereClause += ` AND w.code = $${paramCount}`;
-      params.push(warehouse_code);
+      params.push(warehouse_code as string);
       paramCount++;
     }
 
     if (status) {
       whereClause += ` AND c.status = $${paramCount}`;
-      params.push(status);
+      params.push(status as string);
       paramCount++;
     }
 
     if (type) {
       whereClause += ` AND c.container_type = $${paramCount}`;
-      params.push(type);
+      params.push(type as string);
       paramCount++;
     }
 
@@ -352,7 +352,7 @@ export const getAllContainers = async (req: Request, res: Response) => {
         totalPages: Math.ceil(total / limitNum),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting containers:', error);
     res.status(500).json({
       success: false,

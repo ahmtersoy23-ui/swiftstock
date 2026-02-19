@@ -7,7 +7,7 @@ import { ApiResponse } from '../index';
 // WAREHOUSE ROUTES
 // ============================================
 
-export const getAllWarehouses = async (req: Request, res: Response) => {
+export const getAllWarehouses = async (_req: Request, res: Response) => {
   try {
     const result = await pool.query(
       'SELECT * FROM wms_warehouses WHERE is_active = true ORDER BY code'
@@ -20,7 +20,7 @@ export const getAllWarehouses = async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting warehouses:', error);
     res.status(500).json({
       success: false,
@@ -51,7 +51,7 @@ export const getWarehouseByCode = async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting warehouse:', error);
     res.status(500).json({
       success: false,
@@ -82,7 +82,7 @@ export const getWarehouseById = async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting warehouse:', error);
     res.status(500).json({
       success: false,

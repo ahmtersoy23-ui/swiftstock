@@ -192,7 +192,7 @@ export interface ScanResponse {
   location?: Location;
   operationMode?: OperationMode;
   inventory?: Inventory | Inventory[];
-  contents?: any[];
+  contents?: Array<{ sku_code: string; product_name?: string; product_barcode?: string; quantity: number }>;
   serial?: {
     serial_no: string;
     full_barcode: string;

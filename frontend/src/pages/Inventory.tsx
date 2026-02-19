@@ -57,7 +57,7 @@ interface SerialInfo {
 interface SerialHistoryData {
   serial: SerialInfo;
   history: SerialHistoryEvent[];
-  scan_operations: any[];
+  scan_operations: Array<{ operation_id: number; operation_type: string; scanned_at: string }>;
 }
 
 interface ContainerContent {
@@ -98,11 +98,11 @@ function Inventory() {
 
   // SKU Query Results
   const [skuResults, setSkuResults] = useState<SKUInventoryItem[]>([]);
-  const [skuInfo, setSkuInfo] = useState<any>(null);
+  const [skuInfo, setSkuInfo] = useState<{ sku_code: string; product_name: string; barcode?: string } | null>(null);
 
   // Location Query Results
   const [locationResults, setLocationResults] = useState<LocationInventoryItem[]>([]);
-  const [locationInfo, setLocationInfo] = useState<any>(null);
+  const [locationInfo, setLocationInfo] = useState<{ location_id: number; location_code: string; zone?: string } | null>(null);
 
   // Serial History Results
   const [serialHistory, setSerialHistory] = useState<SerialHistoryData | null>(null);
@@ -184,7 +184,7 @@ function Inventory() {
           setError(language === 'tr' ? 'Koli/Palet bulunamadı' : 'Container not found');
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (queryMode === 'SERIAL') {
         setError(language === 'tr' ? 'Seri numara bulunamadı' : 'Serial number not found');
       } else if (queryMode === 'CONTAINER') {
@@ -270,7 +270,7 @@ function Inventory() {
     }
   };
 
-  const getTotalByType = (items: any[], type: 'EACH' | 'BOX' | 'PALLET') => {
+  const getTotalByType = (items: Array<{ quantity_each?: number; quantity_box?: number; quantity_pallet?: number }>, type: 'EACH' | 'BOX' | 'PALLET') => {
     const key = type === 'EACH' ? 'quantity_each' : type === 'BOX' ? 'quantity_box' : 'quantity_pallet';
     return items.reduce((sum, item) => sum + (item[key] || 0), 0);
   };

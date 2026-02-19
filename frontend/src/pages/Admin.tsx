@@ -78,8 +78,8 @@ function Admin() {
       } else {
         setError(response.error || t.error);
       }
-    } catch (err: any) {
-      setError(err.error || t.error);
+    } catch (err: unknown) {
+      setError((err as { error?: string }).error || t.error);
     } finally {
       setLoading(false);
     }
@@ -120,8 +120,8 @@ function Admin() {
       } else {
         alert(response.error || t.error);
       }
-    } catch (err: any) {
-      alert(err.error || t.error);
+    } catch (err: unknown) {
+      alert((err as { error?: string }).error || t.error);
     }
   };
 
@@ -139,12 +139,12 @@ function Admin() {
     setSaving(true);
     try {
       if (editingUser) {
-        const updateData: any = {
+        const updateData = {
           username: form.username,
           email: form.email,
-          full_name: form.full_name || null,
+          full_name: form.full_name || undefined,
           role: form.role,
-          warehouse_code: form.warehouse_code || null,
+          warehouse_code: form.warehouse_code || undefined,
           is_active: form.is_active,
         };
         const response = await apiClient.updateUser(editingUser.user_id, updateData);
@@ -172,8 +172,8 @@ function Admin() {
           alert(response.error || t.error);
         }
       }
-    } catch (err: any) {
-      alert(err.error || t.error);
+    } catch (err: unknown) {
+      alert((err as { error?: string }).error || t.error);
     } finally {
       setSaving(false);
     }
@@ -191,8 +191,8 @@ function Admin() {
       } else {
         alert(response.error || t.error);
       }
-    } catch (err: any) {
-      alert(err.error || t.error);
+    } catch (err: unknown) {
+      alert((err as { error?: string }).error || t.error);
     }
   };
 
@@ -349,7 +349,7 @@ function Admin() {
                   <label>{t.adminRole} *</label>
                   <select
                     value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value as any })}
+                    onChange={(e) => setForm({ ...form, role: e.target.value as UserForm['role'] })}
                   >
                     <option value="ADMIN">{t.roleAdmin}</option>
                     <option value="MANAGER">{t.roleManager}</option>

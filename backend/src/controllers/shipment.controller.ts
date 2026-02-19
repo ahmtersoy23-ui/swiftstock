@@ -14,15 +14,15 @@ export const getAllShipments = async (req: Request, res: Response) => {
     const offset = (pageNum - 1) * limitNum;
 
     let whereClause = ' WHERE 1=1';
-    const params: any[] = [];
+    const params: (string | number | boolean | null)[] = [];
 
     if (status) {
-      params.push(status);
+      params.push(status as string);
       whereClause += ` AND vs.status = $${params.length}`;
     }
 
     if (warehouse_id) {
-      params.push(warehouse_id);
+      params.push(warehouse_id as string);
       whereClause += ` AND vs.source_warehouse_id = $${params.length}`;
     }
 
@@ -60,7 +60,7 @@ export const getAllShipments = async (req: Request, res: Response) => {
         totalPages: Math.ceil(total / limitNum),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting shipments:', error);
     res.status(500).json({
       success: false,
@@ -106,7 +106,7 @@ export const getShipmentById = async (req: Request, res: Response) => {
         boxes: boxesResult.rows,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting shipment:', error);
     res.status(500).json({
       success: false,
@@ -153,7 +153,7 @@ export const createShipment = async (req: Request, res: Response) => {
       data: result.rows[0],
       message: 'Shipment created successfully',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating shipment:', error);
     res.status(500).json({
       success: false,
@@ -218,7 +218,7 @@ export const createBox = async (req: Request, res: Response) => {
       data: result.rows[0],
       message: 'Box created successfully',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating box:', error);
     res.status(500).json({
       success: false,
@@ -272,7 +272,7 @@ export const getBoxByBarcode = async (req: Request, res: Response) => {
         contents: contentsResult.rows,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting box:', error);
     res.status(500).json({
       success: false,
@@ -367,7 +367,7 @@ export const addItemToBox = async (req: Request, res: Response) => {
       data: result.rows[0],
       message: 'Item added to box',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error adding item to box:', error);
     res.status(500).json({
       success: false,
@@ -414,7 +414,7 @@ export const removeItemFromBox = async (req: Request, res: Response) => {
       success: true,
       message: 'Item removed from box',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error removing item from box:', error);
     res.status(500).json({
       success: false,
@@ -468,7 +468,7 @@ export const closeBox = async (req: Request, res: Response) => {
       data: result.rows[0],
       message: 'Box closed successfully',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error closing box:', error);
     res.status(500).json({
       success: false,
@@ -524,7 +524,7 @@ export const updateBoxDestination = async (req: Request, res: Response) => {
       data: result.rows[0],
       message: 'Box destination updated',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error updating box destination:', error);
     res.status(500).json({
       success: false,
@@ -578,7 +578,7 @@ export const closeShipment = async (req: Request, res: Response) => {
       data: result.rows[0],
       message: 'Shipment closed successfully',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error closing shipment:', error);
     res.status(500).json({
       success: false,
@@ -631,7 +631,7 @@ export const shipShipment = async (req: Request, res: Response) => {
       data: result.rows[0],
       message: 'Shipment marked as shipped',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error shipping shipment:', error);
     res.status(500).json({
       success: false,
@@ -662,10 +662,10 @@ export const getShipmentBoxes = async (req: Request, res: Response) => {
       FROM shipment_boxes sb
       WHERE sb.shipment_id = $1
     `;
-    const params: any[] = [shipment_id];
+    const params: (string | number | boolean | null)[] = [shipment_id];
 
     if (destination) {
-      params.push(destination);
+      params.push(destination as string);
       query += ` AND sb.destination = $${params.length}`;
     }
 
@@ -677,7 +677,7 @@ export const getShipmentBoxes = async (req: Request, res: Response) => {
       success: true,
       data: result.rows,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting shipment boxes:', error);
     res.status(500).json({
       success: false,

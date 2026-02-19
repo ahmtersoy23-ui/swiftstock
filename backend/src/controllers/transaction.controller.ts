@@ -276,10 +276,10 @@ export const getRecentTransactions = async (req: Request, res: Response) => {
       LEFT JOIN transaction_items ti ON t.transaction_id = ti.transaction_id
     `;
 
-    const params: any[] = [];
+    const params: (string | number | boolean | null)[] = [];
     if (warehouse_code) {
       query += ' WHERE w.code = $1';
-      params.push(warehouse_code);
+      params.push(warehouse_code as string);
     }
 
     query += `
@@ -412,17 +412,17 @@ export const undoTransaction = async (req: Request, res: Response) => {
     // Reverse all items (batched INSERT)
     if (itemsResult.rows.length > 0) {
       const valuesClauses: string[] = [];
-      const insertParams: any[] = [];
-      itemsResult.rows.forEach((item: any, idx: number) => {
+      const insertParams: (string | number | boolean | null)[] = [];
+      itemsResult.rows.forEach((item: Record<string, unknown>, idx: number) => {
         const offset = idx * 6;
         valuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`);
         insertParams.push(
           reverseTransaction.transaction_id,
-          item.product_sku,
-          item.quantity,
-          item.unit_type,
-          item.quantity_each,
-          item.to_location_id,
+          item.product_sku as string,
+          item.quantity as number,
+          item.unit_type as string,
+          item.quantity_each as number,
+          (item.to_location_id as number) || null,
         );
       });
       await client.query(

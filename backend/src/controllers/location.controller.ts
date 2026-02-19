@@ -15,15 +15,15 @@ export const getAllLocations = async (req: Request, res: Response) => {
     const offset = (pageNum - 1) * limitNum;
 
     let whereClause = ' WHERE 1=1';
-    const params: any[] = [];
+    const params: (string | number | boolean | null)[] = [];
 
     if (warehouse_code) {
-      params.push(warehouse_code);
+      params.push(warehouse_code as string);
       whereClause += ` AND w.code = $${params.length}`;
     }
 
     if (zone) {
-      params.push(zone);
+      params.push(zone as string);
       whereClause += ` AND l.zone = $${params.length}`;
     }
 
@@ -48,7 +48,7 @@ export const getAllLocations = async (req: Request, res: Response) => {
 
     const result = await pool.query(query, [...params, limitNum, offset]);
 
-    const response: ApiResponse<any> = {
+    const response: ApiResponse = {
       success: true,
       data: result.rows,
       pagination: {
@@ -60,7 +60,7 @@ export const getAllLocations = async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting locations:', error);
     res.status(500).json({
       success: false,
@@ -91,13 +91,13 @@ export const getLocationById = async (req: Request, res: Response) => {
       });
     }
 
-    const response: ApiResponse<any> = {
+    const response: ApiResponse = {
       success: true,
       data: result.rows[0],
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting location:', error);
     res.status(500).json({
       success: false,
@@ -128,13 +128,13 @@ export const getLocationByCode = async (req: Request, res: Response) => {
       });
     }
 
-    const response: ApiResponse<any> = {
+    const response: ApiResponse = {
       success: true,
       data: result.rows[0],
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting location:', error);
     res.status(500).json({
       success: false,
@@ -209,16 +209,16 @@ export const createLocation = async (req: Request, res: Response) => {
       ]
     );
 
-    const response: ApiResponse<any> = {
+    const response: ApiResponse = {
       success: true,
       data: result.rows[0],
       message: 'Location created successfully',
     };
 
     res.status(201).json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating location:', error);
-    if (error.code === '23505') {
+    if (error instanceof Error && 'code' in error && (error as Record<string, unknown>).code === '23505') {
       // Unique constraint violation
       return res.status(409).json({
         success: false,
@@ -268,14 +268,14 @@ export const updateLocation = async (req: Request, res: Response) => {
       });
     }
 
-    const response: ApiResponse<any> = {
+    const response: ApiResponse = {
       success: true,
       data: result.rows[0],
       message: 'Location updated successfully',
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error updating location:', error);
     res.status(500).json({
       success: false,
@@ -316,13 +316,13 @@ export const deleteLocation = async (req: Request, res: Response) => {
       });
     }
 
-    const response: ApiResponse<any> = {
+    const response: ApiResponse = {
       success: true,
       message: 'Location deleted successfully',
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error deleting location:', error);
     res.status(500).json({
       success: false,
@@ -354,14 +354,14 @@ export const getLocationInventory = async (req: Request, res: Response) => {
       [location_id]
     );
 
-    const response: ApiResponse<any> = {
+    const response: ApiResponse = {
       success: true,
       data: result.rows,
       message: `Found ${result.rows.length} products in location`,
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting location inventory:', error);
     res.status(500).json({
       success: false,

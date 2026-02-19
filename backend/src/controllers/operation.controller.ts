@@ -7,7 +7,7 @@ import { ApiResponse } from '../index';
 // OPERATION MODES
 // ============================================
 
-export const getAllOperationModes = async (req: Request, res: Response) => {
+export const getAllOperationModes = async (_req: Request, res: Response) => {
   try {
     const result = await pool.query(
       'SELECT * FROM operation_modes WHERE is_active = true ORDER BY mode_type, mode_code'
@@ -19,7 +19,7 @@ export const getAllOperationModes = async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting operation modes:', error);
     res.status(500).json({
       success: false,
@@ -50,7 +50,7 @@ export const getOperationModeByCode = async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting operation mode:', error);
     res.status(500).json({
       success: false,
@@ -149,7 +149,7 @@ export const createScanSession = async (req: Request, res: Response) => {
     };
 
     res.status(201).json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating scan session:', error);
     res.status(500).json({
       success: false,
@@ -183,7 +183,7 @@ export const getScanSession = async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting scan session:', error);
     res.status(500).json({
       success: false,
@@ -226,7 +226,7 @@ export const getActiveScanSession = async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting active scan session:', error);
     res.status(500).json({
       success: false,
@@ -262,7 +262,7 @@ export const completeScanSession = async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error completing scan session:', error);
     res.status(500).json({
       success: false,
@@ -298,7 +298,7 @@ export const cancelScanSession = async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error cancelling scan session:', error);
     res.status(500).json({
       success: false,
@@ -380,7 +380,7 @@ export const addScanOperation = async (req: Request, res: Response) => {
     };
 
     res.status(201).json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error adding scan operation:', error);
     res.status(500).json({
       success: false,
@@ -418,7 +418,7 @@ export const getSessionOperations = async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting session operations:', error);
     res.status(500).json({
       success: false,

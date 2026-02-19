@@ -11,7 +11,9 @@
     "resolveJsonModule": true,
     "moduleResolution": "node",
     "strict": true,
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]

@@ -70,7 +70,7 @@ export const cacheMiddleware = (
  * Clear cache for specific patterns
  */
 export const clearCacheMiddleware = (patterns: string[]) => {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  return async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     // Store original json function
     const originalJson = res.json.bind(res);
 

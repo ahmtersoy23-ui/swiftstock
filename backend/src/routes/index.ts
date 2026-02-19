@@ -23,7 +23,6 @@ import {
 } from '../middleware/rateLimiter.middleware';
 import { validateBody, validateParams } from '../middleware/validate.middleware';
 import {
-  loginSchema,
   changePasswordSchema,
   refreshTokenSchema,
   createUserSchema,
@@ -241,7 +240,7 @@ router.put('/boxes/:box_id/destination', authenticateToken, requireRole('ADMIN',
 // ============================================
 // HEALTH CHECK
 // ============================================
-router.get('/health', (req, res) => {
+router.get('/health', (_req, res) => {
   res.json({
     success: true,
     message: 'WMS API is running',

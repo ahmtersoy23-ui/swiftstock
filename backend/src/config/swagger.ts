@@ -1,6 +1,6 @@
 // ============================================
 // SWAGGER CONFIGURATION
-import logger from './logger';
+
 // ============================================
 
 import swaggerJsdoc from 'swagger-jsdoc';

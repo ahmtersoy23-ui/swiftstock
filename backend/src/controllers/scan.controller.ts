@@ -4,11 +4,6 @@ import logger from '../config/logger';
 import { ScanRequest, ScanResponse, ApiResponse } from '../types';
 import { parseSerialBarcode } from './serial.controller';
 
-// Helper to check if barcode might be a serial number format (SKU-XXXXXX)
-const isSerialBarcodeFormat = (barcode: string): boolean => {
-  const parsed = parseSerialBarcode(barcode);
-  return parsed !== null;
-};
 
 /**
  * Scan barcode/QR code and return appropriate data

@@ -39,7 +39,7 @@ export const getAllProducts = async (req: Request, res: Response) => {
     // Only select products with product_sku (required for WMS)
     let query = 'SELECT id, product_sku, name AS product_name, category, base_cost, created_at FROM products WHERE product_sku IS NOT NULL';
     let countQuery = 'SELECT COUNT(*) FROM products WHERE product_sku IS NOT NULL';
-    const params: any[] = [];
+    const params: (string | number | boolean | null)[] = [];
 
     // Add category filter if provided
     if (categoryFilter) {
@@ -175,7 +175,7 @@ export const searchProducts = async (req: Request, res: Response) => {
  * DISABLED: SwiftStock has READ-ONLY access to products table
  * Products should be managed from PriceLab
  */
-export const createProduct = async (req: Request, res: Response) => {
+export const createProduct = async (_req: Request, res: Response) => {
   return res.status(403).json({
     success: false,
     error: 'Product creation is disabled. Please manage products from PriceLab.',
@@ -187,7 +187,7 @@ export const createProduct = async (req: Request, res: Response) => {
  * DISABLED: SwiftStock has READ-ONLY access to products table
  * Products should be managed from PriceLab
  */
-export const updateProduct = async (req: Request, res: Response) => {
+export const updateProduct = async (_req: Request, res: Response) => {
   return res.status(403).json({
     success: false,
     error: 'Product updates are disabled. Please manage products from PriceLab.',
@@ -199,7 +199,7 @@ export const updateProduct = async (req: Request, res: Response) => {
  * DISABLED: SwiftStock has READ-ONLY access to products table
  * Products should be managed from PriceLab
  */
-export const deleteProduct = async (req: Request, res: Response) => {
+export const deleteProduct = async (_req: Request, res: Response) => {
   return res.status(403).json({
     success: false,
     error: 'Product deletion is disabled. Please manage products from PriceLab.',

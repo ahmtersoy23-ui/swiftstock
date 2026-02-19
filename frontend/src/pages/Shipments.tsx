@@ -53,8 +53,8 @@ function Shipments() {
           setNewShipment(prev => ({ ...prev, source_warehouse_id: warehousesRes.data[0].warehouse_id }));
         }
       }
-    } catch (err: any) {
-      setError(err.error || 'Failed to load data');
+    } catch (err: unknown) {
+      setError((err as { error?: string }).error || 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -88,8 +88,8 @@ function Shipments() {
         loadData();
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (err: any) {
-      setError(err.error || 'Failed to create shipment');
+    } catch (err: unknown) {
+      setError((err as { error?: string }).error || 'Failed to create shipment');
     }
   };
 
@@ -100,8 +100,8 @@ function Shipments() {
       if (response.success) {
         setBoxes(response.data || []);
       }
-    } catch (err: any) {
-      setError(err.error || 'Failed to load boxes');
+    } catch (err: unknown) {
+      setError((err as { error?: string }).error || 'Failed to load boxes');
     }
   };
 
@@ -120,8 +120,8 @@ function Shipments() {
         loadData();
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (err: any) {
-      setError(err.error || 'Failed to create box');
+    } catch (err: unknown) {
+      setError((err as { error?: string }).error || 'Failed to create box');
     }
   };
 
@@ -141,8 +141,8 @@ function Shipments() {
         }
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (err: any) {
-      setError(err.error || 'Failed to close shipment');
+    } catch (err: unknown) {
+      setError((err as { error?: string }).error || 'Failed to close shipment');
     }
   };
 
@@ -162,8 +162,8 @@ function Shipments() {
         }
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (err: any) {
-      setError(err.error || 'Failed to ship shipment');
+    } catch (err: unknown) {
+      setError((err as { error?: string }).error || 'Failed to ship shipment');
     }
   };
 
@@ -176,8 +176,8 @@ function Shipments() {
         }
         loadData();
       }
-    } catch (err: any) {
-      setError(err.error || 'Failed to update destination');
+    } catch (err: unknown) {
+      setError((err as { error?: string }).error || 'Failed to update destination');
     }
   };
 
@@ -341,7 +341,7 @@ function Shipments() {
                           )}
                           {box.contents && box.contents.length > 0 && (
                             <div className="box-contents">
-                              {box.contents.map((content: any) => (
+                              {box.contents.map((content) => (
                                 <div key={content.content_id} className="content-item">
                                   <span className="content-name">{content.product_name || content.sku_code}</span>
                                   <span className="content-qty">x{content.quantity}</span>
