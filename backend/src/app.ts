@@ -84,8 +84,8 @@ export function createApp(): Application {
   }));
 
   // Body parsing
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Request logging with Winston
   app.use(requestLoggerMiddleware);
