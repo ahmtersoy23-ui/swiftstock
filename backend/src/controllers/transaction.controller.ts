@@ -117,7 +117,7 @@ export const createTransaction = async (req: Request, res: Response) => {
     });
 
     // Step 3: Fetch all inventory data in one query (for OUT transactions)
-    let inventoryMap = new Map();
+    const inventoryMap = new Map();
     if (transaction_type === 'OUT') {
       const skuList = items.map(item => {
         let sku = item.sku_code;

@@ -4,6 +4,7 @@
 
 import { Response } from 'express';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { OAuth2Client } from 'google-auth-library';
 import pool from '../config/database';
@@ -113,7 +114,7 @@ export const refreshAccessToken = async (req: AuthRequest, res: Response): Promi
     }
     let decoded: DecodedRefreshToken | null;
     try {
-      decoded = require('jsonwebtoken').decode(refreshToken) as DecodedRefreshToken | null;
+      decoded = jwt.decode(refreshToken) as DecodedRefreshToken | null;
       if (!decoded || !decoded.user_id) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
@@ -426,7 +427,7 @@ export const googleLogin = async (req: AuthRequest, res: Response): Promise<void
     }
 
     // Find or create user by email
-    let userResult = await client.query(
+    const userResult = await client.query(
       `SELECT user_id, username, email, full_name, role, warehouse_code, is_active
        FROM wms_users
        WHERE email = $1`,
@@ -493,7 +494,7 @@ export const googleLogin = async (req: AuthRequest, res: Response): Promise<void
 
     // Log device session if device_uuid provided
     if (device_uuid) {
-      let deviceResult = await client.query(
+      const deviceResult = await client.query(
         `SELECT device_id FROM devices WHERE device_uuid = $1`,
         [device_uuid]
       );

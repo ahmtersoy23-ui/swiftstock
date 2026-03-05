@@ -27,8 +27,8 @@ export const getAllOrders = async (req: AuthRequest, res: Response): Promise<voi
     const limitNum = Math.min(MAX_PAGE_SIZE, parseInt(limit as string));
     const offset = (pageNum - 1) * limitNum;
 
-    let whereConditions: string[] = [];
-    let queryParams: (string | number | boolean | null)[] = [];
+    const whereConditions: string[] = [];
+    const queryParams: (string | number | boolean | null)[] = [];
     let paramIndex = 1;
 
     if (warehouse_code) {

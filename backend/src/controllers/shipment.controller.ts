@@ -34,7 +34,7 @@ export const getAllShipments = async (req: Request, res: Response) => {
     const total = parseInt(countResult.rows[0].count);
 
     // Get paginated data
-    let query = `
+    const query = `
       SELECT
         vs.*,
         w.code as source_warehouse_code,

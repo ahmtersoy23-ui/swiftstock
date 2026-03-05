@@ -30,8 +30,8 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
     const offset = (pageNum - 1) * limitNum;
 
     // Build query
-    let whereConditions: string[] = [];
-    let queryParams: (string | number | boolean | null)[] = [];
+    const whereConditions: string[] = [];
+    const queryParams: (string | number | boolean | null)[] = [];
     let paramIndex = 1;
 
     if (role) {

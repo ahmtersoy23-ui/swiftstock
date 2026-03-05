@@ -126,7 +126,7 @@ export const authenticateToken = async (
     req.ssoRole = ssoRole;
 
     // Check if user exists in local database by SSO user_id first, then email
-    let userResult = await pool.query(
+    const userResult = await pool.query(
       `SELECT user_id, username, email, full_name, role, warehouse_id, is_active, sso_user_id
        FROM users
        WHERE sso_user_id = $1 OR email = $2`,
