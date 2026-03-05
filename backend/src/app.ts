@@ -63,9 +63,12 @@ export function createApp(): Application {
 
   app.use(cors({
     origin: (origin, callback) => {
-      // Allow requests without origin (server-to-server, health checks, Postman)
+      // No Origin header: allow only in non-production (local dev/testing)
       if (!origin) {
-        return callback(null, true);
+        if (process.env.NODE_ENV !== 'production') {
+          return callback(null, true);
+        }
+        return callback(new Error('Origin header required in production'));
       }
 
       if (allowedOrigins.indexOf(origin) !== -1) {
