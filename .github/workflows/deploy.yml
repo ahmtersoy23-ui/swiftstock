@@ -28,6 +28,12 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
       - name: Build
         run: npm run build
 
@@ -76,8 +82,11 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      - name: Run unit tests
-        run: npx jest --testPathPatterns='health' --passWithNoTests
+      - name: Lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
         env:
           NODE_ENV: test
 

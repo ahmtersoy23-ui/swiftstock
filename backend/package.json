@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "db:init": "psql -U postgres -f ../wms-schema.sql",
     "test": "jest --testPathPatterns='health'",
+    "lint": "eslint src",
     "test:all": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -37,6 +38,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bcrypt": "^6.0.0",
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
@@ -50,11 +52,14 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^10.0.0",
+    "eslint": "^10.0.2",
+    "globals": "^17.4.0",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1"
   }
 }
