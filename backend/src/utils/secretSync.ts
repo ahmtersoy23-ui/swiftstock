@@ -12,11 +12,19 @@
 import axios from 'axios';
 import logger from '../config/logger';
 
-// Initialise from env so SwiftStock works even before the first successful sync
-let cachedJwtSecret: string = process.env.JWT_SECRET || '';
+// Cache is intentionally empty at module load time.
+// It is populated either by syncJwtSecret() (from Apps-SSO) or falls back
+// to process.env.JWT_SECRET at call time (see getJwtSecret).
+let cachedJwtSecret: string = '';
 
-const SSO_INTERNAL_URL = process.env.SSO_INTERNAL_URL || 'http://localhost:3005';
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
+// Read env at call-time (not at module load) to avoid dotenv timing issues.
+// Module-level constants are evaluated before dotenv.config() runs in index.ts.
+function getSsoInternalUrl(): string {
+  return process.env.SSO_INTERNAL_URL || 'http://localhost:3005';
+}
+function getInternalApiKey(): string {
+  return process.env.INTERNAL_API_KEY || '';
+}
 
 /**
  * Fetch the current JWT_SECRET from Apps-SSO and update the in-memory cache.
@@ -25,9 +33,9 @@ const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
 export async function syncJwtSecret(): Promise<void> {
   try {
     const res = await axios.get<{ secret: string }>(
-      `${SSO_INTERNAL_URL}/api/internal/jwt-secret`,
+      `${getSsoInternalUrl()}/api/internal/jwt-secret`,
       {
-        headers: { 'X-Internal-API-Key': INTERNAL_API_KEY },
+        headers: { 'X-Internal-API-Key': getInternalApiKey() },
         timeout: 5000,
       }
     );
