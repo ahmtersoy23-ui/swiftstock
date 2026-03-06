@@ -8,6 +8,7 @@ dotenv.config();
 import { createApp } from './app';
 import pool from './config/database';
 import logger from './config/logger';
+import { syncJwtSecret, startSecretPolling } from './utils/secretSync';
 
 logger.info('🔍 Loading WMS Backend...');
 
@@ -211,6 +212,11 @@ async function startServer() {
     logger.info('🔌 Testing database connection...');
     await pool.query('SELECT NOW()');
     logger.info('✅ Database connection successful');
+
+    // Sync JWT_SECRET from Apps-SSO (startup + polling)
+    // Falls back to process.env.JWT_SECRET if Apps-SSO is unreachable
+    await syncJwtSecret();
+    startSecretPolling();
 
     // Start Express server
     app.listen(PORT, () => {

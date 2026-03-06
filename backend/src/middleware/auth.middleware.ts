@@ -8,13 +8,7 @@ import * as jwt from 'jsonwebtoken';
 import axios from 'axios';
 import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
 import pool from '../config/database';
-
-// JWT_SECRET is required - fail fast if not provided
-export const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  logger.error('FATAL: JWT_SECRET environment variable is required');
-  process.exit(1);
-}
+import { getJwtSecret } from '../utils/secretSync';
 
 const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '1h';
 const SSO_BASE_URL = process.env.SSO_BASE_URL || 'https://apps.iwa.web.tr';
@@ -372,7 +366,7 @@ export const generateToken = (user: AuthUser): string => {
     warehouse_code: user.warehouse_code,
   };
   // @ts-expect-error - JWT library types don't accept string directly for expiresIn, but it's valid at runtime
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN });
 };
 
 /**
@@ -385,7 +379,7 @@ export const generateRefreshToken = (user: AuthUser): string => {
       username: user.username,
       type: 'refresh',
     },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '7d' }
   );
 };
