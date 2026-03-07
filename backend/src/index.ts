@@ -9,6 +9,8 @@ import { createApp } from './app';
 import pool from './config/database';
 import logger from './config/logger';
 import { syncJwtSecret, startSecretPolling } from './utils/secretSync';
+// Register event listeners (side-effect import — must run before first event emits)
+import './modules/inventory-core/events/inventory.listener';
 
 logger.info('🔍 Loading WMS Backend...');
 

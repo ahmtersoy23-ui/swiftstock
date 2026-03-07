@@ -21,7 +21,7 @@ export const loginRateLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   skipSuccessfulRequests: true, // Don't count successful logins
-  validate: { xForwardedForHeader: false }, // Disable IPv6 validation warning
+  validate: { xForwardedForHeader: true }, // Trust proxy, use real IP for rate limiting
 });
 
 /**

@@ -135,7 +135,7 @@ export const refreshAccessToken = async (req: AuthRequest, res: Response): Promi
       `SELECT rt.token_id, rt.token_hash, rt.expires_at, rt.is_revoked,
               u.username, u.email, u.full_name, u.role, u.warehouse_code, u.is_active
        FROM refresh_tokens rt
-       JOIN wms_users u ON rt.user_id = u.user_id
+       JOIN users u ON rt.user_id = u.user_id
        WHERE rt.user_id = $1 AND rt.is_revoked = false`,
       [decoded.user_id]
     );
@@ -246,7 +246,7 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
            ) FILTER (WHERE up.permission_id IS NOT NULL),
            '[]'
          ) AS permissions
-       FROM wms_users u
+       FROM users u
        LEFT JOIN wms_warehouses w ON u.warehouse_code = w.code
        LEFT JOIN user_permissions up ON u.user_id = up.user_id
        WHERE u.user_id = $1
@@ -311,7 +311,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
 
     // Get current password hash
     const userResult = await client.query(
-      `SELECT password_hash FROM wms_users WHERE user_id = $1`,
+      `SELECT password_hash FROM users WHERE user_id = $1`,
       [req.user.user_id]
     );
 
@@ -339,7 +339,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
 
     // Update password and clear must_change_password flag
     await client.query(
-      `UPDATE wms_users SET password_hash = $1, must_change_password = false, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2`,
+      `UPDATE users SET password_hash = $1, must_change_password = false, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2`,
       [newPasswordHash, req.user.user_id]
     );
 
@@ -429,7 +429,7 @@ export const googleLogin = async (req: AuthRequest, res: Response): Promise<void
     // Find or create user by email
     const userResult = await client.query(
       `SELECT user_id, username, email, full_name, role, warehouse_code, is_active
-       FROM wms_users
+       FROM users
        WHERE email = $1`,
       [googleEmail]
     );
@@ -443,7 +443,7 @@ export const googleLogin = async (req: AuthRequest, res: Response): Promise<void
       const passwordHash = await bcrypt.hash(randomPassword, SALT_ROUNDS);
 
       const newUserResult = await client.query(
-        `INSERT INTO wms_users (username, email, password_hash, full_name, role, is_active, must_change_password)
+        `INSERT INTO users (username, email, password_hash, full_name, role, is_active, must_change_password)
          VALUES ($1, $2, $3, $4, 'OPERATOR', true, false)
          RETURNING user_id, username, email, full_name, role, warehouse_code, is_active`,
         [username, googleEmail, passwordHash, googleName]
@@ -466,7 +466,7 @@ export const googleLogin = async (req: AuthRequest, res: Response): Promise<void
 
     // Update last login
     await client.query(
-      `UPDATE wms_users SET last_login = CURRENT_TIMESTAMP WHERE user_id = $1`,
+      `UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE user_id = $1`,
       [user.user_id]
     );
 

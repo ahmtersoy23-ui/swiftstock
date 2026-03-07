@@ -4,9 +4,9 @@
 // ============================================
 
 import { Router } from 'express';
-import * as productController from '../controllers/product.controller';
-import * as serialController from '../controllers/serial.controller';
-import * as scanController from '../controllers/scan.controller';
+import * as productController from '../modules/catalog/controllers/product.controller';
+import * as serialController from '../modules/catalog/controllers/serial.controller';
+import * as scanController from '../modules/catalog/controllers/scan.controller';
 import { authenticateToken, requireRole } from '../middleware/auth.middleware';
 import { validateBody } from '../middleware/validate.middleware';
 import {

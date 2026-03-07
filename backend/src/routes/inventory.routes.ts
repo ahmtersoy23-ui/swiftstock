@@ -4,8 +4,8 @@
 // ============================================
 
 import { Router } from 'express';
-import * as transactionController from '../controllers/transaction.controller';
-import * as inventoryController from '../controllers/inventory.controller';
+import * as transactionController from '../modules/inventory-core/controllers/transaction.controller';
+import * as inventoryController from '../modules/inventory-core/controllers/inventory.controller';
 import { authenticateToken, requireRole } from '../middleware/auth.middleware';
 import { validateBody, validateParams } from '../middleware/validate.middleware';
 import {

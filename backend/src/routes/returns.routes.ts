@@ -5,7 +5,7 @@
 // ============================================
 
 import { Router } from 'express';
-import * as rmaController from '../controllers/rma.controller';
+import * as rmaController from '../modules/returns/controllers/rma.controller';
 import { authenticateToken, requireRole } from '../middleware/auth.middleware';
 import { validateBody, validateParams } from '../middleware/validate.middleware';
 import {

@@ -4,9 +4,9 @@
 // ============================================
 
 import { Router } from 'express';
-import * as warehouseController from '../controllers/warehouse.controller';
-import * as locationController from '../controllers/location.controller';
-import * as containerController from '../controllers/container.controller';
+import * as warehouseController from '../modules/warehouse/controllers/warehouse.controller';
+import * as locationController from '../modules/warehouse/controllers/location.controller';
+import * as containerController from '../modules/warehouse/controllers/container.controller';
 import { authenticateToken, requireRole } from '../middleware/auth.middleware';
 import { validateBody, validateParams } from '../middleware/validate.middleware';
 import {

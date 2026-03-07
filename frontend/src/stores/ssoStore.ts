@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useAuthStore } from './authStore';
 
 interface SSOUser {
   id: string;
@@ -43,12 +44,15 @@ export const useSSOStore = create<SSOState>()(
       setAccessToken: (token) => set({ accessToken: token }),
       setWMSUser: (wmsUser) => set({ wmsUser }),
 
-      clearAuth: () => set({
-        user: null,
-        role: null,
-        accessToken: null,
-        wmsUser: null,
-      }),
+      clearAuth: () => {
+        useAuthStore.getState().clearAuth();
+        set({
+          user: null,
+          role: null,
+          accessToken: null,
+          wmsUser: null,
+        });
+      },
     }),
     {
       name: 'swiftstock-sso-storage',

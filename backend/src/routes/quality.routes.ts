@@ -4,8 +4,8 @@
 // ============================================
 
 import { Router } from 'express';
-import * as cyclecountController from '../controllers/cyclecount.controller';
-import * as reportController from '../controllers/report.controller';
+import * as cyclecountController from '../modules/quality/controllers/cyclecount.controller';
+import * as reportController from '../modules/quality/controllers/report.controller';
 import { authenticateToken, requireRole } from '../middleware/auth.middleware';
 import { validateBody, validateParams } from '../middleware/validate.middleware';
 import {

@@ -5,7 +5,7 @@
 // ============================================
 
 import { Router } from 'express';
-import * as shipmentController from '../controllers/shipment.controller';
+import * as shipmentController from '../modules/shipments/controllers/shipment.controller';
 import { authenticateToken, requireRole } from '../middleware/auth.middleware';
 import { validateBody, validateParams } from '../middleware/validate.middleware';
 import {

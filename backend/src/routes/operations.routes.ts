@@ -4,7 +4,7 @@
 // ============================================
 
 import { Router } from 'express';
-import * as operationController from '../controllers/operation.controller';
+import * as operationController from '../modules/operations/controllers/operation.controller';
 import { authenticateToken, requireRole } from '../middleware/auth.middleware';
 import { validateBody, validateParams } from '../middleware/validate.middleware';
 import {

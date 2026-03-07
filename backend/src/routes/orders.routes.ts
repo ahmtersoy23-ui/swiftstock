@@ -4,7 +4,7 @@
 // ============================================
 
 import { Router } from 'express';
-import * as orderController from '../controllers/order.controller';
+import * as orderController from '../modules/orders/controllers/order.controller';
 import { authenticateToken, requireRole } from '../middleware/auth.middleware';
 import { validateBody, validateParams } from '../middleware/validate.middleware';
 import {
