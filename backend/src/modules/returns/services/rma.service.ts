@@ -2,7 +2,7 @@
 // RMA SERVICE — Module 7
 // İade Yönetimi iş mantığı. Controller sadece req/res yönetir,
 // tüm business logic burada.
-// Tablolar: rma_requests, rma_items, rma_history, return_receipts
+// Tablolar: wms_rma_requests, wms_rma_items, wms_rma_history, return_receipts
 // Coupling: 3/10 — ikinci en kolay modül
 // ============================================
 
@@ -67,9 +67,9 @@ class RmaService {
         w.code as warehouse_code,
         COUNT(DISTINCT i.item_id) as total_items,
         SUM(i.quantity_requested) as total_quantity
-      FROM rma_requests r
+      FROM wms_rma_requests r
       JOIN wms_warehouses w ON r.warehouse_id = w.warehouse_id
-      LEFT JOIN rma_items i ON r.rma_id = i.rma_id
+      LEFT JOIN wms_rma_items i ON r.rma_id = i.rma_id
       WHERE 1=1
     `;
     const params: (string | number | null)[] = [];
@@ -107,7 +107,7 @@ class RmaService {
   async getRMAById(rmaId: string) {
     const rmaResult = await pool.query(
       `SELECT r.*, w.name as warehouse_name, w.code as warehouse_code
-       FROM rma_requests r
+       FROM wms_rma_requests r
        JOIN wms_warehouses w ON r.warehouse_id = w.warehouse_id
        WHERE r.rma_id = $1`,
       [rmaId],
@@ -118,15 +118,15 @@ class RmaService {
     }
 
     const itemsResult = await pool.query(
-      `SELECT i.*, p.product_name
-       FROM rma_items i
-       JOIN products p ON i.product_sku = p.sku_code
+      `SELECT i.*, p.name AS product_name
+       FROM wms_rma_items i
+       JOIN products p ON i.product_sku = p.product_sku
        WHERE i.rma_id = $1`,
       [rmaId],
     );
 
     const historyResult = await pool.query(
-      'SELECT * FROM rma_history WHERE rma_id = $1 ORDER BY created_at DESC',
+      'SELECT * FROM wms_rma_history WHERE rma_id = $1 ORDER BY created_at DESC',
       [rmaId],
     );
 
@@ -156,7 +156,7 @@ class RmaService {
       const rmaNumber = `RMA-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
 
       const rmaResult = await client.query(
-        `INSERT INTO rma_requests
+        `INSERT INTO wms_rma_requests
           (rma_number, warehouse_id, customer_name, customer_email, order_number, status, reason, priority, notes, created_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
@@ -190,13 +190,13 @@ class RmaService {
         );
       });
       await client.query(
-        `INSERT INTO rma_items (rma_id, product_sku, quantity_requested, unit_price, action)
+        `INSERT INTO wms_rma_items (rma_id, product_sku, quantity_requested, unit_price, action)
          VALUES ${valuesClauses.join(', ')}`,
         insertParams,
       );
 
       await client.query(
-        `INSERT INTO rma_history (rma_id, action, new_status, performed_by)
+        `INSERT INTO wms_rma_history (rma_id, action, new_status, performed_by)
          VALUES ($1, $2, $3, $4)`,
         [rma.rma_id, 'CREATED', 'PENDING', performedBy],
       );
@@ -217,7 +217,7 @@ class RmaService {
       await client.query('BEGIN');
 
       const result = await client.query(
-        `UPDATE rma_requests
+        `UPDATE wms_rma_requests
          SET status = 'APPROVED',
              approved_date = CURRENT_TIMESTAMP,
              approved_by = $2,
@@ -233,7 +233,7 @@ class RmaService {
       }
 
       await client.query(
-        `INSERT INTO rma_history (rma_id, action, old_status, new_status, performed_by, notes)
+        `INSERT INTO wms_rma_history (rma_id, action, old_status, new_status, performed_by, notes)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [rmaId, 'APPROVED', 'PENDING', 'APPROVED', performedBy, notes],
       );
@@ -256,7 +256,7 @@ class RmaService {
       await client.query('BEGIN');
 
       const itemResult = await client.query(
-        'SELECT * FROM rma_items WHERE item_id = $1',
+        'SELECT * FROM wms_rma_items WHERE item_id = $1',
         [itemId],
       );
 
@@ -284,7 +284,7 @@ class RmaService {
       );
 
       await client.query(
-        `UPDATE rma_items
+        `UPDATE wms_rma_items
          SET quantity_received = quantity_received + $1,
              condition = $2,
              updated_at = CURRENT_TIMESTAMP
@@ -293,7 +293,7 @@ class RmaService {
       );
 
       await client.query(
-        `UPDATE rma_requests
+        `UPDATE wms_rma_requests
          SET status = 'IN_PROCESS'
          WHERE rma_id = $1 AND status = 'APPROVED'`,
         [item.rma_id],
@@ -314,7 +314,7 @@ class RmaService {
       await client.query('BEGIN');
 
       const result = await client.query(
-        `UPDATE rma_requests
+        `UPDATE wms_rma_requests
          SET status = 'COMPLETED',
              completed_date = CURRENT_TIMESTAMP,
              internal_notes = COALESCE(internal_notes || E'\\n\\n', '') || $2
@@ -329,7 +329,7 @@ class RmaService {
       }
 
       await client.query(
-        `INSERT INTO rma_history (rma_id, action, new_status, performed_by, notes)
+        `INSERT INTO wms_rma_history (rma_id, action, new_status, performed_by, notes)
          VALUES ($1, $2, $3, $4, $5)`,
         [rmaId, 'COMPLETED', 'COMPLETED', performedBy, notes],
       );

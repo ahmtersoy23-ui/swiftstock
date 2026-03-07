@@ -84,13 +84,13 @@ class ReportService {
 
       const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const countResult = await client.query(
-        `SELECT COUNT(*) as count FROM count_reports WHERE report_date = CURRENT_DATE`,
+        `SELECT COUNT(*) as count FROM wms_count_reports WHERE report_date = CURRENT_DATE`,
       );
       const nextNum = parseInt(countResult.rows[0].count) + 1;
       const reportNumber = `SAY-${today}-${String(nextNum).padStart(4, '0')}`;
 
       const reportResult = await client.query(
-        `INSERT INTO count_reports
+        `INSERT INTO wms_count_reports
           (report_number, warehouse_id, warehouse_code, report_date, total_locations,
            total_expected, total_counted, total_variance, variance_percentage, created_by, notes)
          VALUES ($1, $2, $3, CURRENT_DATE, $4, $5, $6, $7, $8, $9, $10)
@@ -132,7 +132,7 @@ class ReportService {
         });
 
         const locInsertResult = await client.query(
-          `INSERT INTO count_report_locations
+          `INSERT INTO wms_count_report_locations
             (report_id, location_id, location_code, location_qr, total_expected, total_counted,
              total_variance, unexpected_count)
            VALUES ${locValuesClauses.join(', ')}
@@ -192,7 +192,7 @@ class ReportService {
 
         if (allItemValuesClauses.length > 0) {
           await client.query(
-            `INSERT INTO count_report_items
+            `INSERT INTO wms_count_report_items
               (report_id, report_location_id, product_sku, product_name, expected_quantity,
                counted_quantity, variance, is_unexpected, scanned_barcodes)
              VALUES ${allItemValuesClauses.join(', ')}`,
@@ -226,7 +226,7 @@ class ReportService {
 
     let query = `
       SELECT cr.*, w.name as warehouse_name
-      FROM count_reports cr
+      FROM wms_count_reports cr
       JOIN wms_warehouses w ON cr.warehouse_id = w.warehouse_id
       WHERE 1=1
     `;
@@ -251,7 +251,7 @@ class ReportService {
 
     const result = await pool.query(query, params);
 
-    let countQuery = `SELECT COUNT(*) as total FROM count_reports cr WHERE 1=1`;
+    let countQuery = `SELECT COUNT(*) as total FROM wms_count_reports cr WHERE 1=1`;
     const countParams: (string | number | boolean | null)[] = [];
     let countParamIndex = 1;
 
@@ -281,7 +281,7 @@ class ReportService {
   async getCountReportById(report_id: string) {
     const reportResult = await pool.query(
       `SELECT cr.*, w.name as warehouse_name
-       FROM count_reports cr
+       FROM wms_count_reports cr
        JOIN wms_warehouses w ON cr.warehouse_id = w.warehouse_id
        WHERE cr.report_id = $1`,
       [report_id],
@@ -292,16 +292,16 @@ class ReportService {
     }
 
     const locationsResult = await pool.query(
-      `SELECT * FROM count_report_locations WHERE report_id = $1 ORDER BY report_location_id`,
+      `SELECT * FROM wms_count_report_locations WHERE report_id = $1 ORDER BY report_location_id`,
       [report_id],
     );
 
     const locationsWithItems = await Promise.all(
       locationsResult.rows.map(async (loc) => {
         const itemsResult = await pool.query(
-          `SELECT * FROM count_report_items
+          `SELECT * FROM wms_count_report_items
            WHERE report_location_id = $1
-           ORDER BY is_unexpected, sku_code`,
+           ORDER BY is_unexpected, product_sku`,
           [loc.report_location_id],
         );
         return {
@@ -336,33 +336,33 @@ class ReportService {
           l.location_code,
           l.qr_code,
           p.product_sku,
-          p.product_name,
-          p.barcode,
-          COALESCE(i.quantity_on_hand, 0) as quantity,
-          p.units_per_box,
-          p.boxes_per_pallet
-        FROM inventory i
-        JOIN products p ON i.product_sku = p.sku_code
+          p.name AS product_name,
+          
+          COALESCE(i.quantity, 0) as quantity,
+          
+          
+        FROM wms_inventory i
+        JOIN products p ON i.product_sku = p.product_sku
         LEFT JOIN wms_locations l ON i.location_id = l.location_id
-        WHERE i.warehouse_id = $1 AND i.quantity_on_hand > 0
-        ORDER BY l.location_code NULLS LAST, p.product_name
+        WHERE i.warehouse_id = $1 AND i.quantity > 0
+        ORDER BY l.location_code NULLS LAST, p.name AS product_name
       `;
     } else {
       query = `
         SELECT
           p.product_sku,
-          p.product_name,
-          p.barcode,
-          SUM(COALESCE(i.quantity_on_hand, 0)) as quantity,
-          p.units_per_box,
-          p.boxes_per_pallet,
+          p.name AS product_name,
+          
+          SUM(COALESCE(i.quantity, 0)) as quantity,
+          
+          
           COUNT(DISTINCT i.location_id) as location_count
         FROM products p
-        LEFT JOIN inventory i ON p.product_sku = i.sku_code AND i.warehouse_id = $1
-        WHERE i.quantity_on_hand > 0
-        GROUP BY p.product_sku, p.product_name, p.barcode, p.units_per_box, p.boxes_per_pallet
-        HAVING SUM(COALESCE(i.quantity_on_hand, 0)) > 0
-        ORDER BY p.product_name
+        LEFT JOIN wms_inventory i ON p.product_sku = i.product_sku AND i.warehouse_id = $1
+        WHERE i.quantity > 0
+        GROUP BY p.product_sku, p.name
+        HAVING SUM(COALESCE(i.quantity, 0)) > 0
+        ORDER BY p.name AS product_name
       `;
     }
 
@@ -374,7 +374,7 @@ class ReportService {
     );
     const totalProducts =
       group_by === 'location'
-        ? new Set(result.rows.map((r) => r.sku_code)).size
+        ? new Set(result.rows.map((r) => r.product_sku)).size
         : result.rows.length;
 
     return {
@@ -391,7 +391,7 @@ class ReportService {
 
   async deleteCountReport(report_id: string) {
     const result = await pool.query(
-      `DELETE FROM count_reports WHERE report_id = $1 RETURNING report_id`,
+      `DELETE FROM wms_count_reports WHERE report_id = $1 RETURNING report_id`,
       [report_id],
     );
 

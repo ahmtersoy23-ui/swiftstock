@@ -58,7 +58,9 @@ export async function syncJwtSecret(): Promise<void> {
  * Priority: synced value from Apps-SSO → process.env.JWT_SECRET
  */
 export function getJwtSecret(): string {
-  return cachedJwtSecret || process.env.JWT_SECRET || '';
+  const secret = cachedJwtSecret || process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET is not configured');
+  return secret;
 }
 
 /**

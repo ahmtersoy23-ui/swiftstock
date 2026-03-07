@@ -119,24 +119,17 @@ export const getUserById = async (req: AuthRequest, res: Response): Promise<void
          u.email,
          u.full_name,
          u.role,
-         u.warehouse_code,
+         w.code AS warehouse_code,
          w.name as warehouse_name,
          u.is_active,
          u.created_at,
          u.updated_at,
          u.last_login,
          u.created_by,
-         COALESCE(
-           json_agg(
-             json_build_object('permission_type', up.permission_type, 'resource', up.resource)
-           ) FILTER (WHERE up.permission_id IS NOT NULL),
-           '[]'
-         ) as permissions
+         '[]'::json as permissions
        FROM wms_users u
-       LEFT JOIN wms_warehouses w ON u.warehouse_code = w.code
-       LEFT JOIN user_permissions up ON u.user_id = up.user_id
-       WHERE u.user_id = $1
-       GROUP BY u.user_id, w.name`,
+       LEFT JOIN wms_warehouses w ON u.warehouse_id = w.warehouse_id
+       WHERE u.user_id = $1`,
       [user_id]
     );
 
@@ -178,7 +171,6 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
       role,
       warehouse_code,
       is_active = true,
-      permissions = [],
     } = req.body;
 
     // Validate required fields
@@ -232,36 +224,34 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     // Hash password
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
+    // Lookup warehouse_id from warehouse_code if provided
+    let warehouseId: number | null = null;
+    if (warehouse_code) {
+      const warehouseResult = await client.query(
+        `SELECT warehouse_id FROM wms_warehouses WHERE code = $1`,
+        [warehouse_code]
+      );
+      if (warehouseResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'Belirtilen depo bulunamadı.' });
+        return;
+      }
+      warehouseId = warehouseResult.rows[0].warehouse_id;
+    }
+
     // Create user with must_change_password = true
     const newUserResult = await client.query(
-      `INSERT INTO wms_users (username, email, password_hash, full_name, role, warehouse_code, is_active, created_by, must_change_password)
+      `INSERT INTO wms_users (username, email, password_hash, full_name, role, warehouse_id, is_active, created_by, must_change_password)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
-       RETURNING user_id, username, email, full_name, role, warehouse_code, is_active, created_at`,
-      [username, email, password_hash, full_name, role, warehouse_code, is_active, req.user?.username || 'SYSTEM']
+       RETURNING user_id, username, email, full_name, role, warehouse_id, is_active, created_at`,
+      [username, email, password_hash, full_name, role, warehouseId, is_active, req.user?.username || 'SYSTEM']
     );
 
-    const newUser = newUserResult.rows[0];
-
-    // Add permissions if provided (batched INSERT)
-    if (permissions && permissions.length > 0) {
-      const permValuesClauses: string[] = [];
-      const permParams: (string | number | boolean | null)[] = [];
-      permissions.forEach((perm: Record<string, unknown>, idx: number) => {
-        const offset = idx * 3;
-        permValuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
-        permParams.push(newUser.user_id, perm.permission_type as string, perm.resource as string);
-      });
-      await client.query(
-        `INSERT INTO user_permissions (user_id, permission_type, resource)
-         VALUES ${permValuesClauses.join(', ')}
-         ON CONFLICT (user_id, permission_type, resource) DO NOTHING`,
-        permParams
-      );
-    }
+    const newUser = { ...newUserResult.rows[0], warehouse_code: warehouse_code || null };
 
     // Log audit event
     await client.query(
-      `INSERT INTO audit_logs (user_id, username, action, resource_type, resource_id, details)
+      `INSERT INTO wms_audit_logs (user_id, username, action, resource_type, resource_id, details)
        VALUES ($1, $2, 'CREATE_USER', 'users', $3, $4)`,
       [req.user?.user_id, req.user?.username, newUser.user_id.toString(), JSON.stringify({ created_user: username })]
     );
@@ -301,7 +291,6 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
       role,
       warehouse_code,
       is_active,
-      permissions,
     } = req.body;
 
     // Check if user exists
@@ -355,8 +344,21 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     if (warehouse_code !== undefined) {
-      updates.push(`warehouse_code = $${paramIndex++}`);
-      values.push(warehouse_code);
+      let warehouseId: number | null = null;
+      if (warehouse_code) {
+        const warehouseResult = await client.query(
+          `SELECT warehouse_id FROM wms_warehouses WHERE code = $1`,
+          [warehouse_code]
+        );
+        if (warehouseResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'Belirtilen depo bulunamadı.' });
+          return;
+        }
+        warehouseId = warehouseResult.rows[0].warehouse_id;
+      }
+      updates.push(`warehouse_id = $${paramIndex++}`);
+      values.push(warehouseId);
     }
 
     if (is_active !== undefined) {
@@ -374,31 +376,6 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
       );
     }
 
-    // Update permissions if provided
-    if (permissions !== undefined) {
-      // Delete existing permissions
-      await client.query(
-        `DELETE FROM user_permissions WHERE user_id = $1`,
-        [user_id]
-      );
-
-      // Add new permissions (batched INSERT)
-      if (permissions.length > 0) {
-        const permValuesClauses: string[] = [];
-        const permParams: (string | number | boolean | null)[] = [];
-        permissions.forEach((perm: Record<string, unknown>, idx: number) => {
-          const offset = idx * 3;
-          permValuesClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
-          permParams.push(user_id, perm.permission_type as string, perm.resource as string);
-        });
-        await client.query(
-          `INSERT INTO user_permissions (user_id, permission_type, resource)
-           VALUES ${permValuesClauses.join(', ')}`,
-          permParams
-        );
-      }
-    }
-
     // Get updated user
     const updatedUserResult = await client.query(
       `SELECT
@@ -407,21 +384,21 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
          u.email,
          u.full_name,
          u.role,
-         u.warehouse_code,
+         w.code AS warehouse_code,
          w.name as warehouse_name,
          u.is_active,
          u.created_at,
          u.updated_at,
          u.last_login
        FROM wms_users u
-       LEFT JOIN wms_warehouses w ON u.warehouse_code = w.code
+       LEFT JOIN wms_warehouses w ON u.warehouse_id = w.warehouse_id
        WHERE u.user_id = $1`,
       [user_id]
     );
 
     // Log audit event
     await client.query(
-      `INSERT INTO audit_logs (user_id, username, action, resource_type, resource_id, details)
+      `INSERT INTO wms_audit_logs (user_id, username, action, resource_type, resource_id, details)
        VALUES ($1, $2, 'UPDATE_USER', 'users', $3, $4)`,
       [req.user?.user_id, req.user?.username, user_id, JSON.stringify(req.body)]
     );
@@ -489,19 +466,13 @@ export const deleteUser = async (req: AuthRequest, res: Response): Promise<void>
 
     // Revoke all refresh tokens
     await client.query(
-      `UPDATE refresh_tokens SET is_revoked = true WHERE user_id = $1`,
-      [user_id]
-    );
-
-    // Close all active device sessions
-    await client.query(
-      `UPDATE device_sessions SET is_active = false, ended_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
+      `UPDATE wms_refresh_tokens SET is_revoked = true WHERE user_id = $1`,
       [user_id]
     );
 
     // Log audit event
     await client.query(
-      `INSERT INTO audit_logs (user_id, username, action, resource_type, resource_id, details)
+      `INSERT INTO wms_audit_logs (user_id, username, action, resource_type, resource_id, details)
        VALUES ($1, $2, 'DELETE_USER', 'users', $3, $4)`,
       [req.user?.user_id, req.user?.username, user_id, JSON.stringify({ deleted_user: deletedUsername })]
     );
@@ -577,13 +548,13 @@ export const resetUserPassword = async (req: AuthRequest, res: Response): Promis
 
     // Revoke all refresh tokens (force re-login)
     await client.query(
-      `UPDATE refresh_tokens SET is_revoked = true WHERE user_id = $1`,
+      `UPDATE wms_refresh_tokens SET is_revoked = true WHERE user_id = $1`,
       [user_id]
     );
 
     // Log audit event
     await client.query(
-      `INSERT INTO audit_logs (user_id, username, action, resource_type, resource_id, details)
+      `INSERT INTO wms_audit_logs (user_id, username, action, resource_type, resource_id, details)
        VALUES ($1, $2, 'RESET_PASSWORD', 'users', $3, $4)`,
       [req.user?.user_id, req.user?.username, user_id, JSON.stringify({ reset_for: userCheck.rows[0].username })]
     );
@@ -623,7 +594,7 @@ export const getUserAuditLogs = async (req: AuthRequest, res: Response): Promise
          details,
          ip_address,
          created_at
-       FROM audit_logs
+       FROM wms_audit_logs
        WHERE user_id = $1
        ORDER BY created_at DESC
        LIMIT $2`,

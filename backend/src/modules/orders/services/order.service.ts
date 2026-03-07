@@ -171,12 +171,12 @@ class OrderService {
     const itemsResult = await pool.query(
       `SELECT
          soi.*,
-         p.product_name,
-         p.barcode,
+         p.name AS product_name,
+ 
          l.location_code,
          u.username as picked_by_username
        FROM shipment_order_items soi
-       LEFT JOIN products p ON soi.product_sku = p.sku_code
+       LEFT JOIN products p ON soi.product_sku = p.product_sku
        LEFT JOIN wms_locations l ON soi.location_id = l.location_id
        LEFT JOIN wms_users u ON soi.picked_by = u.user_id
        WHERE soi.order_id = $1
@@ -252,7 +252,7 @@ class OrderService {
         const sku = item.product_sku ?? item.sku_code;
 
         const productResult = await client.query(
-          `SELECT product_sku, product_name, barcode FROM products WHERE product_sku = $1`,
+          `SELECT product_sku, name AS product_name FROM products WHERE product_sku = $1`,
           [sku],
         );
 
@@ -263,13 +263,13 @@ class OrderService {
         const product = productResult.rows[0];
 
         const locationResult = await client.query(
-          `SELECT li.location_id, l.location_code, li.quantity_each
+          `SELECT li.location_id, l.location_code, li.quantity
            FROM location_inventory li
            JOIN wms_locations l ON li.location_id = l.location_id
            WHERE li.product_sku = $1
              AND l.warehouse_id = (SELECT warehouse_id FROM wms_warehouses WHERE code = $2)
-             AND li.quantity_each > 0
-           ORDER BY li.quantity_each DESC
+             AND li.quantity > 0
+           ORDER BY li.quantity DESC
            LIMIT 1`,
           [sku, warehouse_code],
         );
@@ -287,7 +287,6 @@ class OrderService {
             i + 1,
             product.product_sku,
             product.product_name,
-            product.barcode,
             item.quantity,
             location?.location_id,
             location?.location_code,
@@ -296,7 +295,7 @@ class OrderService {
       }
 
       await client.query(
-        `INSERT INTO audit_logs (user_id, username, action, resource_type, resource_id, details)
+        `INSERT INTO wms_audit_logs (user_id, username, action, resource_type, resource_id, details)
          VALUES ($1, $2, 'CREATE_ORDER', 'shipment_orders', $3, $4)`,
         [
           userId ?? null,
@@ -504,7 +503,7 @@ class OrderService {
       );
 
       await client.query(
-        `INSERT INTO audit_logs (user_id, username, action, resource_type, resource_id, details)
+        `INSERT INTO wms_audit_logs (user_id, username, action, resource_type, resource_id, details)
          VALUES ($1, $2, 'CANCEL_ORDER', 'shipment_orders', $3, $4)`,
         [user?.user_id, user?.username, order_id, JSON.stringify({ reason })],
       );

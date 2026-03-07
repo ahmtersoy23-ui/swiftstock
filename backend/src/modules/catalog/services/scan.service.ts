@@ -22,9 +22,9 @@ class ScanService {
 
     const warehouse_id = warehouseResult.rows[0].warehouse_id;
 
-    // Check if it's a product barcode
+    // Check if it's a product SKU (barcode field removed from products)
     const productResult = await pool.query(
-      'SELECT * FROM products WHERE barcode = $1 AND is_active = true',
+      'SELECT * FROM products WHERE product_sku = $1',
       [barcode],
     );
 
@@ -33,7 +33,7 @@ class ScanService {
 
       const inventoryResult = await pool.query(
         `SELECT i.*, l.qr_code as location_code
-         FROM inventory i
+         FROM wms_inventory i
          LEFT JOIN wms_locations l ON i.location_id = l.location_id
          WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
         [product.product_sku, warehouse_id],
@@ -58,9 +58,9 @@ class ScanService {
       const container = containerResult.rows[0];
 
       const contentsResult = await pool.query(
-        `SELECT cc.*, p.product_name, p.barcode as product_barcode
+        `SELECT cc.*, p.name AS product_name
          FROM wms_container_contents cc
-         JOIN products p ON cc.product_sku = p.sku_code
+         JOIN products p ON cc.product_sku = p.product_sku
          WHERE cc.container_id = $1`,
         [container.container_id],
       );
@@ -84,10 +84,10 @@ class ScanService {
       const location = locationResult.rows[0];
 
       const inventoryResult = await pool.query(
-        `SELECT i.*, p.product_name, p.barcode
-         FROM inventory i
-         JOIN products p ON i.product_sku = p.sku_code
-         WHERE i.location_id = $1 AND i.quantity_each > 0`,
+        `SELECT i.*, p.name AS product_name
+         FROM wms_inventory i
+         JOIN products p ON i.product_sku = p.product_sku
+         WHERE i.location_id = $1 AND i.quantity > 0`,
         [location.location_id],
       );
 
@@ -114,8 +114,8 @@ class ScanService {
     const serialParsed = parseSerialBarcode(barcode);
     if (serialParsed) {
       const serialResult = await pool.query(
-        `SELECT sn.*, p.product_name, p.base_unit, p.units_per_box, p.boxes_per_pallet
-         FROM serial_numbers sn
+        `SELECT sn.*, p.name AS product_name
+         FROM wms_serial_numbers sn
          JOIN products p ON p.product_sku = sn.sku_code
          WHERE sn.full_barcode = $1`,
         [barcode],
@@ -132,7 +132,7 @@ class ScanService {
 
         const inventoryResult = await pool.query(
           `SELECT i.*, l.qr_code as location_code
-           FROM inventory i
+           FROM wms_inventory i
            LEFT JOIN wms_locations l ON i.location_id = l.location_id
            WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
           [serial.product_sku, warehouse_id],
@@ -155,7 +155,7 @@ class ScanService {
 
       // Serial not in DB, check if SKU part exists
       const productFromSerial = await pool.query(
-        'SELECT * FROM products WHERE product_sku = $1 AND is_active = true',
+        'SELECT * FROM products WHERE product_sku = $1',
         [serialParsed.sku_code],
       );
 
@@ -164,7 +164,7 @@ class ScanService {
 
         const inventoryResult = await pool.query(
           `SELECT i.*, l.qr_code as location_code
-           FROM inventory i
+           FROM wms_inventory i
            LEFT JOIN wms_locations l ON i.location_id = l.location_id
            WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
           [product.product_sku, warehouse_id],
@@ -188,7 +188,7 @@ class ScanService {
 
     // Check if it's a SKU code (for products without barcode)
     const skuResult = await pool.query(
-      'SELECT * FROM products WHERE product_sku = $1 AND is_active = true',
+      'SELECT * FROM products WHERE product_sku = $1',
       [barcode],
     );
 
@@ -197,7 +197,7 @@ class ScanService {
 
       const inventoryResult = await pool.query(
         `SELECT i.*, l.qr_code as location_code
-         FROM inventory i
+         FROM wms_inventory i
          LEFT JOIN wms_locations l ON i.location_id = l.location_id
          WHERE i.product_sku = $1 AND i.warehouse_id = $2`,
         [product.product_sku, warehouse_id],
@@ -216,15 +216,14 @@ class ScanService {
     const result = await pool.query(
       `SELECT
         p.*,
-        i.quantity_each,
-        i.last_updated,
+        i.quantity,
+        i.last_updated_at,
         l.qr_code as location_code
        FROM products p
-       LEFT JOIN inventory i ON p.product_sku = i.sku_code
+       LEFT JOIN wms_inventory i ON p.product_sku = i.product_sku
        LEFT JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
        LEFT JOIN wms_locations l ON i.location_id = l.location_id
        WHERE p.product_sku = $1
-         AND p.is_active = true
          AND w.code = $2`,
       [product_sku, warehouse_code],
     );

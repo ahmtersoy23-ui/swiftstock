@@ -2,7 +2,7 @@
 // INVENTORY SERVICE — Module 4 (Inventory Core)
 // Inventory sorgulama ve stok ayarlama iş mantığı.
 // HTTP ve event listener (cyclecount:completed) tarafından kullanılır.
-// Tablolar: inventory, v_inventory_summary
+// Tablolar: wms_inventory, v_inventory_summary
 // Coupling: 2/10 — düşük
 // ============================================
 
@@ -82,14 +82,14 @@ class InventoryService {
     const result = await pool.query(
       `SELECT
          i.*,
-         p.product_name, p.barcode, p.units_per_box, p.boxes_per_pallet,
+         p.name AS product_name,
          w.code as warehouse_code, w.name as warehouse_name,
          l.qr_code as location_code
-       FROM inventory i
+       FROM wms_inventory i
        JOIN products p ON i.product_sku = p.product_sku
-       JOIN warehouses w ON i.warehouse_id = w.warehouse_id
-       LEFT JOIN locations l ON i.location_id = l.location_id
-       WHERE i.product_sku = $1 AND i.quantity_each > 0
+       JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
+       LEFT JOIN wms_locations l ON i.location_id = l.location_id
+       WHERE i.product_sku = $1 AND i.quantity > 0
        ORDER BY w.code`,
       [product_sku],
     );
@@ -98,19 +98,18 @@ class InventoryService {
       throw new InventoryError(404, 'No inventory found for this SKU');
     }
 
-    const totalEach = result.rows.reduce((sum, row) => sum + row.quantity_each, 0);
-    const unitsPerBox = result.rows[0].units_per_box;
-    const boxesPerPallet = result.rows[0].boxes_per_pallet;
+    const totalEach = result.rows.reduce((sum, row) => sum + row.quantity, 0);
+    const units_per_box = 1;
+    const boxes_per_pallet = 1;
 
     return {
       product_sku,
       product_name: result.rows[0].product_name,
-      barcode: result.rows[0].barcode,
       locations: result.rows,
       totals: {
         each: totalEach,
-        boxes: Math.floor(totalEach / unitsPerBox),
-        pallets: Math.floor(totalEach / (unitsPerBox * boxesPerPallet)),
+        boxes: Math.floor(totalEach / units_per_box),
+        pallets: Math.floor(totalEach / (units_per_box * boxes_per_pallet)),
       },
     };
   }
@@ -122,7 +121,7 @@ class InventoryService {
     const limitNum = Math.min(200, Math.max(1, parseInt(String(filters.limit ?? '50')) || 50));
     const offset = (pageNum - 1) * limitNum;
 
-    let whereClause = 'WHERE i.quantity_each <= $1 AND i.quantity_each > 0';
+    let whereClause = 'WHERE i.quantity <= $1 AND i.quantity > 0';
     const countParams: (string | number | boolean | null)[] = [threshold as string | number];
 
     if (warehouse_code) {
@@ -131,8 +130,8 @@ class InventoryService {
     }
 
     const countResult = await pool.query(
-      `SELECT COUNT(*) FROM inventory i
-       JOIN warehouses w ON i.warehouse_id = w.warehouse_id
+      `SELECT COUNT(*) FROM wms_inventory i
+       JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
        ${whereClause}`,
       countParams,
     );
@@ -141,15 +140,15 @@ class InventoryService {
     const result = await pool.query(
       `SELECT
          i.*,
-         p.product_name, p.barcode,
+         p.name AS product_name,
          w.code as warehouse_code,
          l.qr_code as location_code
-       FROM inventory i
+       FROM wms_inventory i
        JOIN products p ON i.product_sku = p.product_sku
-       JOIN warehouses w ON i.warehouse_id = w.warehouse_id
-       LEFT JOIN locations l ON i.location_id = l.location_id
+       JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
+       LEFT JOIN wms_locations l ON i.location_id = l.location_id
        ${whereClause}
-       ORDER BY i.quantity_each ASC
+       ORDER BY i.quantity ASC
        LIMIT $${countParams.length + 1} OFFSET $${countParams.length + 2}`,
       [...countParams, limitNum, offset],
     );
@@ -166,7 +165,6 @@ class InventoryService {
       WHERE (
         LOWER(product_name) LIKE LOWER($1)
         OR LOWER(product_sku) LIKE LOWER($1)
-        OR barcode LIKE $1
       )
     `;
     const params: (string | number | boolean | null)[] = [`%${query}%`];
@@ -193,7 +191,7 @@ class InventoryService {
         if (adj.delta === 0) continue;
 
         const existing = await client.query(
-          `SELECT inventory_id FROM inventory
+          `SELECT inventory_id FROM wms_inventory
            WHERE product_sku = $1 AND warehouse_id = $2 AND location_id = $3
            FOR UPDATE`,
           [adj.productSku, adj.warehouseId, adj.locationId],
@@ -201,14 +199,14 @@ class InventoryService {
 
         if (existing.rows.length > 0) {
           await client.query(
-            `UPDATE inventory
-             SET quantity_each = GREATEST(0, quantity_each + $1), last_updated = NOW()
+            `UPDATE wms_inventory
+             SET quantity = GREATEST(0, quantity + $1), last_updated_at = NOW()
              WHERE inventory_id = $2`,
             [adj.delta, existing.rows[0].inventory_id],
           );
         } else if (adj.delta > 0) {
           await client.query(
-            `INSERT INTO inventory (product_sku, warehouse_id, location_id, quantity_each)
+            `INSERT INTO wms_inventory (product_sku, warehouse_id, location_id, quantity)
              VALUES ($1, $2, $3, $4)`,
             [adj.productSku, adj.warehouseId, adj.locationId, adj.delta],
           );

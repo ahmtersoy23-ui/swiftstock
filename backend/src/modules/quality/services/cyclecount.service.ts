@@ -1,7 +1,7 @@
 // ============================================
 // CYCLECOUNT SERVICE — Module 5 (Quality)
 // Cycle count session iş mantığı.
-// Tablolar: cycle_count_sessions, cycle_count_items, cycle_count_adjustments
+// Tablolar: wms_cycle_count_sessions, wms_cycle_count_items, wms_cycle_count_adjustments
 // Coupling: 6/10 — orta (auto_adjust → eventBus ile decoupled)
 // ============================================
 
@@ -62,9 +62,9 @@ class CycleCountService {
         w.code as warehouse_code,
         COUNT(DISTINCT i.item_id) as total_items,
         COUNT(DISTINCT CASE WHEN i.status = 'COUNTED' THEN i.item_id END) as counted_items
-      FROM cycle_count_sessions s
+      FROM wms_cycle_count_sessions s
       JOIN wms_warehouses w ON s.warehouse_id = w.warehouse_id
-      LEFT JOIN cycle_count_items i ON s.session_id = i.session_id
+      LEFT JOIN wms_cycle_count_items i ON s.session_id = i.session_id
       WHERE 1=1
     `;
     const params: (string | number | boolean | null)[] = [];
@@ -96,7 +96,7 @@ class CycleCountService {
         s.*,
         w.name as warehouse_name,
         w.code as warehouse_code
-       FROM cycle_count_sessions s
+       FROM wms_cycle_count_sessions s
        JOIN wms_warehouses w ON s.warehouse_id = w.warehouse_id
        WHERE s.session_id = $1`,
       [session_id],
@@ -109,10 +109,10 @@ class CycleCountService {
     const itemsResult = await pool.query(
       `SELECT
         i.*,
-        p.product_name,
+        p.name AS product_name,
         l.location_code
-       FROM cycle_count_items i
-       JOIN products p ON i.product_sku = p.sku_code
+       FROM wms_cycle_count_items i
+       JOIN products p ON i.product_sku = p.product_sku
        LEFT JOIN wms_locations l ON i.location_id = l.location_id
        WHERE i.session_id = $1
        ORDER BY i.created_at ASC`,
@@ -132,7 +132,7 @@ class CycleCountService {
       const sessionNumber = `CC-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
 
       const sessionResult = await client.query(
-        `INSERT INTO cycle_count_sessions
+        `INSERT INTO wms_cycle_count_sessions
           (session_number, warehouse_id, status, count_type, scheduled_date, assigned_to, notes, created_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
@@ -153,13 +153,13 @@ class CycleCountService {
       if (items && Array.isArray(items) && items.length > 0) {
         const skuList = items.map((item) => item.product_sku);
         const invResult = await client.query(
-          `SELECT product_sku, quantity_on_hand FROM inventory
+          `SELECT product_sku, quantity FROM wms_inventory
            WHERE product_sku = ANY($1) AND warehouse_id = $2`,
           [skuList, warehouse_id],
         );
         const invMap = new Map<string, number>();
-        invResult.rows.forEach((row: { product_sku: string; quantity_on_hand: number }) => {
-          invMap.set(row.product_sku, row.quantity_on_hand);
+        invResult.rows.forEach((row: { product_sku: string; quantity: number }) => {
+          invMap.set(row.product_sku, row.quantity);
         });
 
         const valuesClauses: string[] = [];
@@ -180,7 +180,7 @@ class CycleCountService {
         });
 
         await client.query(
-          `INSERT INTO cycle_count_items
+          `INSERT INTO wms_cycle_count_items
             (session_id, product_sku, location_id, expected_quantity, status)
            VALUES ${valuesClauses.join(', ')}`,
           insertParams,
@@ -199,7 +199,7 @@ class CycleCountService {
 
   async startSession(session_id: string) {
     const result = await pool.query(
-      `UPDATE cycle_count_sessions
+      `UPDATE wms_cycle_count_sessions
        SET status = 'IN_PROGRESS', started_at = CURRENT_TIMESTAMP
        WHERE session_id = $1 AND status = 'PLANNED'
        RETURNING *`,
@@ -221,7 +221,7 @@ class CycleCountService {
       await client.query('BEGIN');
 
       const itemResult = await client.query(
-        `SELECT * FROM cycle_count_items WHERE item_id = $1`,
+        `SELECT * FROM wms_cycle_count_items WHERE item_id = $1`,
         [item_id],
       );
 
@@ -237,7 +237,7 @@ class CycleCountService {
           : '0.00';
 
       const updateResult = await client.query(
-        `UPDATE cycle_count_items
+        `UPDATE wms_cycle_count_items
          SET counted_quantity = $1,
              variance = $2,
              variance_percentage = $3,
@@ -270,7 +270,7 @@ class CycleCountService {
       await client.query('BEGIN');
 
       const sessionResult = await client.query(
-        `SELECT * FROM cycle_count_sessions WHERE session_id = $1`,
+        `SELECT * FROM wms_cycle_count_sessions WHERE session_id = $1`,
         [session_id],
       );
 
@@ -281,7 +281,7 @@ class CycleCountService {
       const session = sessionResult.rows[0];
 
       const itemsResult = await client.query(
-        `SELECT * FROM cycle_count_items
+        `SELECT * FROM wms_cycle_count_items
          WHERE session_id = $1 AND status = 'COUNTED' AND variance != 0`,
         [session_id],
       );
@@ -321,7 +321,7 @@ class CycleCountService {
         });
 
         await client.query(
-          `INSERT INTO cycle_count_adjustments
+          `INSERT INTO wms_cycle_count_adjustments
             (item_id, session_id, product_sku, location_id, old_quantity, new_quantity, variance, adjustment_type, adjusted_by)
            VALUES ${adjustValuesClauses.join(', ')}`,
           adjustParams,
@@ -338,7 +338,7 @@ class CycleCountService {
 
           const itemIds = itemsResult.rows.map((item: Record<string, unknown>) => item.item_id);
           await client.query(
-            `UPDATE cycle_count_items SET status = 'ADJUSTED' WHERE item_id = ANY($1)`,
+            `UPDATE wms_cycle_count_items SET status = 'ADJUSTED' WHERE item_id = ANY($1)`,
             [itemIds],
           );
         }
@@ -346,7 +346,7 @@ class CycleCountService {
 
       // Mark session COMPLETED
       await client.query(
-        `UPDATE cycle_count_sessions
+        `UPDATE wms_cycle_count_sessions
          SET status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP
          WHERE session_id = $1`,
         [session_id],

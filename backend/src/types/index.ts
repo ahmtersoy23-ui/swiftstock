@@ -83,7 +83,6 @@ export interface StockMovement {
   movement_type: 'IN' | 'OUT' | 'MOVE' | 'COUNT' | 'ADJUST';
   quantity: number;
   from_location_id?: number;
-  to_location_id?: number;
   container_id?: number;
   reference_number?: string;
   notes?: string;
@@ -138,9 +137,7 @@ export interface TransactionItem {
   product_sku: string;  // Changed from sku_code
   quantity: number;
   unit_type: 'EACH' | 'BOX' | 'PALLET';
-  quantity_each: number;
   from_location_id?: number;
-  to_location_id?: number;
 }
 
 // ============================================

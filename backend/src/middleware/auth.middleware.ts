@@ -121,9 +121,11 @@ export const authenticateToken = async (
 
     // Check if user exists in local database by SSO user_id first, then email
     const userResult = await pool.query(
-      `SELECT user_id, username, email, full_name, role, warehouse_id, is_active, sso_user_id
-       FROM users
-       WHERE sso_user_id = $1 OR email = $2`,
+      `SELECT u.user_id, u.username, u.email, u.full_name, u.role,
+              w.code AS warehouse_code, u.is_active, u.sso_user_id
+       FROM users u
+       LEFT JOIN wms_warehouses w ON u.warehouse_id = w.warehouse_id
+       WHERE u.sso_user_id = $1 OR u.email = $2`,
       [ssoUser.id, ssoUser.email]
     );
 
@@ -134,7 +136,7 @@ export const authenticateToken = async (
       const insertResult = await pool.query(
         `INSERT INTO users (username, email, full_name, role, is_active, sso_user_id, created_at)
          VALUES ($1, $2, $3, $4, true, $5, NOW())
-         RETURNING user_id, username, email, full_name, role, warehouse_id, is_active, sso_user_id`,
+         RETURNING user_id, username, email, full_name, role, is_active, sso_user_id`,
         [ssoUser.email, ssoUser.email, ssoUser.name, mapSSORole(ssoRole), ssoUser.id]
       );
       user = insertResult.rows[0];
@@ -282,6 +284,15 @@ export const requireWarehouse = (req: AuthRequest, res: Response, next: NextFunc
     return;
   }
 
+  // Non-admin must have a warehouse assigned
+  if (!req.user.warehouse_code) {
+    res.status(HTTP_STATUS.FORBIDDEN).json({
+      success: false,
+      error: 'Bu işlem için bir depoya atanmanız gereklidir.',
+    });
+    return;
+  }
+
   // Get warehouse_code from request (query, params, or body)
   const requestedWarehouse = req.query.warehouse_code || req.params.warehouse_code || req.body.warehouse_code;
 
@@ -291,7 +302,7 @@ export const requireWarehouse = (req: AuthRequest, res: Response, next: NextFunc
   }
 
   // Check if user's warehouse matches requested warehouse
-  if (req.user.warehouse_code && req.user.warehouse_code !== requestedWarehouse) {
+  if (req.user.warehouse_code !== requestedWarehouse) {
     res.status(HTTP_STATUS.FORBIDDEN).json({
       success: false,
       error: 'Bu depoya erişim yetkiniz bulunmuyor.',
@@ -327,9 +338,11 @@ export const optionalAuth = async (
 
       // DB lookup (simplified — no auto-create for optional auth)
       const userResult = await pool.query(
-        `SELECT user_id, username, email, full_name, role, warehouse_code, is_active
-         FROM users
-         WHERE email = $1`,
+        `SELECT u.user_id, u.username, u.email, u.full_name, u.role,
+                w.code AS warehouse_code, u.is_active
+         FROM users u
+         LEFT JOIN wms_warehouses w ON u.warehouse_id = w.warehouse_id
+         WHERE u.email = $1`,
         [ssoUser.email]
       );
 

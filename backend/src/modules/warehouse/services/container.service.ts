@@ -126,9 +126,9 @@ class ContainerService {
     const container = containerResult.rows[0];
 
     const contentsResult = await pool.query(
-      `SELECT cc.*, p.product_name, p.barcode as product_barcode
+      `SELECT cc.*, p.name AS product_name
        FROM wms_container_contents cc
-       JOIN products p ON cc.product_sku = p.sku_code
+       JOIN products p ON cc.product_sku = p.product_sku
        WHERE cc.container_id = $1`,
       [container.container_id],
     );

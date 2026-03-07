@@ -1,7 +1,7 @@
 // ============================================
 // SERIAL SERVICE — Module 1 (Catalog)
 // Seri numarası iş mantığı. Controller sadece req/res yönetir.
-// Tablolar: serial_numbers, serial_history, serial_counters
+// Tablolar: wms_serial_numbers, serial_history, serial_counters
 // ============================================
 
 import pool from '../../../config/database';
@@ -71,7 +71,7 @@ export const parseSerialBarcode = (
 class SerialService {
   async generateSerialNumbers(product_sku: string, quantity: number) {
     const productCheck = await pool.query(
-      'SELECT product_sku, product_name FROM products WHERE product_sku = $1',
+      'SELECT product_sku, name AS product_name FROM products WHERE product_sku = $1',
       [product_sku],
     );
 
@@ -95,7 +95,7 @@ class SerialService {
         const full_barcode = `${product_sku}-${serial_no}`;
 
         const insertResult = await client.query(
-          `INSERT INTO serial_numbers (product_sku, serial_no, full_barcode, status)
+          `INSERT INTO wms_serial_numbers (product_sku, serial_no, full_barcode, status)
            VALUES ($1, $2, $3, 'AVAILABLE')
            RETURNING serial_no, full_barcode`,
           [product_sku, serial_no, full_barcode],
@@ -124,8 +124,8 @@ class SerialService {
     const { status, limit = 100, offset = 0 } = filters;
 
     let query = `
-      SELECT sn.*, p.product_name, w.code as warehouse_code, l.qr_code as location_code
-      FROM serial_numbers sn
+      SELECT sn.*, p.name AS product_name, w.code as warehouse_code, l.qr_code as location_code
+      FROM wms_serial_numbers sn
       JOIN products p ON p.product_sku = sn.sku_code
       LEFT JOIN wms_warehouses w ON w.warehouse_id = sn.warehouse_id
       LEFT JOIN wms_locations l ON l.location_id = sn.location_id
@@ -144,7 +144,7 @@ class SerialService {
     const result = await pool.query(query, params);
 
     const countResult = await pool.query(
-      `SELECT COUNT(*) FROM serial_numbers WHERE product_sku = $1 ${status ? 'AND status = $2' : ''}`,
+      `SELECT COUNT(*) FROM wms_serial_numbers WHERE product_sku = $1 ${status ? 'AND status = $2' : ''}`,
       status ? [product_sku, status] : [product_sku],
     );
 
@@ -160,9 +160,9 @@ class SerialService {
 
   async lookupSerialBarcode(barcode: string) {
     const result = await pool.query(
-      `SELECT sn.*, p.product_name, p.base_unit, p.units_per_box,
+      `SELECT sn.*, p.name AS product_name,
               w.code as warehouse_code, l.qr_code as location_code
-       FROM serial_numbers sn
+       FROM wms_serial_numbers sn
        JOIN products p ON p.product_sku = sn.sku_code
        LEFT JOIN wms_warehouses w ON w.warehouse_id = sn.warehouse_id
        LEFT JOIN wms_locations l ON l.location_id = sn.location_id
@@ -181,7 +181,7 @@ class SerialService {
     const { status, warehouse_id, location_id, transaction_id } = data;
 
     const result = await pool.query(
-      `UPDATE serial_numbers
+      `UPDATE wms_serial_numbers
        SET status = $1,
            warehouse_id = $2,
            location_id = $3,
@@ -202,7 +202,7 @@ class SerialService {
   async getSerialStats(product_sku: string) {
     const result = await pool.query(
       `SELECT status, COUNT(*) as count
-       FROM serial_numbers
+       FROM wms_serial_numbers
        WHERE product_sku = $1
        GROUP BY status`,
       [product_sku],
@@ -226,8 +226,8 @@ class SerialService {
 
   async getSerialHistory(barcode: string) {
     const serialResult = await pool.query(
-      `SELECT sn.*, p.product_name
-       FROM serial_numbers sn
+      `SELECT sn.*, p.name AS product_name
+       FROM wms_serial_numbers sn
        JOIN products p ON p.product_sku = sn.sku_code
        WHERE sn.full_barcode = $1`,
       [barcode],
@@ -259,7 +259,7 @@ class SerialService {
        LEFT JOIN wms_warehouses fw ON fw.warehouse_id = sh.from_warehouse_id
        LEFT JOIN wms_warehouses tw ON tw.warehouse_id = sh.to_warehouse_id
        LEFT JOIN wms_users u ON u.user_id = sh.user_id
-       LEFT JOIN scan_sessions ss ON ss.session_id = sh.session_id
+       LEFT JOIN wms_scan_sessions ss ON ss.session_id = sh.session_id
        WHERE sh.full_barcode = $1
        ORDER BY sh.created_at DESC`,
       [barcode],
@@ -277,8 +277,8 @@ class SerialService {
          ss.session_code,
          ss.user_name,
          l.location_code
-       FROM scan_operations so
-       JOIN scan_sessions ss ON ss.session_id = so.session_id
+       FROM wms_scan_operations so
+       JOIN wms_scan_sessions ss ON ss.session_id = so.session_id
        LEFT JOIN wms_locations l ON l.location_code = so.location_code
        WHERE so.product_sku = $1
        ORDER BY so.scanned_at DESC

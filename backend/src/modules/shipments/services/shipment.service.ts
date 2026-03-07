@@ -224,7 +224,7 @@ class ShipmentService {
           'content_id', sbc.content_id,
           'product_sku', sbc.product_sku,
           'quantity', sbc.quantity,
-          'product_name', p.product_name
+          'product_name', p.name
         ))
         FROM shipment_box_contents sbc
         JOIN products p ON sbc.product_sku = p.product_sku
@@ -301,8 +301,7 @@ class ShipmentService {
     const contentsResult = await pool.query(
       `SELECT
         sbc.*,
-        p.product_name,
-        p.barcode as product_barcode
+        p.name AS product_name,
       FROM shipment_box_contents sbc
       JOIN products p ON sbc.product_sku = p.product_sku
       WHERE sbc.box_id = $1

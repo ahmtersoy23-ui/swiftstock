@@ -1,7 +1,7 @@
 // ============================================
 // TRANSACTION SERVICE — Module 4 (Inventory Core)
 // Transaction iş mantığı. HTTP ve event listener tarafından kullanılır.
-// Tablolar: transactions, transaction_items, inventory
+// Tablolar: wms_transactions, wms_transaction_items, wms_inventory
 // Coupling: 3/10 — düşük
 // ============================================
 
@@ -80,7 +80,7 @@ class TransactionService {
           throw new TransactionError(400, 'warehouse_code or warehouse_id is required');
         }
         const warehouseResult = await client.query(
-          'SELECT warehouse_id FROM warehouses WHERE code = $1',
+          'SELECT warehouse_id FROM wms_warehouses WHERE code = $1',
           [warehouse_code],
         );
         if (warehouseResult.rows.length === 0) {
@@ -94,7 +94,7 @@ class TransactionService {
       if (location_id == null) {
         if (location_qr) {
           const locationResult = await client.query(
-            'SELECT location_id FROM locations WHERE qr_code = $1 AND warehouse_id = $2',
+            'SELECT location_id FROM wms_locations WHERE qr_code = $1 AND warehouse_id = $2',
             [location_qr, warehouse_id],
           );
           if (locationResult.rows.length > 0) {
@@ -103,7 +103,7 @@ class TransactionService {
         }
         if (location_id == null) {
           const mainResult = await client.query(
-            `SELECT location_id FROM locations WHERE warehouse_id = $1 AND qr_code LIKE '%-MAIN'`,
+            `SELECT location_id FROM wms_locations WHERE warehouse_id = $1 AND qr_code LIKE '%-MAIN'`,
             [warehouse_id],
           );
           if (mainResult.rows.length > 0) {
@@ -114,7 +114,7 @@ class TransactionService {
 
       // ── Create transaction record ─────────────────────────────────────────
       const transactionResult = await client.query(
-        `INSERT INTO transactions
+        `INSERT INTO wms_transactions
          (transaction_type, warehouse_id, location_id, reference_no, notes, created_by, device_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
@@ -124,20 +124,17 @@ class TransactionService {
 
       // ── Batch-fetch products ──────────────────────────────────────────────
       const skuCodes = items.map((i) => i.product_sku ?? i.sku_code).filter(Boolean) as string[];
-      const barcodes = items.map((i) => i.barcode).filter(Boolean) as string[];
-      const allIdentifiers = [...skuCodes, ...barcodes];
 
       const productDetailsResult = await client.query(
-        `SELECT product_sku, barcode, units_per_box, boxes_per_pallet
+        `SELECT product_sku
          FROM products
-         WHERE product_sku = ANY($1) OR barcode = ANY($1)`,
-        [allIdentifiers],
+         WHERE product_sku = ANY($1)`,
+        [skuCodes],
       );
       const productBySku = new Map<string, Record<string, unknown>>();
       const productByBarcode = new Map<string, Record<string, unknown>>();
       productDetailsResult.rows.forEach((p) => {
         productBySku.set(p.product_sku, p);
-        if (p.barcode) productByBarcode.set(p.barcode, p);
       });
 
       // ── Batch-fetch inventory (OUT check) ─────────────────────────────────
@@ -152,13 +149,13 @@ class TransactionService {
         }).filter(Boolean) as string[];
 
         const inventoryResult = await client.query(
-          `SELECT product_sku, quantity_each
-           FROM inventory
+          `SELECT product_sku, quantity
+           FROM wms_inventory
            WHERE product_sku = ANY($1) AND warehouse_id = $2 AND location_id = $3`,
           [skuList, warehouse_id, location_id],
         );
         inventoryResult.rows.forEach((inv) => {
-          inventoryMap.set(inv.product_sku, inv.quantity_each);
+          inventoryMap.set(inv.product_sku, inv.quantity);
         });
       }
 
@@ -176,40 +173,42 @@ class TransactionService {
         }
 
         const product = productBySku.get(product_sku!) as
-          | { product_sku: string; units_per_box: number; boxes_per_pallet: number }
+          | { product_sku: string }
           | undefined;
         if (!product) {
           throw new TransactionError(404, `Product not found: ${product_sku}`);
         }
 
-        const { units_per_box, boxes_per_pallet } = product;
+        // Unit conversion: products has no units_per_box/boxes_per_pallet — use defaults
+        const units_per_box = 1;
+        const boxes_per_pallet = 1;
         const unit_type = item.unit_type ?? 'EACH';
-        let quantity_each = item.quantity;
-        if (unit_type === 'BOX') quantity_each = item.quantity * units_per_box;
-        else if (unit_type === 'PALLET') quantity_each = item.quantity * units_per_box * boxes_per_pallet;
+        let quantity_value = item.quantity;
+        if (unit_type === 'BOX') quantity_value = item.quantity * units_per_box;
+        else if (unit_type === 'PALLET') quantity_value = item.quantity * units_per_box * boxes_per_pallet;
 
         if (transaction_type === 'OUT') {
           const currentStock = inventoryMap.get(product_sku!) ?? 0;
-          if (currentStock < quantity_each) {
+          if (currentStock < quantity_value) {
             throw new TransactionError(
               400,
-              `Insufficient stock for ${product_sku}. Available: ${currentStock}, Requested: ${quantity_each}`,
+              `Insufficient stock for ${product_sku}. Available: ${currentStock}, Requested: ${quantity_value}`,
             );
           }
         }
 
         const itemResult = await client.query(
-          `INSERT INTO transaction_items
-           (transaction_id, product_sku, quantity, unit_type, quantity_each, to_location_id)
-           VALUES ($1, $2, $3, $4, $5, $6)
+          `INSERT INTO wms_transaction_items
+           (transaction_id, product_sku, quantity, unit_type)
+           VALUES ($1, $2, $3, $4)
            RETURNING *`,
-          [transaction.transaction_id, product_sku, item.quantity, unit_type, quantity_each, location_id],
+          [transaction.transaction_id, product_sku, item.quantity, unit_type],
         );
         processedItems.push(itemResult.rows[0]);
 
-        const inventoryDelta = transaction_type === 'IN' ? quantity_each : -quantity_each;
+        const inventoryDelta = transaction_type === 'IN' ? quantity_value : -quantity_value;
         const existingInventory = await client.query(
-          `SELECT inventory_id, quantity_each FROM inventory
+          `SELECT inventory_id, quantity FROM wms_inventory
            WHERE product_sku = $1 AND warehouse_id = $2 AND location_id = $3
            FOR UPDATE`,
           [product_sku, warehouse_id, location_id],
@@ -217,26 +216,26 @@ class TransactionService {
 
         // A4: FOR UPDATE sonrası OUT için stok tekrar kontrol — concurrent race condition önler
         if (transaction_type === 'OUT') {
-          const lockedStock = existingInventory.rows[0]?.quantity_each ?? 0;
-          if (lockedStock < quantity_each) {
+          const lockedStock = existingInventory.rows[0]?.quantity ?? 0;
+          if (lockedStock < quantity_value) {
             throw new TransactionError(
               400,
-              `Insufficient stock for ${product_sku}. Available: ${lockedStock}, Requested: ${quantity_each}`,
+              `Insufficient stock for ${product_sku}. Available: ${lockedStock}, Requested: ${quantity_value}`,
             );
           }
         }
 
         if (existingInventory.rows.length > 0) {
           await client.query(
-            `UPDATE inventory SET quantity_each = quantity_each + $1, last_updated = NOW()
+            `UPDATE wms_inventory SET quantity = quantity + $1, last_updated_at = NOW()
              WHERE inventory_id = $2`,
             [inventoryDelta, existingInventory.rows[0].inventory_id],
           );
         } else if (transaction_type === 'IN') {
           await client.query(
-            `INSERT INTO inventory (product_sku, warehouse_id, location_id, quantity_each)
+            `INSERT INTO wms_inventory (product_sku, warehouse_id, location_id, quantity)
              VALUES ($1, $2, $3, $4)`,
-            [product_sku, warehouse_id, location_id, quantity_each],
+            [product_sku, warehouse_id, location_id, quantity_value],
           );
         }
       }
@@ -263,10 +262,10 @@ class TransactionService {
         w.code as warehouse_code,
         l.qr_code as location_code,
         COUNT(ti.item_id) as item_count
-      FROM transactions t
-      JOIN warehouses w ON t.warehouse_id = w.warehouse_id
-      LEFT JOIN locations l ON t.location_id = l.location_id
-      LEFT JOIN transaction_items ti ON t.transaction_id = ti.transaction_id
+      FROM wms_transactions t
+      JOIN wms_warehouses w ON t.warehouse_id = w.warehouse_id
+      LEFT JOIN wms_locations l ON t.location_id = l.location_id
+      LEFT JOIN wms_transaction_items ti ON t.transaction_id = ti.transaction_id
     `;
 
     const params: (string | number | boolean | null)[] = [];
@@ -288,9 +287,9 @@ class TransactionService {
   async getTransactionDetails(transaction_id: string) {
     const transactionResult = await pool.query(
       `SELECT t.*, w.code as warehouse_code, l.qr_code as location_code
-       FROM transactions t
-       JOIN warehouses w ON t.warehouse_id = w.warehouse_id
-       LEFT JOIN locations l ON t.location_id = l.location_id
+       FROM wms_transactions t
+       JOIN wms_warehouses w ON t.warehouse_id = w.warehouse_id
+       LEFT JOIN wms_locations l ON t.location_id = l.location_id
        WHERE t.transaction_id = $1`,
       [transaction_id],
     );
@@ -302,8 +301,8 @@ class TransactionService {
     const transaction = transactionResult.rows[0];
 
     const itemsResult = await pool.query(
-      `SELECT ti.*, p.product_name, p.barcode
-       FROM transaction_items ti
+      `SELECT ti.*, p.name AS product_name
+       FROM wms_transaction_items ti
        JOIN products p ON ti.product_sku = p.product_sku
        WHERE ti.transaction_id = $1`,
       [transaction_id],
@@ -318,7 +317,7 @@ class TransactionService {
       await client.query('BEGIN');
 
       const transactionResult = await client.query(
-        'SELECT * FROM transactions WHERE transaction_id = $1',
+        'SELECT * FROM wms_transactions WHERE transaction_id = $1',
         [transaction_id],
       );
       if (transactionResult.rows.length === 0) {
@@ -327,13 +326,13 @@ class TransactionService {
       const transaction = transactionResult.rows[0];
 
       const itemsResult = await client.query(
-        'SELECT * FROM transaction_items WHERE transaction_id = $1',
+        'SELECT * FROM wms_transaction_items WHERE transaction_id = $1',
         [transaction_id],
       );
 
       const reverseType = transaction.transaction_type === 'IN' ? 'OUT' : 'IN';
       const reverseTransactionResult = await client.query(
-        `INSERT INTO transactions
+        `INSERT INTO wms_transactions
          (transaction_type, warehouse_id, location_id, reference_no, notes, created_by)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
@@ -352,22 +351,20 @@ class TransactionService {
         const valuesClauses: string[] = [];
         const insertParams: (string | number | boolean | null)[] = [];
         itemsResult.rows.forEach((item: Record<string, unknown>, idx: number) => {
-          const offset = idx * 6;
+          const offset = idx * 4;
           valuesClauses.push(
-            `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`,
+            `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4})`,
           );
           insertParams.push(
             reverseTransaction.transaction_id,
             item.product_sku as string,
             item.quantity as number,
             item.unit_type as string,
-            item.quantity_each as number,
-            (item.to_location_id as number) || null,
           );
         });
         await client.query(
-          `INSERT INTO transaction_items
-           (transaction_id, product_sku, quantity, unit_type, quantity_each, to_location_id)
+          `INSERT INTO wms_transaction_items
+           (transaction_id, product_sku, quantity, unit_type)
            VALUES ${valuesClauses.join(', ')}`,
           insertParams,
         );

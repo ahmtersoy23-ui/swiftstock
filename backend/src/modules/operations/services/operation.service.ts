@@ -1,7 +1,7 @@
 // ============================================
 // OPERATION SERVICE — Module 8
 // Operasyon motoru iş mantığı. Controller sadece req/res yönetir.
-// Tablolar: operation_modes, scan_sessions, scan_operations
+// Tablolar: operation_modes, wms_scan_sessions, wms_scan_operations
 // Coupling: 3/10 — düşük
 // ============================================
 
@@ -72,7 +72,7 @@ class OperationService {
     const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     const result = await pool.query(
-      `SELECT COUNT(*) as count FROM scan_sessions WHERE session_code LIKE $1`,
+      `SELECT COUNT(*) as count FROM wms_scan_sessions WHERE session_code LIKE $1`,
       [`SESSION-${yearMonth}-%`],
     );
 
@@ -110,7 +110,7 @@ class OperationService {
       await client.query('BEGIN');
 
       const activeSessionCheck = await client.query(
-        `SELECT session_id, session_code FROM scan_sessions
+        `SELECT session_id, session_code FROM wms_scan_sessions
          WHERE user_name = $1 AND status = 'ACTIVE'`,
         [user_name],
       );
@@ -123,7 +123,7 @@ class OperationService {
       }
 
       const result = await client.query(
-        `INSERT INTO scan_sessions (session_code, warehouse_id, user_name, mode_type, notes)
+        `INSERT INTO wms_scan_sessions (session_code, warehouse_id, user_name, mode_type, notes)
          VALUES ($1, $2, $3, $4, $5) RETURNING *`,
         [session_code, warehouse_id, user_name, mode_type, notes],
       );
@@ -141,7 +141,7 @@ class OperationService {
   async getScanSession(session_id: string) {
     const result = await pool.query(
       `SELECT s.*, w.code as warehouse_code, w.name as warehouse_name
-       FROM scan_sessions s
+       FROM wms_scan_sessions s
        JOIN wms_warehouses w ON s.warehouse_id = w.warehouse_id
        WHERE s.session_id = $1`,
       [session_id],
@@ -157,7 +157,7 @@ class OperationService {
   async getActiveScanSession(user_name: string) {
     const result = await pool.query(
       `SELECT s.*, w.code as warehouse_code, w.name as warehouse_name
-       FROM scan_sessions s
+       FROM wms_scan_sessions s
        JOIN wms_warehouses w ON s.warehouse_id = w.warehouse_id
        WHERE s.user_name = $1 AND s.status = 'ACTIVE'
        ORDER BY s.started_at DESC
@@ -174,7 +174,7 @@ class OperationService {
 
   async completeScanSession(session_id: string, notes?: string) {
     const result = await pool.query(
-      `UPDATE scan_sessions
+      `UPDATE wms_scan_sessions
        SET status = 'COMPLETED', completed_at = NOW(), notes = COALESCE($2, notes)
        WHERE session_id = $1 AND status = 'ACTIVE'
        RETURNING *`,
@@ -190,7 +190,7 @@ class OperationService {
 
   async cancelScanSession(session_id: string, notes?: string) {
     const result = await pool.query(
-      `UPDATE scan_sessions
+      `UPDATE wms_scan_sessions
        SET status = 'CANCELLED', completed_at = NOW(), notes = COALESCE($2, notes)
        WHERE session_id = $1 AND status = 'ACTIVE'
        RETURNING *`,
@@ -220,7 +220,7 @@ class OperationService {
     } = data;
 
     const sessionCheck = await pool.query(
-      'SELECT status FROM scan_sessions WHERE session_id = $1',
+      'SELECT status FROM wms_scan_sessions WHERE session_id = $1',
       [session_id],
     );
 
@@ -233,7 +233,7 @@ class OperationService {
     }
 
     const result = await pool.query(
-      `INSERT INTO scan_operations (
+      `INSERT INTO wms_scan_operations (
         session_id, operation_type, product_sku, location_id,
         from_location_id, to_location_id, quantity, unit_type, notes
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -258,13 +258,13 @@ class OperationService {
     const result = await pool.query(
       `SELECT
         so.*,
-        p.product_name,
-        p.barcode,
+        p.name AS product_name,
+
         l.location_code,
         fl.location_code as from_location_code,
         tl.location_code as to_location_code
-       FROM scan_operations so
-       LEFT JOIN products p ON so.product_sku = p.sku_code
+       FROM wms_scan_operations so
+       LEFT JOIN products p ON so.product_sku = p.product_sku
        LEFT JOIN wms_locations l ON so.location_id = l.location_id
        LEFT JOIN wms_locations fl ON so.from_location_id = fl.location_id
        LEFT JOIN wms_locations tl ON so.to_location_id = tl.location_id

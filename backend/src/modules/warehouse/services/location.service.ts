@@ -228,16 +228,16 @@ class LocationService {
     const result = await pool.query(
       `SELECT
         li.*,
-        p.product_name,
-        p.barcode,
+        p.name AS product_name,
+
         p.category,
         l.location_code,
         l.zone
        FROM location_inventory li
-       JOIN products p ON li.product_sku = p.sku_code
+       JOIN products p ON li.product_sku = p.product_sku
        JOIN wms_locations l ON li.location_id = l.location_id
        WHERE li.location_id = $1
-       ORDER BY p.product_name`,
+       ORDER BY p.name`,
       [location_id],
     );
 

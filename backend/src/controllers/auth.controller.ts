@@ -16,6 +16,7 @@ import {
   generateRefreshToken,
 } from '../middleware/auth.middleware';
 import logger from '../config/logger';
+import { getJwtSecret } from '../utils/secretSync';
 
 const SALT_ROUNDS = 12;
 
@@ -42,7 +43,7 @@ export const logout = async (req: AuthRequest, res: Response): Promise<void> => 
     if (refreshToken && req.user) {
       // Get all tokens for this user and find matching one with bcrypt.compare
       const tokensResult = await client.query(
-        `SELECT token_id, token_hash FROM refresh_tokens WHERE user_id = $1 AND is_revoked = false`,
+        `SELECT token_id, token_hash FROM wms_refresh_tokens WHERE user_id = $1 AND is_revoked = false`,
         [req.user.user_id]
       );
 
@@ -51,24 +52,16 @@ export const logout = async (req: AuthRequest, res: Response): Promise<void> => 
         const isMatch = await bcrypt.compare(refreshToken, row.token_hash);
         if (isMatch) {
           await client.query(
-            `UPDATE refresh_tokens SET is_revoked = true WHERE token_id = $1`,
+            `UPDATE wms_refresh_tokens SET is_revoked = true WHERE token_id = $1`,
             [row.token_id]
           );
           break;
         }
       }
 
-      // Close active device sessions
-      await client.query(
-        `UPDATE device_sessions
-         SET is_active = false, ended_at = CURRENT_TIMESTAMP
-         WHERE user_id = $1 AND is_active = true`,
-        [req.user.user_id]
-      );
-
       // Log audit event
       await client.query(
-        `INSERT INTO audit_logs (user_id, username, action, ip_address)
+        `INSERT INTO wms_audit_logs (user_id, username, action, ip_address)
          VALUES ($1, $2, 'LOGOUT', $3)`,
         [req.user.user_id, req.user.username, req.ip]
       );
@@ -106,7 +99,6 @@ export const refreshAccessToken = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    // First, decode the JWT to get user_id (without verification since it might be expired)
     interface DecodedRefreshToken {
       user_id: number;
       username: string;
@@ -114,18 +106,22 @@ export const refreshAccessToken = async (req: AuthRequest, res: Response): Promi
     }
     let decoded: DecodedRefreshToken | null;
     try {
-      decoded = jwt.decode(refreshToken) as DecodedRefreshToken | null;
-      if (!decoded || !decoded.user_id) {
+      decoded = jwt.verify(refreshToken, getJwtSecret()) as DecodedRefreshToken;
+    } catch (verifyErr) {
+      if (verifyErr instanceof jwt.TokenExpiredError) {
+        decoded = jwt.decode(refreshToken) as DecodedRefreshToken | null;
+      } else {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          error: 'Geçersiz refresh token formatı.',
+          error: 'Geçersiz refresh token.',
         });
         return;
       }
-    } catch {
+    }
+    if (!decoded || !decoded.user_id) {
       res.status(HTTP_STATUS.UNAUTHORIZED).json({
         success: false,
-        error: 'Geçersiz refresh token.',
+        error: 'Geçersiz refresh token formatı.',
       });
       return;
     }
@@ -133,9 +129,10 @@ export const refreshAccessToken = async (req: AuthRequest, res: Response): Promi
     // Get all non-revoked tokens for this user and compare with bcrypt
     const tokensResult = await client.query(
       `SELECT rt.token_id, rt.token_hash, rt.expires_at, rt.is_revoked,
-              u.username, u.email, u.full_name, u.role, u.warehouse_code, u.is_active
-       FROM refresh_tokens rt
+              u.user_id, u.username, u.email, u.full_name, u.role, w.code AS warehouse_code, u.is_active
+       FROM wms_refresh_tokens rt
        JOIN users u ON rt.user_id = u.user_id
+       LEFT JOIN wms_warehouses w ON u.warehouse_id = w.warehouse_id
        WHERE rt.user_id = $1 AND rt.is_revoked = false`,
       [decoded.user_id]
     );
@@ -228,7 +225,7 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
       return;
     }
 
-    // Get full user details with permissions
+    // Get full user details
     const userResult = await pool.query(
       `SELECT
          u.user_id,
@@ -236,21 +233,14 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
          u.email,
          u.full_name,
          u.role,
-         u.warehouse_code,
+         w.code AS warehouse_code,
          w.name AS warehouse_name,
          u.created_at,
          u.last_login,
-         COALESCE(
-           json_agg(
-             json_build_object('permission_type', up.permission_type, 'resource', up.resource)
-           ) FILTER (WHERE up.permission_id IS NOT NULL),
-           '[]'
-         ) AS permissions
+         '[]'::json AS permissions
        FROM users u
-       LEFT JOIN wms_warehouses w ON u.warehouse_code = w.code
-       LEFT JOIN user_permissions up ON u.user_id = up.user_id
-       WHERE u.user_id = $1
-       GROUP BY u.user_id, w.name`,
+       LEFT JOIN wms_warehouses w ON u.warehouse_id = w.warehouse_id
+       WHERE u.user_id = $1`,
       [req.user.user_id]
     );
 
@@ -345,13 +335,13 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
 
     // Revoke all refresh tokens (force re-login on all devices)
     await client.query(
-      `UPDATE refresh_tokens SET is_revoked = true WHERE user_id = $1`,
+      `UPDATE wms_refresh_tokens SET is_revoked = true WHERE user_id = $1`,
       [req.user.user_id]
     );
 
     // Log audit event
     await client.query(
-      `INSERT INTO audit_logs (user_id, username, action, ip_address)
+      `INSERT INTO wms_audit_logs (user_id, username, action, ip_address)
        VALUES ($1, $2, 'PASSWORD_CHANGE', $3)`,
       [req.user.user_id, req.user.username, req.ip]
     );
@@ -428,9 +418,10 @@ export const googleLogin = async (req: AuthRequest, res: Response): Promise<void
 
     // Find or create user by email
     const userResult = await client.query(
-      `SELECT user_id, username, email, full_name, role, warehouse_code, is_active
-       FROM users
-       WHERE email = $1`,
+      `SELECT u.user_id, u.username, u.email, u.full_name, u.role, w.code AS warehouse_code, u.is_active
+       FROM users u
+       LEFT JOIN wms_warehouses w ON u.warehouse_id = w.warehouse_id
+       WHERE u.email = $1`,
       [googleEmail]
     );
 
@@ -445,10 +436,10 @@ export const googleLogin = async (req: AuthRequest, res: Response): Promise<void
       const newUserResult = await client.query(
         `INSERT INTO users (username, email, password_hash, full_name, role, is_active, must_change_password)
          VALUES ($1, $2, $3, $4, 'OPERATOR', true, false)
-         RETURNING user_id, username, email, full_name, role, warehouse_code, is_active`,
+         RETURNING user_id, username, email, full_name, role, is_active`,
         [username, googleEmail, passwordHash, googleName]
       );
-      user = newUserResult.rows[0];
+      user = { ...newUserResult.rows[0], warehouse_code: null };
 
       logger.info(`New user created via Google OAuth: ${googleEmail}`);
     } else {
@@ -487,46 +478,14 @@ export const googleLogin = async (req: AuthRequest, res: Response): Promise<void
     // Store refresh token in database
     const tokenHash = await bcrypt.hash(refreshToken, SALT_ROUNDS);
     await client.query(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, device_id)
-       VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '7 days', $3)`,
-      [user.user_id, tokenHash, device_uuid]
+      `INSERT INTO wms_refresh_tokens (user_id, token_hash, device_uuid, device_name, expires_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP + INTERVAL '7 days')`,
+      [user.user_id, tokenHash, device_uuid || null, device_name || null]
     );
-
-    // Log device session if device_uuid provided
-    if (device_uuid) {
-      const deviceResult = await client.query(
-        `SELECT device_id FROM devices WHERE device_uuid = $1`,
-        [device_uuid]
-      );
-
-      let deviceId: number;
-
-      if (deviceResult.rows.length === 0) {
-        const newDevice = await client.query(
-          `INSERT INTO devices (device_uuid, device_name, assigned_user_id, last_seen, registered_by)
-           VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)
-           RETURNING device_id`,
-          [device_uuid, device_name || 'Unknown Device', user.user_id, user.username]
-        );
-        deviceId = newDevice.rows[0].device_id;
-      } else {
-        deviceId = deviceResult.rows[0].device_id;
-        await client.query(
-          `UPDATE devices SET last_seen = CURRENT_TIMESTAMP, assigned_user_id = $1 WHERE device_id = $2`,
-          [user.user_id, deviceId]
-        );
-      }
-
-      await client.query(
-        `INSERT INTO device_sessions (device_id, user_id, session_token, ip_address)
-         VALUES ($1, $2, $3, $4)`,
-        [deviceId, user.user_id, tokenHash, req.ip]
-      );
-    }
 
     // Log audit event
     await client.query(
-      `INSERT INTO audit_logs (user_id, username, action, ip_address, user_agent)
+      `INSERT INTO wms_audit_logs (user_id, username, action, ip_address, user_agent)
        VALUES ($1, $2, 'GOOGLE_LOGIN', $3, $4)`,
       [user.user_id, user.username, req.ip, req.get('user-agent')]
     );
