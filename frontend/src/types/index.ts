@@ -244,7 +244,8 @@ export interface InventorySummary {
 // API RESPONSE TYPES
 // ============================================
 
-export interface ApiResponse<T = unknown> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   message?: string;

@@ -716,7 +716,7 @@ function Operations() {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (barcode.trim()) {
-        processScan(barcode, 'hid');
+        processScan(barcode);
         setBarcode('');
       }
     }
@@ -727,13 +727,13 @@ function Operations() {
     const locationCode = manualLocationInput.trim().toUpperCase();
     const searchCode =
       locationCode.startsWith('LOC-') || locationCode.startsWith('L-') ? locationCode : `LOC-${locationCode}`;
-    processScan(searchCode, 'hid');
+    processScan(searchCode);
     setManualLocationInput('');
   };
 
   const handleManualSkuSubmit = () => {
     if (!manualSkuInput.trim()) return;
-    processScan(manualSkuInput.trim(), 'hid');
+    processScan(manualSkuInput.trim());
     setManualSkuInput('');
   };
 
