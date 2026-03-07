@@ -73,7 +73,7 @@ function Operations() {
 
   // Process scan callback (declared before useScanner)
   const processScan = useCallback(
-    async (scannedBarcode: string, _source: 'hid' | 'camera' = 'hid') => {
+    async (scannedBarcode: string) => {
       if (!scannedBarcode.trim()) return;
 
       if (isProcessingRef.current || scanCooldownRef.current) {

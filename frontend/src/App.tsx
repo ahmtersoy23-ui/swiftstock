@@ -11,6 +11,8 @@ import Reports from './pages/Reports';
 import Admin from './pages/Admin';
 import Shipments from './pages/Shipments';
 import { useSSO } from './hooks/useSSO';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // SSO authentication integrated
 function App() {
@@ -64,21 +66,27 @@ function App() {
   }
 
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/operations" element={<Operations />} />
-          <Route path="/inventory" element={<Inventory />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/transactions" element={<Transactions />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/locations" element={<Locations />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/shipments" element={<Shipments />} />
-        </Routes>
-      </Layout>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/operations" element={<Operations />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/locations" element={<Locations />} />
+            <Route path="/admin" element={
+              <ProtectedRoute requiredRole={['ADMIN', 'MANAGER']}>
+                <Admin />
+              </ProtectedRoute>
+            } />
+            <Route path="/shipments" element={<Shipments />} />
+          </Routes>
+        </Layout>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

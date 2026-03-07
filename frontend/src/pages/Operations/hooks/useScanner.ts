@@ -1,5 +1,5 @@
 // Scanner hook for camera-based barcode scanning
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { BarcodeScanner, LensFacing, BarcodeFormat } from '@capacitor-mlkit/barcode-scanning';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -24,6 +24,7 @@ export function useScanner({ onScan, onError, translations }: UseScannerOptions)
   const scannerActiveRef = useRef(false);
   const scannerReadyRef = useRef(false);
   const scannerRetryCount = useRef(0);
+  const startNativeScannerRef = useRef<() => Promise<void>>(async () => {});
 
   const startNativeScanner = useCallback(async () => {
     if (scannerActiveRef.current) return;
@@ -45,7 +46,7 @@ export function useScanner({ onScan, onError, translations }: UseScannerOptions)
       try {
         await BarcodeScanner.stopScan();
         await BarcodeScanner.removeAllListeners();
-      } catch (e) {}
+      } catch { /* ignore cleanup errors */ }
 
       await BarcodeScanner.addListener('scanError', (event) => {
         console.error('Scanner error:', event);
@@ -96,13 +97,13 @@ export function useScanner({ onScan, onError, translations }: UseScannerOptions)
       setTimeout(() => {
         scannerReadyRef.current = true;
       }, SCANNER_STARTUP_DELAY);
-    } catch (err: unknown) {
+    } catch {
       scannerActiveRef.current = false;
       scannerReadyRef.current = false;
 
       if (scannerRetryCount.current < MAX_RETRY) {
         scannerRetryCount.current++;
-        setTimeout(() => startNativeScanner(), 500);
+        setTimeout(() => { startNativeScannerRef.current(); }, 500);
       } else {
         onError(translations.errorCameraStartFailed);
         setCameraActive(false);
@@ -116,10 +117,10 @@ export function useScanner({ onScan, onError, translations }: UseScannerOptions)
     scannerReadyRef.current = false;
     try {
       await BarcodeScanner.stopScan();
-    } catch (err) {}
+    } catch { /* ignore stop errors */ }
     try {
       await BarcodeScanner.removeAllListeners();
-    } catch (err) {}
+    } catch { /* ignore listener errors */ }
     listenerRef.current = null;
     setCameraActive(false);
   }, []);
@@ -137,7 +138,7 @@ export function useScanner({ onScan, onError, translations }: UseScannerOptions)
         () => {}
       );
       setCameraActive(true);
-    } catch (err) {
+    } catch {
       onError(translations.errorCameraOpenFailed);
     }
   }, [onScan, onError, translations]);
@@ -149,7 +150,7 @@ export function useScanner({ onScan, onError, translations }: UseScannerOptions)
       try {
         await scannerRef.current.stop();
         scannerRef.current = null;
-      } catch (err) {}
+      } catch { /* ignore stop errors */ }
     }
     setCameraActive(false);
   }, [cameraActive, stopNativeScanner]);
@@ -165,6 +166,10 @@ export function useScanner({ onScan, onError, translations }: UseScannerOptions)
       }
     }
   }, [cameraActive, stopCamera, startNativeScanner, startWebCamera]);
+
+  useEffect(() => {
+    startNativeScannerRef.current = startNativeScanner;
+  }, [startNativeScanner]);
 
   return {
     cameraActive,

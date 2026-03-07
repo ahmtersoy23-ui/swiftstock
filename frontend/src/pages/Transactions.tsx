@@ -66,7 +66,7 @@ function Transactions() {
       if (response.success && response.data) {
         setTransactions(response.data as TransactionWithDetails[]);
       }
-    } catch (err: unknown) {
+    } catch {
       setError(t.failedToLoadTransactions);
     } finally {
       setLoading(false);
@@ -140,7 +140,7 @@ function Transactions() {
           if (response.success && response.data?.items) {
             itemsMap.set(txn.transaction_id, response.data.items);
           }
-        } catch (err) {
+        } catch {
           // Continue with other transactions
         }
       }

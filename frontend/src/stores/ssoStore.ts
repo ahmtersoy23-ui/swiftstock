@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useAuthStore } from './authStore';
 
 interface SSOUser {
   id: string;
@@ -45,7 +44,6 @@ export const useSSOStore = create<SSOState>()(
       setWMSUser: (wmsUser) => set({ wmsUser }),
 
       clearAuth: () => {
-        useAuthStore.getState().clearAuth();
         set({
           user: null,
           role: null,

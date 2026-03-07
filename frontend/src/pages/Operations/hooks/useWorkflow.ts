@@ -1,5 +1,5 @@
 // Workflow state management hook
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import type { WorkflowState, ScannedItem } from '../types';
 import { initialWorkflowState } from '../types';
 
@@ -7,8 +7,10 @@ export function useWorkflow() {
   const [workflow, setWorkflow] = useState<WorkflowState>(initialWorkflowState);
   const workflowRef = useRef(workflow);
 
-  // Keep ref in sync
-  workflowRef.current = workflow;
+  // Keep ref in sync (useEffect to avoid mutating ref during render)
+  useEffect(() => {
+    workflowRef.current = workflow;
+  }, [workflow]);
 
   const setMode = useCallback((mode: WorkflowState['mode']) => {
     setWorkflow({ step: 'MODE_SELECTED', mode, location: null, items: [] });

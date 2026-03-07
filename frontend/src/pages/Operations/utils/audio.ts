@@ -23,7 +23,7 @@ export const playTone = (
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + duration);
-  } catch (e) {
+  } catch {
     // Silently fail for audio errors
   }
 };

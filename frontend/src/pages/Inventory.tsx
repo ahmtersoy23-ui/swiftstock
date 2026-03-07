@@ -184,7 +184,7 @@ function Inventory() {
           setError(language === 'tr' ? 'Koli/Palet bulunamadı' : 'Container not found');
         }
       }
-    } catch (err: unknown) {
+    } catch {
       if (queryMode === 'SERIAL') {
         setError(language === 'tr' ? 'Seri numara bulunamadı' : 'Serial number not found');
       } else if (queryMode === 'CONTAINER') {
@@ -236,7 +236,7 @@ function Inventory() {
     if (html5QrCodeRef.current) {
       try {
         await html5QrCodeRef.current.stop();
-      } catch (e) {}
+      } catch { /* ignore stop errors */ }
       html5QrCodeRef.current = null;
     }
     setShowCamera(false);

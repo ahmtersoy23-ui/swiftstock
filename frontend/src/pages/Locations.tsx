@@ -108,7 +108,7 @@ function Locations() {
       if (warehousesResponse.success) {
         setWarehouses(warehousesResponse.data || []);
       }
-    } catch (err: unknown) {
+    } catch {
       setError('Failed to load data');
     } finally {
       setLoading(false);
@@ -151,124 +151,68 @@ function Locations() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Location QR Code - ${location.location_code}</title>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 20px;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-            }
-            .preview-section {
-              margin-bottom: 30px;
-              text-align: center;
-            }
-            .preview-label {
-              width: 60mm;
-              height: 60mm;
-              border: 2px solid #2563eb;
-              padding: 3mm;
-              background: white;
-              display: inline-flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              gap: 2mm;
-            }
-            .location-header {
-              font-size: 14pt;
-              font-weight: bold;
-              color: #2563eb;
-              text-align: center;
-            }
-            .location-description {
-              font-size: 8pt;
-              color: #666;
-              text-align: center;
-            }
-            .qr-container {
-              width: 35mm;
-              height: 35mm;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            }
-            .qr-container img, .qr-container canvas {
-              max-width: 100%;
-              max-height: 100%;
-            }
-            .location-code {
-              font-size: 10pt;
-              font-family: 'Courier New', monospace;
-              font-weight: bold;
-              text-align: center;
-            }
-            .zone-badge {
-              display: inline-block;
-              padding: 1mm 3mm;
-              background: #10b981;
-              color: white;
-              font-size: 8pt;
-              font-weight: bold;
-              border-radius: 2mm;
-            }
-            .btn-print {
-              padding: 12px 24px;
-              background: #2563eb;
-              color: white;
-              border: none;
-              border-radius: 6px;
-              font-size: 16px;
-              font-weight: 600;
-              cursor: pointer;
-              margin-top: 20px;
-            }
-            .btn-print:hover {
-              background: #1d4ed8;
-            }
-            @media print {
-              body { padding: 0; }
-              .btn-print { display: none; }
-              .preview-section h2 { display: none; }
-              .preview-label {
-                border: none;
-                margin: 0;
-                page-break-inside: avoid;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="preview-section">
-            <h2>📍 Location QR Code Preview</h2>
-            <div class="preview-label">
-              <div class="location-header">LOCATION</div>
-              <div class="qr-container" id="qrcode"></div>
-              <div class="location-code">${location.location_code}</div>
-              ${location.zone ? `<div class="zone-badge">${location.zone}</div>` : ''}
-            </div>
-          </div>
-          <button class="btn-print" onclick="window.print()">🖨️ Print QR Code</button>
-          <script>
-            new QRCode(document.getElementById('qrcode'), {
-              text: '${location.location_code}',
-              width: 120,
-              height: 120,
-              colorDark: '#2563eb',
-              colorLight: '#ffffff',
-              correctLevel: QRCode.CorrectLevel.M
-            });
-          </script>
-        </body>
-      </html>
-    `);
+    // Static HTML — dynamic values injected via textContent after load (XSS-safe)
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+  <head>
+    <title>Location QR Code</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+      .preview-section { margin-bottom: 30px; text-align: center; }
+      .preview-label { width: 60mm; height: 60mm; border: 2px solid #2563eb; padding: 3mm; background: white;
+        display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2mm; }
+      .location-header { font-size: 14pt; font-weight: bold; color: #2563eb; text-align: center; }
+      .qr-container { width: 35mm; height: 35mm; display: flex; align-items: center; justify-content: center; }
+      .qr-container img, .qr-container canvas { max-width: 100%; max-height: 100%; }
+      .location-code { font-size: 10pt; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; }
+      .zone-badge { display: none; padding: 1mm 3mm; background: #10b981; color: white;
+        font-size: 8pt; font-weight: bold; border-radius: 2mm; }
+      .btn-print { padding: 12px 24px; background: #2563eb; color: white; border: none;
+        border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; }
+      @media print {
+        body { padding: 0; }
+        .btn-print { display: none; }
+        .preview-section h2 { display: none; }
+        .preview-label { border: none; margin: 0; page-break-inside: avoid; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="preview-section">
+      <h2>Location QR Code Preview</h2>
+      <div class="preview-label">
+        <div class="location-header">LOCATION</div>
+        <div class="qr-container" id="qrcode"></div>
+        <div class="location-code" id="loc-code"></div>
+        <div class="zone-badge" id="zone-badge"></div>
+      </div>
+    </div>
+    <button class="btn-print" onclick="window.print()">Print QR Code</button>
+  </body>
+</html>`);
     printWindow.document.close();
+
+    // Inject dynamic values safely via textContent (XSS-safe)
+    const locCodeEl = printWindow.document.getElementById('loc-code');
+    const zoneBadgeEl = printWindow.document.getElementById('zone-badge');
+    if (locCodeEl) locCodeEl.textContent = location.location_code;
+    if (zoneBadgeEl && location.zone) {
+      zoneBadgeEl.textContent = location.zone;
+      zoneBadgeEl.style.display = 'inline-block';
+    }
+
+    printWindow.addEventListener('load', () => {
+      const win = printWindow as Window & { QRCode: new (el: HTMLElement, opts: object) => void };
+      const qrEl = printWindow.document.getElementById('qrcode');
+      if (qrEl && win.QRCode) {
+        new win.QRCode(qrEl, {
+          text: location.location_code,
+          width: 120, height: 120,
+          colorDark: '#2563eb', colorLight: '#ffffff', correctLevel: 1,
+        });
+      }
+    });
   };
 
   const handlePrintOperationModeBarcode = (mode: OperationMode) => {
@@ -301,124 +245,68 @@ function Locations() {
       : getTranslatedModeDescription(mode.mode_type);
     void _translatedDesc;
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Operation Mode - ${translatedName}</title>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 20px;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-            }
-            .preview-section {
-              margin-bottom: 30px;
-              text-align: center;
-            }
-            .preview-label {
-              width: 60mm;
-              height: 60mm;
-              border: 2px solid ${color};
-              padding: 3mm;
-              background: white;
-              display: inline-flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              gap: 2mm;
-            }
-            .mode-header {
-              font-size: 14pt;
-              font-weight: bold;
-              color: ${color};
-              text-align: center;
-            }
-            .mode-description {
-              font-size: 8pt;
-              color: #666;
-              text-align: center;
-            }
-            .qr-container {
-              width: 35mm;
-              height: 35mm;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            }
-            .qr-container img, .qr-container canvas {
-              max-width: 100%;
-              max-height: 100%;
-            }
-            .mode-code {
-              font-size: 9pt;
-              font-family: 'Courier New', monospace;
-              font-weight: bold;
-              text-align: center;
-            }
-            .mode-type-badge {
-              display: inline-block;
-              padding: 1mm 3mm;
-              background: ${color};
-              color: white;
-              font-size: 8pt;
-              font-weight: bold;
-              border-radius: 2mm;
-            }
-            .btn-print {
-              padding: 12px 24px;
-              background: ${color};
-              color: white;
-              border: none;
-              border-radius: 6px;
-              font-size: 16px;
-              font-weight: 600;
-              cursor: pointer;
-              margin-top: 20px;
-            }
-            .btn-print:hover {
-              opacity: 0.9;
-            }
-            @media print {
-              body { padding: 0; }
-              .btn-print { display: none; }
-              .preview-section h2 { display: none; }
-              .preview-label {
-                border: none;
-                margin: 0;
-                page-break-inside: avoid;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="preview-section">
-            <h2>🔄 Operation Mode QR Code Preview</h2>
-            <div class="preview-label">
-              <div class="mode-header">${translatedName}</div>
-              <div class="qr-container" id="qrcode"></div>
-              <div class="mode-code">${mode.mode_code}</div>
-              <div class="mode-type-badge">${translatedName}</div>
-            </div>
-          </div>
-          <button class="btn-print" onclick="window.print()">🖨️ ${t.print} QR Code</button>
-          <script>
-            new QRCode(document.getElementById('qrcode'), {
-              text: '${mode.mode_code}',
-              width: 120,
-              height: 120,
-              colorDark: '${color}',
-              colorLight: '#ffffff',
-              correctLevel: QRCode.CorrectLevel.M
-            });
-          </script>
-        </body>
-      </html>
-    `);
+    // color comes from a hardcoded whitelist — safe to embed in CSS.
+    // translatedName and mode.mode_code are injected via textContent (XSS-safe).
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+  <head>
+    <title>Operation Mode QR Code</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+      .preview-section { margin-bottom: 30px; text-align: center; }
+      .preview-label { width: 60mm; height: 60mm; border: 2px solid ${color}; padding: 3mm; background: white;
+        display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2mm; }
+      .mode-header { font-size: 14pt; font-weight: bold; color: ${color}; text-align: center; }
+      .qr-container { width: 35mm; height: 35mm; display: flex; align-items: center; justify-content: center; }
+      .qr-container img, .qr-container canvas { max-width: 100%; max-height: 100%; }
+      .mode-code { font-size: 9pt; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; }
+      .mode-type-badge { display: inline-block; padding: 1mm 3mm; background: ${color}; color: white;
+        font-size: 8pt; font-weight: bold; border-radius: 2mm; }
+      .btn-print { padding: 12px 24px; background: ${color}; color: white; border: none;
+        border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; }
+      @media print {
+        body { padding: 0; }
+        .btn-print { display: none; }
+        .preview-section h2 { display: none; }
+        .preview-label { border: none; margin: 0; page-break-inside: avoid; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="preview-section">
+      <h2>Operation Mode QR Code Preview</h2>
+      <div class="preview-label">
+        <div class="mode-header" id="mode-header"></div>
+        <div class="qr-container" id="qrcode"></div>
+        <div class="mode-code" id="mode-code"></div>
+        <div class="mode-type-badge" id="mode-badge"></div>
+      </div>
+    </div>
+    <button class="btn-print" onclick="window.print()">Print QR Code</button>
+  </body>
+</html>`);
     printWindow.document.close();
+
+    // Inject dynamic values safely via textContent (XSS-safe)
+    const modeHeaderEl = printWindow.document.getElementById('mode-header');
+    const modeCodeEl = printWindow.document.getElementById('mode-code');
+    const modeBadgeEl = printWindow.document.getElementById('mode-badge');
+    if (modeHeaderEl) modeHeaderEl.textContent = translatedName;
+    if (modeCodeEl) modeCodeEl.textContent = mode.mode_code;
+    if (modeBadgeEl) modeBadgeEl.textContent = translatedName;
+
+    printWindow.addEventListener('load', () => {
+      const win = printWindow as Window & { QRCode: new (el: HTMLElement, opts: object) => void };
+      const qrEl = printWindow.document.getElementById('qrcode');
+      if (qrEl && win.QRCode) {
+        new win.QRCode(qrEl, {
+          text: mode.mode_code,
+          width: 120, height: 120,
+          colorDark: color, colorLight: '#ffffff', correctLevel: 1,
+        });
+      }
+    });
   };
 
   const getWarehouseName = (warehouseId: number) => {
