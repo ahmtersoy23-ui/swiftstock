@@ -26,7 +26,7 @@ export const shipmentApi = {
   },
 
   // Get shipment boxes
-  getBoxes: async (shipment_id: number, destination?: 'USA' | 'FBA') => {
+  getBoxes: async (shipment_id: number, destination?: string) => {
     const response = await api.get<ApiResponse>(`/shipments/${shipment_id}/boxes`, {
       params: destination ? { destination } : undefined,
     });
@@ -35,9 +35,8 @@ export const shipmentApi = {
 
   // Create box in shipment
   createBox: async (shipment_id: number, data: {
-    destination?: 'USA' | 'FBA';
-    notes?: string;
-    created_by: string;
+    destination?: string;
+    created_by?: string;
   }) => {
     const response = await api.post<ApiResponse>(`/shipments/${shipment_id}/boxes`, data);
     return response.data;
@@ -84,7 +83,7 @@ export const shipmentApi = {
   },
 
   // Update box destination
-  updateBoxDestination: async (box_id: number, destination: 'USA' | 'FBA') => {
+  updateBoxDestination: async (box_id: number, destination: string) => {
     const response = await api.put<ApiResponse>(`/boxes/${box_id}/destination`, { destination });
     return response.data;
   },

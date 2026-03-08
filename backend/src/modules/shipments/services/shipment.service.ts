@@ -82,7 +82,10 @@ class ShipmentService {
         w.code as warehouse_code,
         w.name as warehouse_name,
         (SELECT COUNT(*) FROM shipment_boxes sb WHERE sb.shipment_id = vs.shipment_id AND sb.destination = 'USA') as usa_boxes,
-        (SELECT COUNT(*) FROM shipment_boxes sb WHERE sb.shipment_id = vs.shipment_id AND sb.destination = 'FBA') as fba_boxes
+        (SELECT COUNT(*) FROM shipment_boxes sb WHERE sb.shipment_id = vs.shipment_id AND sb.destination = 'FBA') as fba_boxes,
+        (SELECT COUNT(*) FROM shipment_boxes sb WHERE sb.shipment_id = vs.shipment_id AND sb.destination = 'NJ') as nj_boxes,
+        (SELECT COUNT(*) FROM shipment_boxes sb WHERE sb.shipment_id = vs.shipment_id AND sb.destination = 'NL') as nl_boxes,
+        (SELECT COUNT(*) FROM shipment_boxes sb WHERE sb.shipment_id = vs.shipment_id AND sb.destination = 'UK') as uk_boxes
       FROM virtual_shipments vs
       LEFT JOIN wms_warehouses w ON vs.warehouse_id = w.warehouse_id
       ${whereClause}

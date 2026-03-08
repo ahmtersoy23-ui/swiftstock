@@ -259,7 +259,9 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 // ============================================
 
 export type ShipmentStatus = 'OPEN' | 'CLOSED' | 'SHIPPED' | 'CANCELLED';
-export type BoxDestination = 'USA' | 'FBA';
+// TR → NJ/NL/UK (depo transferi) veya USA/FBA (pazar yeri)
+// NJ → USA/FBA (pazar yeri) only
+export type BoxDestination = 'NJ' | 'NL' | 'UK' | 'USA' | 'FBA';
 export type BoxStatus = 'OPEN' | 'CLOSED' | 'SHIPPED';
 
 export interface VirtualShipment {
@@ -271,6 +273,9 @@ export interface VirtualShipment {
   status: ShipmentStatus;
   usa_boxes?: number;
   fba_boxes?: number;
+  nj_boxes?: number;
+  nl_boxes?: number;
+  uk_boxes?: number;
   notes?: string;
   created_by?: string;
   created_at: Date;
