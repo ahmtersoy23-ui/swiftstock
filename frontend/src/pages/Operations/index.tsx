@@ -1,7 +1,7 @@
 // Operations page - main orchestrator
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient, reportApi } from '../../lib/api';
+import { apiClient, reportApi, containerApi, catalogApi } from '../../lib/api';
 import { useStore } from '../../stores/appStore';
 import { translations } from '../../i18n/translations';
 import type { ScanResponse, OperationMode, Product, Location, Container, Inventory } from '../../types';
@@ -46,6 +46,12 @@ function Operations() {
   // Manual input state
   const [manualLocationInput, setManualLocationInput] = useState('');
   const [manualSkuInput, setManualSkuInput] = useState('');
+
+  // Zone suggestion (FACTORY + IN-RECEIVING)
+  const [zoneSuggestion, setZoneSuggestion] = useState<{ zone: string | null; category: string | null } | null>(null);
+
+  // Container name modal
+  const [containerNameModal, setContainerNameModal] = useState<{ show: boolean; type: 'BOX' | 'PALLET' | null; displayName: string }>({ show: false, type: null, displayName: '' });
 
   // Refs
   const inputRef = useRef<HTMLInputElement>(null);
@@ -252,12 +258,13 @@ function Operations() {
     }
 
     if (code === 'ACTION-NEW-BOX' || code === 'ACTION-NEW-PALLET') {
+      const type = code === 'ACTION-NEW-BOX' ? 'BOX' : 'PALLET';
       const currentWorkflow = workflowRef.current;
       if (currentWorkflow.items.length > 0) {
-        createContainer(code === 'ACTION-NEW-BOX' ? 'BOX' : 'PALLET');
+        setContainerNameModal({ show: true, type, displayName: '' });
         return;
       }
-      startContainerMode(code === 'ACTION-NEW-BOX' ? 'BOX' : 'PALLET');
+      startContainerMode(type);
       return;
     }
 
@@ -300,6 +307,7 @@ function Operations() {
     playScanSound.location();
     setWorkflow((prev) => ({ ...prev, location, step: 'LOCATION_SET' }));
     setLastAction(`📍 ${location.location_code}`);
+    setZoneSuggestion(null);
     lastScanRef.current = { barcode: '', time: 0 };
 
     // If count mode, fetch location inventory
@@ -403,6 +411,25 @@ function Operations() {
       playScanSound.error();
       setError(t.errorScanLocationFirst);
       return;
+    }
+
+    // FACTORY + IN-RECEIVING: seri numarası zorunlu
+    if (activeMode?.mode_code === 'MODE-IN-RECEIVING' && currentWarehouse === 'FACTORY') {
+      if (!serial) {
+        playScanSound.error();
+        setError(language === 'tr'
+          ? `Seri numarası zorunlu — ${product.sku_code}-SERINOSU formatında okutun`
+          : `Serial number required — scan ${product.sku_code}-SERIALNO format`);
+        return;
+      }
+      // Zone suggestion — fire and forget
+      catalogApi.getCategoryZone(product.sku_code, 'FACTORY')
+        .then((res) => {
+          if (res.success && res.data) {
+            setZoneSuggestion({ zone: res.data.suggested_zone, category: res.data.category });
+          }
+        })
+        .catch(() => { /* ignore */ });
     }
 
     // Stock check for picking
@@ -543,7 +570,7 @@ function Operations() {
     }
   };
 
-  const createContainer = async (containerType: 'BOX' | 'PALLET') => {
+  const createContainer = async (containerType: 'BOX' | 'PALLET', displayName: string) => {
     const currentWorkflow = workflowRef.current;
 
     if (currentWorkflow.items.length === 0) {
@@ -553,6 +580,7 @@ function Operations() {
 
     setLoading(true);
     setError(null);
+    setContainerNameModal({ show: false, type: null, displayName: '' });
 
     try {
       const itemMap = new Map<string, number>();
@@ -566,24 +594,26 @@ function Operations() {
         quantity,
       }));
 
-      const response = await apiClient.createContainer({
+      const response = await containerApi.create({
         container_type: containerType,
         warehouse_code: currentWarehouse,
         location_qr: currentWorkflow.location?.qr_code,
-        contents,
+        items: contents,
         created_by: currentUser,
+        display_name: displayName || undefined,
       });
 
       if (response.success && response.data) {
         playScanSound.success();
         const containerLabel = containerType === 'BOX' ? t.box : t.pallet;
-        setSuccess(`✓ ${containerLabel} ${t.successContainerCreated}: ${response.data.barcode}`);
-        setLastAction(`📦 ${containerLabel}: ${response.data.barcode}`);
+        const label = displayName ? `${displayName} (${response.data.barcode})` : response.data.barcode;
+        setSuccess(`✓ ${containerLabel} ${t.successContainerCreated}: ${label}`);
+        setLastAction(`📦 ${containerLabel}: ${label}`);
         if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
         setWorkflow((prev) => ({ ...prev, items: [] }));
       } else {
         playScanSound.error();
-        setError(response.message || t.errorContainerCreateFailed);
+        setError((response as { message?: string }).message || t.errorContainerCreateFailed);
       }
     } catch (err: unknown) {
       playScanSound.error();
@@ -600,6 +630,8 @@ function Operations() {
     setBarcode('');
     setManualLocationInput('');
     setManualSkuInput('');
+    setZoneSuggestion(null);
+    setContainerNameModal({ show: false, type: null, displayName: '' });
     lastScanRef.current = { barcode: '', time: 0 };
     resetCountState();
   };
@@ -906,9 +938,76 @@ function Operations() {
         {/* Box/Pallet Creation Buttons */}
         {workflow.items.length > 0 && containerMode && (
           <div className="container-actions">
-            <button onClick={() => createContainer(containerMode)} className={`container-btn ${containerMode.toLowerCase()}`} disabled={loading}>
+            <button
+              onClick={() => setContainerNameModal({ show: true, type: containerMode, displayName: '' })}
+              className={`container-btn ${containerMode.toLowerCase()}`}
+              disabled={loading}
+            >
               {containerMode === 'BOX' ? '📦' : '📋'} {containerMode === 'BOX' ? t.newBox : t.newPallet} Oluştur
             </button>
+          </div>
+        )}
+
+        {/* Zone Suggestion Banner (FACTORY + IN-RECEIVING) */}
+        {zoneSuggestion && zoneSuggestion.zone && (
+          <div style={{ margin: '8px 0', padding: '10px 14px', background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+            <span>🗂️</span>
+            <span>
+              <strong>{language === 'tr' ? 'Önerilen Zone:' : 'Suggested Zone:'}</strong> {zoneSuggestion.zone}
+              {zoneSuggestion.category && zoneSuggestion.category !== zoneSuggestion.zone && (
+                <span style={{ color: '#6b7280', marginLeft: '6px' }}>({zoneSuggestion.category})</span>
+              )}
+            </span>
+            <button
+              onClick={() => setZoneSuggestion(null)}
+              style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}
+            >×</button>
+          </div>
+        )}
+
+        {/* Container Name Modal */}
+        {containerNameModal.show && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '320px', maxWidth: '90vw' }}>
+              <h3 style={{ margin: '0 0 16px', fontSize: '16px' }}>
+                {containerNameModal.type === 'BOX' ? '📦' : '📋'}{' '}
+                {language === 'tr'
+                  ? `${containerNameModal.type === 'BOX' ? 'Koli' : 'Palet'} İsmi`
+                  : `${containerNameModal.type === 'BOX' ? 'Box' : 'Pallet'} Name`}
+              </h3>
+              <input
+                type="text"
+                autoFocus
+                value={containerNameModal.displayName}
+                onChange={(e) => setContainerNameModal((prev) => ({ ...prev, displayName: e.target.value }))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && containerNameModal.displayName.trim() && containerNameModal.type) {
+                    createContainer(containerNameModal.type, containerNameModal.displayName.trim());
+                  }
+                }}
+                placeholder={language === 'tr' ? 'ör. FBA-BOX-01, TR-AMBALAJ-MART' : 'e.g. FBA-BOX-01, TR-MARCH'}
+                style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', marginBottom: '16px' }}
+              />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => {
+                    if (containerNameModal.displayName.trim() && containerNameModal.type) {
+                      createContainer(containerNameModal.type, containerNameModal.displayName.trim());
+                    }
+                  }}
+                  disabled={!containerNameModal.displayName.trim() || loading}
+                  style={{ flex: 1, padding: '10px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', opacity: !containerNameModal.displayName.trim() ? 0.5 : 1 }}
+                >
+                  {language === 'tr' ? 'Oluştur' : 'Create'}
+                </button>
+                <button
+                  onClick={() => setContainerNameModal({ show: false, type: null, displayName: '' })}
+                  style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {t.cancel}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

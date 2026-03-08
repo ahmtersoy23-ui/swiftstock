@@ -129,7 +129,21 @@ class ShipmentService {
       [shipmentId],
     );
 
-    return { ...shipmentResult.rows[0], boxes: boxesResult.rows };
+    const containersResult = await pool.query(
+      `SELECT c.container_id, c.barcode, c.display_name, c.container_type, c.status,
+              COALESCE(cc.item_count, 0) as item_count
+       FROM wms_containers c
+       LEFT JOIN (
+         SELECT container_id, COUNT(*) as item_count
+         FROM wms_container_contents
+         GROUP BY container_id
+       ) cc ON cc.container_id = c.container_id
+       WHERE c.shipment_id = $1
+       ORDER BY c.created_at`,
+      [shipmentId],
+    );
+
+    return { ...shipmentResult.rows[0], boxes: boxesResult.rows, containers: containersResult.rows };
   }
 
   async createShipment(data: CreateShipmentInput) {

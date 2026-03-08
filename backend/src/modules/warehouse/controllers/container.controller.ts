@@ -22,13 +22,13 @@ function handleError(res: Response, error: unknown, context: string): void {
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
 export const createContainer = async (req: Request, res: Response) => {
-  const { container_type, warehouse_code, items, contents, created_by } = req.body;
-  const containerItems = items || contents;
+  const { container_type, warehouse_code, items, contents, created_by, display_name, shipment_id } = req.body;
+  const containerItems = items || contents || [];
 
-  if (!container_type || !warehouse_code || !containerItems || containerItems.length === 0 || !created_by) {
+  if (!container_type || !warehouse_code || !created_by) {
     res.status(400).json({
       success: false,
-      error: 'container_type, warehouse_code, items (or contents), and created_by are required',
+      error: 'container_type, warehouse_code, and created_by are required',
     });
     return;
   }
@@ -39,16 +39,38 @@ export const createContainer = async (req: Request, res: Response) => {
       warehouse_code,
       items: containerItems,
       created_by,
+      display_name: display_name || undefined,
+      shipment_id: shipment_id ? Number(shipment_id) : undefined,
       notes: req.body.notes,
       parent_container_id: req.body.parent_container_id,
     });
     res.json({
       success: true,
       data,
-      message: `Container ${data.barcode} created successfully`,
+      message: `Container ${data.barcode} olusturuldu`,
     });
   } catch (error) {
     handleError(res, error, 'createContainer');
+  }
+};
+
+export const linkContainerToShipment = async (req: Request, res: Response) => {
+  const container_id = parseInt(req.params.container_id);
+  const { shipment_id } = req.body;
+
+  if (isNaN(container_id)) {
+    res.status(400).json({ success: false, error: 'Gecersiz container_id' });
+    return;
+  }
+
+  try {
+    const data = await containerService.linkContainerToShipment(
+      container_id,
+      shipment_id === null || shipment_id === undefined ? null : Number(shipment_id),
+    );
+    res.json({ success: true, data });
+  } catch (error) {
+    handleError(res, error, 'linkContainerToShipment');
   }
 };
 

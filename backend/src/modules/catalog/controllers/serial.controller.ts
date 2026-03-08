@@ -21,9 +21,9 @@ function handleError(res: Response, error: unknown, context: string): void {
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
 export const generateSerialNumbers = async (req: Request, res: Response) => {
-  const { product_sku, quantity } = req.body;
+  const { sku_code, quantity } = req.body;
 
-  if (!product_sku || !quantity || quantity < 1) {
+  if (!sku_code || !quantity || quantity < 1) {
     res.status(400).json({
       success: false,
       error: 'sku_code and quantity (>= 1) are required',
@@ -40,7 +40,7 @@ export const generateSerialNumbers = async (req: Request, res: Response) => {
   }
 
   try {
-    const data = await serialService.generateSerialNumbers(product_sku, quantity);
+    const data = await serialService.generateSerialNumbers(sku_code, quantity);
     res.json({ success: true, data });
   } catch (error) {
     handleError(res, error, 'generateSerialNumbers');

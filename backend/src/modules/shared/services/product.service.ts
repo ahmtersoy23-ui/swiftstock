@@ -123,6 +123,31 @@ class ProductService {
       throw error;
     }
   }
+
+  /**
+   * Get category and suggested zone for a product SKU in a given warehouse.
+   * Zone lookup is from wms_category_zone_config table.
+   */
+  async getCategoryZone(product_sku: string, warehouse_code: string): Promise<{ category: string | null; suggested_zone: string | null }> {
+    try {
+      const result = await pool.query(
+        `SELECT p.category, czc.zone AS suggested_zone
+         FROM products p
+         LEFT JOIN wms_category_zone_config czc
+           ON czc.category = p.category AND czc.warehouse_code = $2 AND czc.is_active = true
+         WHERE p.product_sku = $1`,
+        [product_sku, warehouse_code],
+      );
+      if (result.rows.length === 0) return { category: null, suggested_zone: null };
+      return {
+        category: result.rows[0].category as string | null,
+        suggested_zone: result.rows[0].suggested_zone as string | null,
+      };
+    } catch (error) {
+      logger.error('[ProductService] getCategoryZone error:', error);
+      throw error;
+    }
+  }
 }
 
 export const productService = new ProductService();

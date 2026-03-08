@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../stores/appStore';
-import api, { apiClient } from '../lib/api';
+import api, { apiClient, serialApi } from '../lib/api';
 import type { Product } from '../types';
 import { translations } from '../i18n/translations';
 import * as XLSX from 'xlsx';
@@ -31,6 +31,13 @@ function Products() {
   // Selection state for bulk delete
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [allCategories, setAllCategories] = useState<string[]>([]);
+
+  // Label print modal state
+  const [labelModal, setLabelModal] = useState<{
+    product: Product | null;
+    quantity: number;
+    loading: boolean;
+  }>({ product: null, quantity: 1, loading: false });
 
   // Toggle individual product selection
   const toggleSelectProduct = (skuCode: string) => {
@@ -428,54 +435,56 @@ function Products() {
     }
   };
 
-  const handlePrintLabel = async (product: Product) => {
-    // Open preview window with serial number support
+  // Opens the label quantity modal (no API call here)
+  const handlePrintLabel = (product: Product) => {
+    setLabelModal({ product, quantity: 1, loading: false });
+  };
+
+  // Called from modal: generates serials via main-page API, then opens print popup
+  const handleGenerateLabels = async () => {
+    if (!labelModal.product) return;
+    setLabelModal((prev) => ({ ...prev, loading: true }));
+    try {
+      const result = await serialApi.generate(labelModal.product.sku_code, labelModal.quantity);
+      if (!result.success) throw new Error((result as { error?: string }).error || 'Seri numarasi olusturulamadi');
+      const serials = (result as { data: { serials: Array<{ full_barcode: string }> } }).data.serials;
+      setLabelModal({ product: null, quantity: 1, loading: false });
+      openPrintPopup(labelModal.product, serials);
+    } catch (err) {
+      setError((err as Error).message);
+      setLabelModal((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  // Opens print popup and renders labels from pre-fetched serial data (no API call in popup)
+  const openPrintPopup = (product: Product, serials: Array<{ full_barcode: string }>) => {
     const printWindow = window.open('', '_blank', 'width=700,height=900');
     if (!printWindow) return;
 
-    // API base URL for serial generation
-    const apiBaseUrl = window.location.hostname === 'localhost'
-      ? 'http://localhost:3001/api'
-      : `http://${window.location.hostname}:3001/api`;
-
-    // Build static HTML (no dynamic interpolation to prevent XSS)
     printWindow.document.write(`<!DOCTYPE html>
 <html>
   <head>
-    <title>Serial Label</title>
+    <title>Etiket Yazdir</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-      .section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-      .section h2 { margin-bottom: 15px; color: #2563eb; text-align: center; }
-      .preview-label { width: 100mm; height: 30mm; border: 2px solid #2563eb; padding: 1mm 2mm;
-        background: white; display: flex; flex-direction: column;
-        align-items: center; justify-content: space-between; margin: 15px auto; }
+      .controls { background: white; padding: 16px; border-radius: 8px; margin-bottom: 16px; text-align: center; }
+      .controls h2 { margin-bottom: 8px; color: #2563eb; }
+      .btn { padding: 12px 24px; margin: 4px; cursor: pointer; font-size: 15px; border: none; border-radius: 6px; font-weight: 600; }
+      .btn-print { background: #2563eb; color: white; }
+      .btn-close { background: #6b7280; color: white; }
+      .labels-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; padding: 16px; background: white; border-radius: 8px; }
+      .label { width: 100mm; height: 30mm; border: 1px dashed #999; padding: 1mm 2mm; background: white;
+        display: flex; flex-direction: column; align-items: center; justify-content: space-between; page-break-inside: avoid; }
       .product-name { font-size: 8pt; font-weight: bold; line-height: 1.2; text-align: center;
         width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
       .barcode-container { width: 96mm; height: 14mm; display: flex; align-items: center; justify-content: center; }
       .barcode-container svg { max-width: 100%; max-height: 100%; }
       .serial-code { font-size: 6pt; font-family: 'Courier New', monospace; color: #333; text-align: center; }
-      .input-section { text-align: center; }
-      .input-section label { display: block; margin-bottom: 10px; font-weight: bold; font-size: 16px; }
-      .input-section input { padding: 12px; font-size: 20px; width: 180px; text-align: center;
-        border: 2px solid #e5e7eb; border-radius: 6px; margin-bottom: 15px; }
-      .input-section input:focus { outline: none; border-color: #2563eb; }
-      .btn { padding: 14px 28px; margin: 5px; cursor: pointer; font-size: 16px; border: none; border-radius: 6px; font-weight: 600; }
-      .btn-generate { background: #10b981; color: white; }
-      .btn-generate:disabled { background: #9ca3af; cursor: not-allowed; }
-      .btn-print { background: #2563eb; color: white; }
-      .btn-close { background: #6b7280; color: white; }
-      .labels-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; padding: 20px; background: white; border-radius: 8px; }
-      .label { width: 100mm; height: 30mm; border: 1px dashed #999; padding: 1mm 2mm; background: white;
-        display: flex; flex-direction: column; align-items: center; justify-content: space-between; page-break-inside: avoid; }
-      .hidden { display: none; }
-      .info-box { background: #dbeafe; border: 1px solid #93c5fd; border-radius: 6px; padding: 12px; margin: 15px 0; text-align: center; }
-      .info-box strong { color: #1d4ed8; }
       @media print {
         body { padding: 0; background: white; }
-        .section, .controls { display: none !important; }
+        .controls { display: none !important; }
         .labels-container { padding: 0; background: transparent; }
         .label { border: none; }
         @page { size: auto; margin: 5mm; }
@@ -483,141 +492,56 @@ function Products() {
     </style>
   </head>
   <body>
-    <div class="section" id="preview-section">
-      <h2>Seri Numarali Etiket</h2>
-      <p style="text-align:center;color:#6b7280;margin-bottom:10px;">Her etiket benzersiz seri numarasi icerecek</p>
-      <div style="text-align:center;">
-        <div class="preview-label">
-          <div class="product-name" id="preview-product-name"></div>
-          <div class="barcode-container"><svg id="preview-barcode"></svg></div>
-          <div class="serial-code" id="preview-serial-code"></div>
-        </div>
-      </div>
-      <div class="info-box">
-        <strong>Urun:</strong> <span id="info-sku"></span><br>
-        <small>Her etiket: <span id="info-format"></span>... formatinda</small>
-      </div>
+    <div class="controls">
+      <h2 id="title-text"></h2>
+      <button class="btn btn-print" onclick="window.print()">Yazdir</button>
+      <button class="btn btn-close" onclick="window.close()">Kapat</button>
     </div>
-    <div class="section input-section" id="input-section">
-      <label>Kac adet etiket basilacak?</label>
-      <input type="number" id="quantity-input" min="1" max="500" value="1" autofocus />
-      <br>
-      <button class="btn btn-generate" id="generate-btn" onclick="generateSerialLabels()">
-        Seri No Olustur ve Hazirla
-      </button>
-    </div>
-    <div class="section controls hidden" id="print-controls">
-      <div style="text-align:center;">
-        <button class="btn btn-print" id="print-btn" onclick="window.print()">Yazdir</button>
-        <button class="btn btn-close" onclick="window.close()">Kapat</button>
-      </div>
-    </div>
-    <div class="labels-container hidden" id="labels-container"></div>
-    <script>
-      // Data injected via textContent after load (XSS-safe)
-      var SKU_CODE = '';
-      var PRODUCT_NAME = '';
-      var API_URL = '';
-    </script>
+    <div class="labels-container" id="labels-container"></div>
   </body>
 </html>`);
     printWindow.document.close();
 
-    // Inject dynamic values safely via textContent (XSS-safe, no eval)
-    const previewName = printWindow.document.getElementById('preview-product-name');
-    const previewSerial = printWindow.document.getElementById('preview-serial-code');
-    const infoSku = printWindow.document.getElementById('info-sku');
-    const infoFormat = printWindow.document.getElementById('info-format');
-    if (previewName) previewName.textContent = product.product_name;
-    if (previewSerial) previewSerial.textContent = `${product.sku_code}-XXXXXX`;
-    if (infoSku) infoSku.textContent = product.sku_code;
-    if (infoFormat) infoFormat.textContent = `${product.sku_code}-000001, ${product.sku_code}-000002`;
-
-    // Pass data to the popup's script context safely
-    (printWindow as Window & { SKU_CODE: string; PRODUCT_NAME: string; API_URL: string }).SKU_CODE = product.sku_code;
-    (printWindow as Window & { SKU_CODE: string; PRODUCT_NAME: string; API_URL: string }).PRODUCT_NAME = product.product_name;
-    (printWindow as Window & { SKU_CODE: string; PRODUCT_NAME: string; API_URL: string }).API_URL = apiBaseUrl;
-
-    // Initialize preview barcode and wire up generate function
     printWindow.addEventListener('load', () => {
       const win = printWindow as Window & {
         JsBarcode: (selector: string, value: string, options: object) => void;
-        SKU_CODE: string;
-        PRODUCT_NAME: string;
-        API_URL: string;
-        generateSerialLabels: () => Promise<void>;
       };
-      if (win.JsBarcode) {
-        win.JsBarcode('#preview-barcode', `${product.sku_code}-000001`, {
-          format: 'CODE128', width: 2.2, height: 55, displayValue: false, margin: 0,
-        });
-      }
-      printWindow.document.getElementById('quantity-input')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') win.generateSerialLabels?.();
+
+      const titleEl = printWindow.document.getElementById('title-text');
+      if (titleEl) titleEl.textContent = `${serials.length} Etiket — ${product.sku_code}`;
+
+      const container = printWindow.document.getElementById('labels-container');
+      if (!container) return;
+
+      serials.forEach((s, i) => {
+        const label = printWindow.document.createElement('div');
+        label.className = 'label';
+
+        const nameDiv = printWindow.document.createElement('div');
+        nameDiv.className = 'product-name';
+        nameDiv.textContent = product.product_name;
+        label.appendChild(nameDiv);
+
+        const barcodeDiv = printWindow.document.createElement('div');
+        barcodeDiv.className = 'barcode-container';
+        const svg = printWindow.document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('id', `barcode-${i}`);
+        barcodeDiv.appendChild(svg);
+        label.appendChild(barcodeDiv);
+
+        const serialDiv = printWindow.document.createElement('div');
+        serialDiv.className = 'serial-code';
+        serialDiv.textContent = s.full_barcode;
+        label.appendChild(serialDiv);
+
+        container.appendChild(label);
       });
 
-      win.generateSerialLabels = async () => {
-        const input = printWindow.document.getElementById('quantity-input') as HTMLInputElement;
-        const quantity = parseInt(input?.value || '0');
-        if (!quantity || quantity < 1) { printWindow.alert('En az 1 adet giriniz'); return; }
-        if (quantity > 500) { printWindow.alert('Maksimum 500 etiket'); return; }
-
-        const btn = printWindow.document.getElementById('generate-btn') as HTMLButtonElement;
-        btn.disabled = true;
-        btn.textContent = 'Seri numaralari olusturuluyor...';
-
-        try {
-          const response = await printWindow.fetch(win.API_URL + '/serials/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sku_code: win.SKU_CODE, quantity }),
-          });
-          const result = await response.json() as { success: boolean; error?: string; data?: { serials: Array<{ full_barcode: string }> } };
-          if (!result.success) throw new Error(result.error || 'Seri numarasi olusturulamadi');
-
-          const serials = result.data!.serials;
-          printWindow.document.getElementById('preview-section')?.classList.add('hidden');
-          printWindow.document.getElementById('input-section')?.classList.add('hidden');
-          printWindow.document.getElementById('print-controls')?.classList.remove('hidden');
-
-          const container = printWindow.document.getElementById('labels-container')!;
-          container.classList.remove('hidden');
-          container.textContent = '';
-
-          serials.forEach((s, i) => {
-            const label = printWindow.document.createElement('div');
-            label.className = 'label';
-            const nameDiv = printWindow.document.createElement('div');
-            nameDiv.className = 'product-name';
-            nameDiv.textContent = win.PRODUCT_NAME;
-            label.appendChild(nameDiv);
-            const barcodeDiv = printWindow.document.createElement('div');
-            barcodeDiv.className = 'barcode-container';
-            const svg = printWindow.document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('id', `barcode-${i}`);
-            barcodeDiv.appendChild(svg);
-            label.appendChild(barcodeDiv);
-            const serialDiv = printWindow.document.createElement('div');
-            serialDiv.className = 'serial-code';
-            serialDiv.textContent = s.full_barcode;
-            label.appendChild(serialDiv);
-            container.appendChild(label);
-          });
-
-          serials.forEach((s, i) => {
-            win.JsBarcode(`#barcode-${i}`, s.full_barcode, {
-              format: 'CODE128', width: 2.2, height: 55, displayValue: false, margin: 0,
-            });
-          });
-
-          const printBtn = printWindow.document.getElementById('print-btn');
-          if (printBtn) printBtn.textContent = `${quantity} Etiket Yazdir`;
-        } catch (error) {
-          printWindow.alert('Hata: ' + (error as Error).message);
-          btn.disabled = false;
-          btn.textContent = 'Seri No Olustur ve Hazirla';
-        }
-      };
+      serials.forEach((s, i) => {
+        win.JsBarcode?.(`#barcode-${i}`, s.full_barcode, {
+          format: 'CODE128', width: 2.2, height: 55, displayValue: false, margin: 0,
+        });
+      });
     });
   };
 
@@ -905,6 +829,50 @@ function Products() {
       )}
         </div>
       </div>
+
+      {/* Label Print Modal */}
+      {labelModal.product && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+          onClick={() => !labelModal.loading && setLabelModal({ product: null, quantity: 1, loading: false })}
+        >
+          <div
+            style={{ background: 'white', borderRadius: 12, padding: 28, width: 340, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: 6, color: '#111' }}>Etiket Bas</h3>
+            <p style={{ color: '#6b7280', marginBottom: 4, fontSize: 13 }}>{labelModal.product.sku_code}</p>
+            <p style={{ color: '#374151', marginBottom: 16, fontSize: 14, fontWeight: 500 }}>{labelModal.product.product_name}</p>
+            <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14 }}>Adet</label>
+            <input
+              type="number"
+              min={1}
+              max={500}
+              value={labelModal.quantity}
+              onChange={(e) => setLabelModal((prev) => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
+              onKeyDown={(e) => e.key === 'Enter' && !labelModal.loading && handleGenerateLabels()}
+              autoFocus
+              style={{ width: '100%', padding: '10px 12px', fontSize: 18, textAlign: 'center', border: '2px solid #e5e7eb', borderRadius: 6, marginBottom: 16 }}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={handleGenerateLabels}
+                disabled={labelModal.loading}
+                style={{ flex: 1, padding: '12px 0', background: labelModal.loading ? '#9ca3af' : '#10b981', color: 'white', border: 'none', borderRadius: 6, fontWeight: 600, cursor: labelModal.loading ? 'not-allowed' : 'pointer', fontSize: 14 }}
+              >
+                {labelModal.loading ? 'Uretiliyor...' : 'Seri No Uret ve Hazirla'}
+              </button>
+              <button
+                onClick={() => setLabelModal({ product: null, quantity: 1, loading: false })}
+                disabled={labelModal.loading}
+                style={{ padding: '12px 16px', background: '#6b7280', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}
+              >
+                Iptal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

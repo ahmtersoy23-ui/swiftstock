@@ -27,6 +27,7 @@ export interface GetContainersFilters {
   status?: string;
   type?: string;
   search?: string;
+  shipment_id?: string | number;
   page?: string | number;
   limit?: string | number;
 }
@@ -41,6 +42,8 @@ export interface CreateContainerInput {
   warehouse_code: string;
   items: ContainerItem[];
   created_by: string;
+  display_name?: string;       // kullanıcı tanımlı isim (zorunlu — UI enforces)
+  shipment_id?: number;        // opsiyonel sevkiyat bağlantısı
   notes?: string;
   parent_container_id?: number;
 }
@@ -49,7 +52,7 @@ export interface CreateContainerInput {
 
 class ContainerService {
   async createContainer(data: CreateContainerInput) {
-    const { container_type, warehouse_code, items, created_by, notes, parent_container_id } = data;
+    const { container_type, warehouse_code, items, created_by, display_name, shipment_id, notes, parent_container_id } = data;
 
     const warehouseResult = await pool.query(
       'SELECT warehouse_id FROM wms_warehouses WHERE code = $1',
@@ -62,6 +65,28 @@ class ContainerService {
 
     const warehouse_id = warehouseResult.rows[0].warehouse_id;
 
+    // Uniqueness check for display_name within the same warehouse
+    if (display_name) {
+      const nameCheck = await pool.query(
+        `SELECT container_id FROM wms_containers WHERE display_name = $1 AND warehouse_id = $2`,
+        [display_name, warehouse_id],
+      );
+      if (nameCheck.rows.length > 0) {
+        throw new ContainerError(409, `Bu isimde bir koli/palet zaten var: ${display_name}`);
+      }
+    }
+
+    // Validate shipment exists if provided
+    if (shipment_id) {
+      const shipmentCheck = await pool.query(
+        'SELECT shipment_id FROM virtual_shipments WHERE shipment_id = $1',
+        [shipment_id],
+      );
+      if (shipmentCheck.rows.length === 0) {
+        throw new ContainerError(404, 'Sevkiyat bulunamadi');
+      }
+    }
+
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -71,10 +96,10 @@ class ContainerService {
       const tempBarcode = `TEMP-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const containerResult = await client.query(
         `INSERT INTO wms_containers
-         (barcode, container_type, warehouse_id, parent_container_id, status, created_by, notes)
-         VALUES ($1, $2, $3, $4, 'ACTIVE', $5, $6)
+         (barcode, container_type, warehouse_id, parent_container_id, status, created_by, display_name, shipment_id, notes)
+         VALUES ($1, $2, $3, $4, 'ACTIVE', $5, $6, $7, $8)
          RETURNING *`,
-        [tempBarcode, container_type, warehouse_id, parent_container_id ?? null, created_by, notes ?? null],
+        [tempBarcode, container_type, warehouse_id, parent_container_id ?? null, created_by, display_name ?? null, shipment_id ?? null, notes ?? null],
       );
 
       const { container_id } = containerResult.rows[0];
@@ -137,7 +162,7 @@ class ContainerService {
   }
 
   async getAllContainers(filters: GetContainersFilters) {
-    const { warehouse_code, status, type, search, page = 1, limit = 50 } = filters;
+    const { warehouse_code, status, type, search, shipment_id, page = 1, limit = 50 } = filters;
 
     const pageNum = Math.max(1, parseInt(page as string) || 1);
     const limitNum = Math.min(200, Math.max(1, parseInt(limit as string) || 50));
@@ -159,8 +184,12 @@ class ContainerService {
       whereClause += ` AND c.container_type = $${paramCount++}`;
       params.push(type as string);
     }
+    if (shipment_id) {
+      whereClause += ` AND c.shipment_id = $${paramCount++}`;
+      params.push(Number(shipment_id));
+    }
     if (search) {
-      whereClause += ` AND (c.barcode ILIKE $${paramCount} OR c.notes ILIKE $${paramCount})`;
+      whereClause += ` AND (c.barcode ILIKE $${paramCount} OR c.display_name ILIKE $${paramCount} OR c.notes ILIKE $${paramCount})`;
       params.push(`%${search}%`);
       paramCount++;
     }
@@ -180,6 +209,7 @@ class ContainerService {
         w.name as warehouse_name,
         l.location_code,
         l.qr_code as location_qr,
+        vs.name AS shipment_name,
         COALESCE(cc.current_items, 0) as current_items,
         COALESCE(cc.original_items, 0) as original_items,
         CASE
@@ -191,6 +221,7 @@ class ContainerService {
        FROM wms_containers c
        JOIN wms_warehouses w ON c.warehouse_id = w.warehouse_id
        LEFT JOIN wms_locations l ON c.location_id = l.location_id
+       LEFT JOIN virtual_shipments vs ON vs.shipment_id = c.shipment_id
        LEFT JOIN (
          SELECT container_id, COUNT(*) as current_items, COUNT(*) as original_items
          FROM wms_container_contents
@@ -203,6 +234,26 @@ class ContainerService {
     );
 
     return { rows: result.rows, page: pageNum, limit: limitNum, total };
+  }
+
+  async linkContainerToShipment(container_id: number, shipment_id: number | null) {
+    if (shipment_id !== null) {
+      const check = await pool.query(
+        'SELECT shipment_id FROM virtual_shipments WHERE shipment_id = $1',
+        [shipment_id],
+      );
+      if (check.rows.length === 0) {
+        throw new ContainerError(404, 'Sevkiyat bulunamadi');
+      }
+    }
+    const result = await pool.query(
+      `UPDATE wms_containers SET shipment_id = $1 WHERE container_id = $2 RETURNING *`,
+      [shipment_id, container_id],
+    );
+    if (result.rows.length === 0) {
+      throw new ContainerError(404, 'Container bulunamadi');
+    }
+    return result.rows[0];
   }
 
   /**

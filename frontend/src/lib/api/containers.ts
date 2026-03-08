@@ -9,14 +9,12 @@ export const containerApi = {
     items?: Array<{ sku_code: string; quantity: number }>;
     contents?: Array<{ sku_code: string; quantity: number }>;
     created_by: string;
+    display_name?: string;
+    shipment_id?: number;
     notes?: string;
     parent_container_id?: number;
   }) => {
-    // Support both 'items' and 'contents' field names
-    const payload = {
-      ...data,
-      items: data.items || data.contents,
-    };
+    const payload = { ...data, items: data.items || data.contents };
     const response = await api.post<ApiResponse>('/containers', payload);
     return response.data;
   },
@@ -36,8 +34,14 @@ export const containerApi = {
     status?: string;
     type?: string;
     search?: string;
+    shipment_id?: number;
   }) => {
     const response = await api.get<ApiResponse>('/containers', { params: filters });
+    return response.data;
+  },
+
+  linkShipment: async (container_id: number, shipment_id: number | null) => {
+    const response = await api.patch<ApiResponse>(`/containers/${container_id}/shipment`, { shipment_id });
     return response.data;
   },
 };

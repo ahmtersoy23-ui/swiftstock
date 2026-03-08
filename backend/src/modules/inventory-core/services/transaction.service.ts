@@ -7,6 +7,7 @@
 
 import pool from '../../../config/database';
 import logger from '../../../config/logger';
+import { parseSerialBarcode } from '../../catalog/services/serial.service';
 
 // ── Domain Error ──────────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ export interface TransactionItem {
   product_sku?: string;
   sku_code?: string;
   barcode?: string;
+  serial_no?: string;   // explicit serial number (e.g., "000001")
   quantity: number;
   unit_type?: string;
 }
@@ -159,17 +161,32 @@ class TransactionService {
         });
       }
 
+      // ── Resolve warehouse_code for serial validation ──────────────────────
+      const warehouseCodeResult = await client.query(
+        'SELECT code FROM wms_warehouses WHERE warehouse_id = $1',
+        [warehouse_id],
+      );
+      const resolvedWarehouseCode = warehouseCodeResult.rows[0]?.code as string | undefined;
+
       // ── Process each item ─────────────────────────────────────────────────
       const processedItems = [];
       for (const item of items) {
         let product_sku = item.product_sku ?? item.sku_code;
+        let serial_no = item.serial_no;
 
-        if (item.barcode && !product_sku) {
-          const product = productByBarcode.get(item.barcode) as { product_sku: string } | undefined;
-          if (!product) {
-            throw new TransactionError(404, `Product not found for barcode: ${item.barcode}`);
+        // If barcode provided, try to parse as IWASKU-SERIALNO first
+        if (item.barcode) {
+          const parsed = parseSerialBarcode(item.barcode);
+          if (parsed) {
+            product_sku = product_sku ?? parsed.sku_code;
+            serial_no = serial_no ?? parsed.serial_no;
+          } else if (!product_sku) {
+            const product = productByBarcode.get(item.barcode) as { product_sku: string } | undefined;
+            if (!product) {
+              throw new TransactionError(404, `Product not found for barcode: ${item.barcode}`);
+            }
+            product_sku = product.product_sku;
           }
-          product_sku = product.product_sku;
         }
 
         const product = productBySku.get(product_sku!) as
@@ -177,6 +194,39 @@ class TransactionService {
           | undefined;
         if (!product) {
           throw new TransactionError(404, `Product not found: ${product_sku}`);
+        }
+
+        // ── Serial validation for FACTORY IN ─────────────────────────────
+        let serial_id: number | null = null;
+        if (transaction_type === 'IN' && resolvedWarehouseCode === 'FACTORY') {
+          if (!serial_no) {
+            throw new TransactionError(
+              400,
+              `Seri numarasi zorunlu — FACTORY deposuna giris icin IWASKU-SERIALNO formatinda barkod okutun (${product_sku})`,
+            );
+          }
+          const serialResult = await client.query(
+            `SELECT serial_id FROM wms_serial_numbers
+             WHERE product_sku = $1 AND serial_no = $2`,
+            [product_sku, serial_no],
+          );
+          if (serialResult.rows.length === 0) {
+            throw new TransactionError(
+              404,
+              `Seri numarasi bulunamadi: ${product_sku}-${serial_no}. Once Katalog > Seri No Uret adimindan etiket olusturun.`,
+            );
+          }
+          serial_id = serialResult.rows[0].serial_id as number;
+        } else if (serial_no) {
+          // Optional serial tracking for other warehouses/types
+          const serialResult = await client.query(
+            `SELECT serial_id FROM wms_serial_numbers
+             WHERE product_sku = $1 AND serial_no = $2`,
+            [product_sku, serial_no],
+          );
+          if (serialResult.rows.length > 0) {
+            serial_id = serialResult.rows[0].serial_id as number;
+          }
         }
 
         // Unit conversion: products has no units_per_box/boxes_per_pallet — use defaults
@@ -199,10 +249,10 @@ class TransactionService {
 
         const itemResult = await client.query(
           `INSERT INTO wms_transaction_items
-           (transaction_id, product_sku, quantity, unit_type)
-           VALUES ($1, $2, $3, $4)
+           (transaction_id, product_sku, quantity, unit_type, serial_id)
+           VALUES ($1, $2, $3, $4, $5)
            RETURNING *`,
-          [transaction.transaction_id, product_sku, item.quantity, unit_type],
+          [transaction.transaction_id, product_sku, item.quantity, unit_type, serial_id],
         );
         processedItems.push(itemResult.rows[0]);
 
