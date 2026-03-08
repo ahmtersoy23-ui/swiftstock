@@ -15,7 +15,7 @@ class ProductService {
   async getProductBySku(sku: string): Promise<Product | null> {
     try {
       const result = await pool.query(
-        `SELECT id, product_sku, name AS product_name, category, base_cost, created_at
+        `SELECT id, product_sku AS sku_code, name AS product_name, category, base_cost, created_at
          FROM products
          WHERE product_sku = $1`,
         [sku]
@@ -49,7 +49,7 @@ class ProductService {
   async searchProducts(query: string, limit = 50): Promise<Product[]> {
     try {
       const result = await pool.query(
-        `SELECT id, product_sku, name AS product_name, category, base_cost, created_at
+        `SELECT id, product_sku AS sku_code, name AS product_name, category, base_cost, created_at
          FROM products
          WHERE product_sku IS NOT NULL
            AND (
@@ -81,7 +81,7 @@ class ProductService {
     const offset = (page - 1) * limit;
 
     let query =
-      'SELECT id, product_sku, name AS product_name, category, base_cost, created_at FROM products WHERE product_sku IS NOT NULL';
+      'SELECT id, product_sku AS sku_code, name AS product_name, category, base_cost, created_at FROM products WHERE product_sku IS NOT NULL';
     let countQuery = 'SELECT COUNT(*) FROM products WHERE product_sku IS NOT NULL';
     const params: (string | number)[] = [];
 

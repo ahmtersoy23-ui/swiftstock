@@ -17,7 +17,7 @@ export interface ApiResponse<T = unknown> {
 
 export interface Product {
   id: string;
-  product_sku: string;
+  sku_code: string;
   product_name: string;
   category?: string;
   base_cost?: number;
