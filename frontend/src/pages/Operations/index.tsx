@@ -362,7 +362,7 @@ function Operations() {
         return;
       }
 
-      const scannedBarcode = serial?.full_barcode || product.barcode || product.sku_code;
+      const scannedBarcode = serial?.full_barcode || product.sku_code;
 
       if (isAlreadyScanned(scannedBarcode)) {
         playScanSound.error();
@@ -495,15 +495,9 @@ function Operations() {
     let addedCount = 0;
     contents.forEach((item) => {
       const product: Product = {
+        id: item.sku_code,
         sku_code: item.sku_code,
         product_name: item.product_name || item.sku_code,
-        barcode: item.product_barcode || item.sku_code,
-        base_unit: 'EACH',
-        units_per_box: 1,
-        boxes_per_pallet: 1,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
       };
 
       for (let i = 0; i < item.quantity; i++) {
