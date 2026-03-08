@@ -22,12 +22,13 @@ SwiftStock; üretimden sevkiyata kadar tüm fiziksel stok hareketini takip eden,
 
 | Alan | Açıklama | Kullanım |
 |------|----------|----------|
-| **IWASKU** (Product ID) | Ürün kimliği — ana stok birimi | Her zaman zorunlu |
-| **Seri Numarası** | Tekil ürün takibi | İsteğe bağlı |
+| **IWASKU** (Product ID) | Ürün kimliği — ana stok birimi | Zorunlu |
+| **Seri Numarası** | Tekil ürün takibi | Zorunlu |
 
-- Stok takibi **IWASKU bazlı** yapılır (varsayılan)
-- Seri numarası etkinleştirildiğinde tekil ürün bazında iz sürülebilir
-- Barkod = `IWASKU` veya `IWASKU-SerialNo` formatında basılır
+- Her ürün üretildiğinde **IWASKU + seri numarası** birlikte atanır
+- Seri numarası sistem tarafından otomatik üretilir; aynı IWASKU'dan birden fazla adet üretildiğinde her birine ayrı seri no verilir
+- Stok takibi tekil ürün (IWASKU + SN çifti) bazında yapılır
+- **Barkod formatı: `IWASKU-SERIALNO`** (sabit format — tek varyant)
 
 ---
 
@@ -47,15 +48,35 @@ SwiftStock; üretimden sevkiyata kadar tüm fiziksel stok hareketini takip eden,
 
 **Karar: Tek warehouse + zone bazlı lokasyon** (ayrı depolar yerine)
 
-Tek `FACTORY` warehouse altında zone/alan ayrımı yapılır:
+Her ürün kategorisi **kendi adıyla ayrı bir zone**'dur. Zone listesi `pricelab_db.products.category` değerlerinden otomatik türetilir:
 
-| Zone Kodu | Alan Adı |
-|-----------|----------|
-| `METAL` | Metal Üretim Alanı |
-| `AHSAP_UV` | Ahşap UV Koridor |
-| `AHSAP_GIRIS` | Ahşap Giriş Kat |
-| `HARITA` | Harita (Cam/Ahşap/UV) |
-| `TABLETOP` | Tabletop Alanı |
+| Zone (= Kategori Adı) |
+|-----------------------|
+| IWA Metal |
+| IWA Ahşap |
+| IWA Tabletop |
+| CFW Metal |
+| CFW Metal Üstü Ahşap |
+| CFW Ahşap Harita |
+| Shukran Cam |
+| Trend Ahşap |
+| Kanvas |
+| Mobilya |
+| Tekstil |
+| Takı |
+| İslami Takı |
+| Döküm |
+| Alsat |
+| Montaj Atölyesi |
+| Welter Atelier |
+| XSarfs |
+| Soba |
+| Diğer |
+
+**Kategori → Zone otomatik eşlemesi:**
+- Ürün `FACTORY`'e kabul edilirken sistem `pricelab_db.products.category` değerini okur ve doğrudan zone olarak önerir
+- Zone listesi ve isimleri pricelab_db'deki kategorilerle senkronize kalır; yeni kategori = otomatik yeni zone
+- Personel önerilen zone'u onaylar ya da değiştirir
 
 **Gerekçe:** Tek warehouse = tek stok sorgusu, tek rapor, tek API. Zone field ile fiziksel ayrım sistem içinde karşılanır.
 
@@ -74,9 +95,9 @@ US WAYFAIR MDN CG | US WF SH CG | ZA TAKEALOT
 ## 4. Üretim Aşaması
 
 1. Üretim birimi ürünü üretir
-2. Her ürüne **IWASKU bazlı barkod** atanır (isteğe bağlı seri no eklenir)
-3. Barkod etiketi yazdırılır (Zebra veya benzeri)
-4. Ürün sisteme **IN** işlemi ile fabrika deposuna alınır
+2. Her ürüne **IWASKU + seri numarası** atanır (sistem otomatik üretir)
+3. `IWASKU-SERIALNO` formatında barkod etiketi yazdırılır (Zebra veya benzeri)
+4. Ürün sisteme **IN** işlemi ile fabrika deposuna alınır; kategori bilgisinden zone otomatik önerilir
 
 ---
 
@@ -84,25 +105,43 @@ US WAYFAIR MDN CG | US WF SH CG | ZA TAKEALOT
 
 ### 5.1 Oluşturma
 - Sistem üzerinden yeni koli veya palet oluşturulur
-- Sistem otomatik barkod üretir: `KOL-XXXXX` / `PAL-XXXXX`
-- İçine ürünler tek tek barkod okutularak eklenir
+- **Kullanıcı anlamlı bir isim verir** (örn. `FBA-BOX-01`, `TR-AMBALAJ-MART`, `NJ-PLT-045`)
+- Sistem aynı zamanda dahili bir barkod üretir; etiket bu kod üzerinden basılır
+- İsim benzersiz olmalıdır; sistem çakışma uyarısı verir
+- Oluşturma sırasında **isteğe bağlı olarak bir sevkiyat (sanal depo) ile ilişkilendirilebilir**
 
-### 5.2 Toplu Hareket
+### 5.2 Sevkiyat ile İlişkilendirme
+Koli/palet, bir sanal depo (sevkiyat) altına bağlanabilir:
+```
+SANAL DEPO / SEVKİYAT  →  "US-FBA-MARCH-2026"
+  ├── FBA-BOX-01  (koli)
+  │     ├── IWASKU-A-000001
+  │     └── IWASKU-A-000002
+  └── FBA-BOX-02  (koli)
+        └── IWASKU-B-000100
+```
+- Koli oluşturulurken mevcut sevkiyatlardan biri seçilir (zorunlu değil, sonradan da atanabilir)
+- Sevkiyata bağlı koliler sevkiyat detayında listelenir: kaç koli, toplam kaç ürün
+- Sevkiyat transfer edildiğinde bağlı tüm koliler otomatik olarak birlikte hareket eder
+
+### 5.3 Toplu Hareket
 - Koli/palet barkodu okutulduğunda **tüm içerik tek birim** gibi hareket eder
-- Transfer, sevkiyat, raf atama: koli kodu ile yapılır
+- Transfer, sevkiyat, raf atama: koli adı/kodu ile yapılır
 
-### 5.3 Container Dağıtma (Kırma)
+### 5.4 Container Dağıtma (Kırma)
 - Koli/palet içindeki **tekil bir ürün** müstakil olarak taratılırsa:
   - Container otomatik olarak **dağıtılır**
   - Geri kalan ürünler **tekil** olarak bulundukları rafa kaydedilir
   - Dağıtılan container kapatılır
 
-### 5.4 Hiyerarşi
+### 5.5 Hiyerarşi
 ```
-PALET → KOLİ → ÜRÜN
+SEVKİYAT (Sanal Depo)
+  └── PALET → KOLİ → ÜRÜN (IWASKU-SERIALNO)
 ```
 - Palet içinde koli olabilir
 - Koli içinde ürün olur
+- Sevkiyat ilişkisi opsiyonel üst katmandır
 
 ---
 
@@ -173,7 +212,7 @@ PALET → KOLİ → ÜRÜN
   - Sanal depolar (transit)
   - Raf bazlı dağılım
 - IWASKU bazlı toplam stok + lokasyon dağılımı
-- Seri no etkinse tekil ürün nerede, hangi rafa göre
+- Tekil ürün (IWASKU-SERIALNO) nerede, hangi rafta takip edilebilir
 
 ---
 
@@ -222,4 +261,6 @@ PALET → KOLİ → ÜRÜN
 | Sevkiyat (Sanal Depo) | ✅ | ✅ | Tam çalışıyor |
 | RMA / İade | ✅ | ❌ | Backend tam, frontend yok |
 | Orders / Picking | ✅ | ❌ | Backend tam, frontend yok |
-| Seri No Takibi | ✅ | ⚠️ | Backend tam, UI kısmi |
+| Seri No Takibi | ✅ | ⚠️ | Backend tam, UI güncellenmeli (zorunlu hale getirildi) |
+| Container — Kullanıcı Adı + Sevkiyat Bağı | ❌ | ❌ | Backend + UI yeni tasarım gerekiyor |
+| Kategori → Zone Otomatik Eşleme | ❌ | ❌ | pricelab_db entegrasyonu gerekiyor |
