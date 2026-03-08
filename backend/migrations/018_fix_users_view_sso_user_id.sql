@@ -5,3 +5,6 @@ CREATE OR REPLACE VIEW users AS
          warehouse_id, is_active, last_login, created_at, updated_at,
          must_change_password, sso_user_id
   FROM wms_users;
+
+-- swiftstock_user'a VIEW erişimi ver
+GRANT SELECT ON users TO swiftstock_user;
