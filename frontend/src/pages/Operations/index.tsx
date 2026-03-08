@@ -1,7 +1,8 @@
 // Operations page - main orchestrator
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient, reportApi, containerApi, catalogApi } from '../../lib/api';
+import { apiClient, reportApi, containerApi } from '../../lib/api';
+import { catalogApi } from '../../lib/api/catalog';
 import { useStore } from '../../stores/appStore';
 import { translations } from '../../i18n/translations';
 import type { ScanResponse, OperationMode, Product, Location, Container, Inventory } from '../../types';
@@ -424,7 +425,7 @@ function Operations() {
       }
       // Zone suggestion — fire and forget
       catalogApi.getCategoryZone(product.sku_code, 'FACTORY')
-        .then((res) => {
+        .then((res: { success: boolean; data?: { category: string | null; suggested_zone: string | null } }) => {
           if (res.success && res.data) {
             setZoneSuggestion({ zone: res.data.suggested_zone, category: res.data.category });
           }
