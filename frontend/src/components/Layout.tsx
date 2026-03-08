@@ -21,10 +21,17 @@ function Layout({ children }: LayoutProps) {
   useEffect(() => {
     api.get('/warehouses?all=true').then((res) => {
       if (res.data?.success && Array.isArray(res.data.data)) {
-        setWarehouses(res.data.data);
+        const list: { code: string; name: string; is_active: boolean }[] = res.data.data;
+        setWarehouses(list);
+        // Eski localStorage değeri (TUR/USA/FAB) geçersizse ilk aktif depoya sıfırla
+        const validCodes = list.map((w) => w.code);
+        if (!validCodes.includes(currentWarehouse)) {
+          const firstActive = list.find((w) => w.is_active);
+          if (firstActive) setCurrentWarehouse(firstActive.code);
+        }
       }
-    }).catch(() => { /* fail silently — fallback to current value */ });
-  }, []);
+    }).catch(() => { /* fail silently */ });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleWarehouseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCurrentWarehouse(e.target.value);

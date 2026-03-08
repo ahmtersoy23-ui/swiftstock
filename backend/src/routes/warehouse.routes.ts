@@ -19,8 +19,8 @@ import {
 
 const router = Router();
 
-// ── Warehouses (READ-ONLY config) ─────────────────────────────────────────
-router.get('/warehouses', authenticateToken, warehouseController.getAllWarehouses);
+// ── Warehouses (READ-ONLY config — public, no auth needed for list) ───────
+router.get('/warehouses', warehouseController.getAllWarehouses);
 router.get('/warehouses/:warehouse_id', authenticateToken, warehouseController.getWarehouseById);
 router.get('/warehouses/code/:warehouse_code', authenticateToken, warehouseController.getWarehouseByCode);
 
