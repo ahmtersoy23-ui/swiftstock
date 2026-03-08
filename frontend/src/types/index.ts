@@ -265,21 +265,15 @@ export type BoxStatus = 'OPEN' | 'CLOSED' | 'SHIPPED';
 export interface VirtualShipment {
   shipment_id: number;
   prefix: string;
-  name: string;
-  source_warehouse_id: number;
-  source_warehouse_code?: string;
-  source_warehouse_name?: string;
-  default_destination: BoxDestination;
+  warehouse_id: number;
+  warehouse_code?: string;
+  warehouse_name?: string;
   status: ShipmentStatus;
-  total_boxes: number;
-  total_items: number;
   usa_boxes?: number;
   fba_boxes?: number;
   notes?: string;
-  created_by: string;
+  created_by?: string;
   created_at: Date;
-  closed_at?: Date;
-  shipped_at?: Date;
   boxes?: ShipmentBox[];
 }
 
@@ -290,16 +284,10 @@ export interface ShipmentBox {
   box_number: number;
   destination: BoxDestination;
   status: BoxStatus;
-  total_items: number;
-  total_quantity: number;
   weight_kg?: number;
-  notes?: string;
-  created_by: string;
   created_at: Date;
-  closed_at?: Date;
   // Extended fields
   prefix?: string;
-  shipment_name?: string;
   shipment_status?: ShipmentStatus;
   contents?: ShipmentBoxContent[];
 }

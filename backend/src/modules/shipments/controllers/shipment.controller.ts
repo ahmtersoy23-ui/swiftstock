@@ -39,12 +39,12 @@ export const getShipmentById = async (req: Request, res: Response) => {
 };
 
 export const createShipment = async (req: Request, res: Response) => {
-  const { prefix, name, source_warehouse_id, default_destination, notes, created_by } = req.body;
+  const { prefix, warehouse_id, notes, created_by } = req.body;
 
-  if (!prefix || !name || !source_warehouse_id || !created_by) {
+  if (!prefix || !warehouse_id || !created_by) {
     res.status(400).json({
       success: false,
-      error: 'prefix, name, source_warehouse_id and created_by are required',
+      error: 'prefix, warehouse_id and created_by are required',
     });
     return;
   }
@@ -52,9 +52,7 @@ export const createShipment = async (req: Request, res: Response) => {
   try {
     const data = await shipmentService.createShipment({
       prefix,
-      name,
-      source_warehouse_id,
-      default_destination,
+      warehouse_id,
       notes,
       created_by,
     });
@@ -97,17 +95,11 @@ export const getShipmentBoxes = async (req: Request, res: Response) => {
 };
 
 export const createBox = async (req: Request, res: Response) => {
-  const { destination, notes, created_by } = req.body;
-
-  if (!created_by) {
-    res.status(400).json({ success: false, error: 'created_by is required' });
-    return;
-  }
+  const { destination, created_by } = req.body;
 
   try {
     const data = await shipmentService.createBox(req.params.shipment_id, {
       destination,
-      notes,
       created_by,
     });
     res.status(201).json({ success: true, data, message: 'Box created successfully' });
@@ -126,12 +118,12 @@ export const getBoxByBarcode = async (req: Request, res: Response) => {
 };
 
 export const addItemToBox = async (req: Request, res: Response) => {
-  const { product_sku, quantity, added_by } = req.body;
+  const { product_sku, quantity } = req.body;
 
-  if (!product_sku || !quantity || !added_by) {
+  if (!product_sku || !quantity) {
     res.status(400).json({
       success: false,
-      error: 'product_sku, quantity and added_by are required',
+      error: 'product_sku and quantity are required',
     });
     return;
   }
@@ -140,7 +132,6 @@ export const addItemToBox = async (req: Request, res: Response) => {
     const data = await shipmentService.addItemToBox(req.params.box_id, {
       product_sku,
       quantity,
-      added_by,
     });
     res.status(201).json({ success: true, data, message: 'Item added to box' });
   } catch (error) {

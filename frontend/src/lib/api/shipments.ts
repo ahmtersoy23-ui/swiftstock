@@ -17,9 +17,7 @@ export const shipmentApi = {
   // Create new shipment
   create: async (data: {
     prefix: string;
-    name: string;
-    source_warehouse_id: number;
-    default_destination?: 'USA' | 'FBA';
+    warehouse_id: number;
     notes?: string;
     created_by: string;
   }) => {

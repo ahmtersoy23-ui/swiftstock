@@ -3,7 +3,6 @@
 // Sevkiyat iş mantığı. Controller sadece req/res yönetir,
 // tüm business logic burada.
 // Tablolar: virtual_shipments, shipment_boxes, shipment_box_contents
-// Coupling: 2/10 — pilot modül
 // ============================================
 
 import pool from '../../../config/database';
@@ -31,23 +30,19 @@ export interface ShipmentFilters {
 
 export interface CreateShipmentInput {
   prefix: string;
-  name: string;
-  source_warehouse_id: string | number;
-  default_destination?: string;
+  warehouse_id: string | number;
   notes?: string;
   created_by: string;
 }
 
 export interface CreateBoxInput {
   destination?: string;
-  notes?: string;
-  created_by: string;
+  created_by?: string;
 }
 
 export interface AddItemToBoxInput {
   product_sku: string;
   quantity: number;
-  added_by: string;
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────
@@ -72,7 +67,7 @@ class ShipmentService {
 
     if (warehouse_id) {
       params.push(warehouse_id);
-      whereClause += ` AND vs.source_warehouse_id = $${params.length}`;
+      whereClause += ` AND vs.warehouse_id = $${params.length}`;
     }
 
     const countResult = await pool.query(
@@ -84,12 +79,12 @@ class ShipmentService {
     const query = `
       SELECT
         vs.*,
-        w.code as source_warehouse_code,
-        w.name as source_warehouse_name,
+        w.code as warehouse_code,
+        w.name as warehouse_name,
         (SELECT COUNT(*) FROM shipment_boxes sb WHERE sb.shipment_id = vs.shipment_id AND sb.destination = 'USA') as usa_boxes,
         (SELECT COUNT(*) FROM shipment_boxes sb WHERE sb.shipment_id = vs.shipment_id AND sb.destination = 'FBA') as fba_boxes
       FROM virtual_shipments vs
-      JOIN wms_warehouses w ON vs.source_warehouse_id = w.warehouse_id
+      LEFT JOIN wms_warehouses w ON vs.warehouse_id = w.warehouse_id
       ${whereClause}
       ORDER BY vs.created_at DESC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
@@ -112,10 +107,10 @@ class ShipmentService {
     const shipmentResult = await pool.query(
       `SELECT
         vs.*,
-        w.code as source_warehouse_code,
-        w.name as source_warehouse_name
+        w.code as warehouse_code,
+        w.name as warehouse_name
       FROM virtual_shipments vs
-      JOIN wms_warehouses w ON vs.source_warehouse_id = w.warehouse_id
+      LEFT JOIN wms_warehouses w ON vs.warehouse_id = w.warehouse_id
       WHERE vs.shipment_id = $1`,
       [shipmentId],
     );
@@ -147,7 +142,7 @@ class ShipmentService {
   }
 
   async createShipment(data: CreateShipmentInput) {
-    const { prefix, name, source_warehouse_id, default_destination, notes, created_by } = data;
+    const { prefix, warehouse_id, notes, created_by } = data;
 
     const existingPrefix = await pool.query(
       'SELECT shipment_id FROM virtual_shipments WHERE prefix = $1',
@@ -155,14 +150,14 @@ class ShipmentService {
     );
 
     if (existingPrefix.rows.length > 0) {
-      throw new ShipmentError(400, 'Prefix already exists');
+      throw new ShipmentError(400, 'Bu prefix zaten kullanımda');
     }
 
     const result = await pool.query(
-      `INSERT INTO virtual_shipments (prefix, name, source_warehouse_id, default_destination, notes, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO virtual_shipments (prefix, warehouse_id, status, notes, created_by)
+       VALUES ($1, $2, 'OPEN', $3, $4)
        RETURNING *`,
-      [prefix.toUpperCase(), name, source_warehouse_id, default_destination || 'USA', notes, created_by],
+      [prefix.toUpperCase(), warehouse_id, notes, created_by],
     );
 
     return result.rows[0];
@@ -178,19 +173,19 @@ class ShipmentService {
       throw new ShipmentError(404, 'Shipment not found');
     }
 
-    if (shipmentResult.rows[0].status !== 'OPEN') {
-      throw new ShipmentError(400, 'Shipment is not open');
+    if (shipmentResult.rows[0].status === 'SHIPPED') {
+      throw new ShipmentError(400, 'Sevkiyat zaten gönderilmiş');
     }
 
     await pool.query(
-      `UPDATE shipment_boxes SET status = 'CLOSED', closed_at = CURRENT_TIMESTAMP
+      `UPDATE shipment_boxes SET status = 'CLOSED'
        WHERE shipment_id = $1 AND status = 'OPEN'`,
       [shipmentId],
     );
 
     const result = await pool.query(
       `UPDATE virtual_shipments
-       SET status = 'CLOSED', closed_at = CURRENT_TIMESTAMP
+       SET status = 'CLOSED'
        WHERE shipment_id = $1
        RETURNING *`,
       [shipmentId],
@@ -210,7 +205,7 @@ class ShipmentService {
     }
 
     if (shipmentResult.rows[0].status === 'SHIPPED') {
-      throw new ShipmentError(400, 'Shipment is already shipped');
+      throw new ShipmentError(400, 'Sevkiyat zaten gönderilmiş');
     }
 
     await pool.query(
@@ -220,7 +215,7 @@ class ShipmentService {
 
     const result = await pool.query(
       `UPDATE virtual_shipments
-       SET status = 'SHIPPED', shipped_at = CURRENT_TIMESTAMP
+       SET status = 'SHIPPED'
        WHERE shipment_id = $1
        RETURNING *`,
       [shipmentId],
@@ -260,7 +255,7 @@ class ShipmentService {
   }
 
   async createBox(shipmentId: string, data: CreateBoxInput) {
-    const { destination, notes, created_by } = data;
+    const { destination } = data;
 
     const shipmentResult = await pool.query(
       'SELECT * FROM virtual_shipments WHERE shipment_id = $1',
@@ -273,8 +268,8 @@ class ShipmentService {
 
     const shipment = shipmentResult.rows[0];
 
-    if (shipment.status !== 'OPEN') {
-      throw new ShipmentError(400, 'Cannot add boxes to a closed shipment');
+    if (shipment.status === 'SHIPPED') {
+      throw new ShipmentError(400, 'Gönderilmiş sevkiyata koli eklenemez');
     }
 
     const nextBoxResult = await pool.query(
@@ -286,10 +281,10 @@ class ShipmentService {
     const barcode = `${shipment.prefix}-${String(nextNumber).padStart(5, '0')}`;
 
     const result = await pool.query(
-      `INSERT INTO shipment_boxes (shipment_id, barcode, box_number, destination, notes, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO shipment_boxes (shipment_id, barcode, box_number, destination)
+       VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [shipmentId, barcode, nextNumber, destination || shipment.default_destination, notes, created_by],
+      [shipmentId, barcode, nextNumber, destination || 'USA'],
     );
 
     return result.rows[0];
@@ -300,7 +295,6 @@ class ShipmentService {
       `SELECT
         sb.*,
         vs.prefix,
-        vs.name as shipment_name,
         vs.status as shipment_status
       FROM shipment_boxes sb
       JOIN virtual_shipments vs ON sb.shipment_id = vs.shipment_id
@@ -315,7 +309,7 @@ class ShipmentService {
     const contentsResult = await pool.query(
       `SELECT
         sbc.*,
-        p.name AS product_name,
+        p.name AS product_name
       FROM shipment_box_contents sbc
       JOIN products p ON sbc.product_sku = p.product_sku
       WHERE sbc.box_id = $1
@@ -327,7 +321,7 @@ class ShipmentService {
   }
 
   async addItemToBox(boxId: string, data: AddItemToBoxInput) {
-    const { product_sku, quantity, added_by } = data;
+    const { product_sku, quantity } = data;
 
     const boxResult = await pool.query(
       `SELECT sb.*, vs.status as shipment_status
@@ -344,11 +338,11 @@ class ShipmentService {
     const box = boxResult.rows[0];
 
     if (box.status !== 'OPEN') {
-      throw new ShipmentError(400, 'Cannot add items to a closed box');
+      throw new ShipmentError(400, 'Kapalı koliye ürün eklenemez');
     }
 
-    if (box.shipment_status !== 'OPEN') {
-      throw new ShipmentError(400, 'Cannot add items when shipment is closed');
+    if (box.shipment_status === 'SHIPPED') {
+      throw new ShipmentError(400, 'Gönderilmiş sevkiyata ürün eklenemez');
     }
 
     const productResult = await pool.query(
@@ -369,17 +363,17 @@ class ShipmentService {
     if (existingContent.rows.length > 0) {
       result = await pool.query(
         `UPDATE shipment_box_contents
-         SET quantity = quantity + $1, added_at = CURRENT_TIMESTAMP, added_by = $2
-         WHERE box_id = $3 AND product_sku = $4
+         SET quantity = quantity + $1, added_at = CURRENT_TIMESTAMP
+         WHERE box_id = $2 AND product_sku = $3
          RETURNING *`,
-        [quantity, added_by, boxId, product_sku],
+        [quantity, boxId, product_sku],
       );
     } else {
       result = await pool.query(
-        `INSERT INTO shipment_box_contents (box_id, product_sku, quantity, added_by)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO shipment_box_contents (box_id, product_sku, quantity)
+         VALUES ($1, $2, $3)
          RETURNING *`,
-        [boxId, product_sku, quantity, added_by],
+        [boxId, product_sku, quantity],
       );
     }
 
@@ -401,7 +395,7 @@ class ShipmentService {
     }
 
     if (contentResult.rows[0].box_status !== 'OPEN') {
-      throw new ShipmentError(400, 'Cannot remove items from a closed box');
+      throw new ShipmentError(400, 'Kapalı koliden ürün kaldırılamaz');
     }
 
     await pool.query('DELETE FROM shipment_box_contents WHERE content_id = $1', [contentId]);
@@ -421,12 +415,12 @@ class ShipmentService {
     }
 
     if (boxResult.rows[0].status !== 'OPEN') {
-      throw new ShipmentError(400, 'Box is already closed');
+      throw new ShipmentError(400, 'Koli zaten kapalı');
     }
 
     const result = await pool.query(
       `UPDATE shipment_boxes
-       SET status = 'CLOSED', weight_kg = $1, closed_at = CURRENT_TIMESTAMP
+       SET status = 'CLOSED', weight_kg = $1
        WHERE box_id = $2
        RETURNING *`,
       [weightKg ?? null, boxId],
@@ -449,7 +443,7 @@ class ShipmentService {
     }
 
     if (boxResult.rows[0].shipment_status === 'SHIPPED') {
-      throw new ShipmentError(400, 'Cannot change destination of shipped box');
+      throw new ShipmentError(400, 'Gönderilmiş kolinin hedefi değiştirilemez');
     }
 
     const result = await pool.query(

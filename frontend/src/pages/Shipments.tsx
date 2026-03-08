@@ -26,9 +26,7 @@ function Shipments() {
   // Form state
   const [newShipment, setNewShipment] = useState({
     prefix: '',
-    name: '',
-    source_warehouse_id: 0,
-    default_destination: 'USA' as 'USA' | 'FBA',
+    warehouse_id: 0,
     notes: '',
   });
 
@@ -49,8 +47,8 @@ function Shipments() {
       }
       if (warehousesRes.success) {
         setWarehouses(warehousesRes.data || []);
-        if (warehousesRes.data?.length > 0 && newShipment.source_warehouse_id === 0) {
-          setNewShipment(prev => ({ ...prev, source_warehouse_id: warehousesRes.data[0].warehouse_id }));
+        if (warehousesRes.data?.length > 0 && newShipment.warehouse_id === 0) {
+          setNewShipment(prev => ({ ...prev, warehouse_id: warehousesRes.data[0].warehouse_id }));
         }
       }
     } catch (err: unknown) {
@@ -64,8 +62,8 @@ function Shipments() {
     e.preventDefault();
     setError(null);
 
-    if (!newShipment.prefix || !newShipment.name || !newShipment.source_warehouse_id) {
-      setError(language === 'tr' ? 'Prefix, isim ve depo zorunludur' : 'Prefix, name and warehouse are required');
+    if (!newShipment.prefix || !newShipment.warehouse_id) {
+      setError(language === 'tr' ? 'Prefix ve depo zorunludur' : 'Prefix and warehouse are required');
       return;
     }
 
@@ -80,9 +78,7 @@ function Shipments() {
         setShowCreateModal(false);
         setNewShipment({
           prefix: '',
-          name: '',
-          source_warehouse_id: warehouses[0]?.warehouse_id || 0,
-          default_destination: 'USA',
+          warehouse_id: warehouses[0]?.warehouse_id || 0,
           notes: '',
         });
         loadData();
@@ -256,11 +252,11 @@ function Shipments() {
                           <span className="shipment-prefix">{shipment.prefix}</span>
                           {getStatusBadge(shipment.status)}
                         </div>
-                        <div className="shipment-name">{shipment.name}</div>
+                        {shipment.warehouse_name && (
+                          <div className="shipment-name">{shipment.warehouse_name} ({shipment.warehouse_code})</div>
+                        )}
                         <div className="shipment-stats">
-                          <span>{shipment.total_boxes} {language === 'tr' ? 'koli' : 'boxes'}</span>
-                          <span className="separator">|</span>
-                          <span>{shipment.total_items} {language === 'tr' ? 'ürün' : 'items'}</span>
+                          <span>{(shipment.usa_boxes || 0) + (shipment.fba_boxes || 0)} {language === 'tr' ? 'koli' : 'boxes'}</span>
                         </div>
                         <div className="shipment-destinations">
                           {(shipment.usa_boxes || 0) > 0 && (
@@ -324,8 +320,7 @@ function Shipments() {
                             {getDestinationBadge(box.destination)}
                           </div>
                           <div className="box-stats">
-                            <span>{box.total_items} {language === 'tr' ? 'ürün' : 'items'}</span>
-                            <span>{box.total_quantity} {language === 'tr' ? 'adet' : 'pcs'}</span>
+                            <span>{box.contents?.length ?? 0} {language === 'tr' ? 'ürün' : 'items'}</span>
                           </div>
                           {box.status === 'OPEN' && selectedShipment.status === 'OPEN' && (
                             <div className="box-actions">
@@ -379,20 +374,10 @@ function Shipments() {
                 <small>{language === 'tr' ? 'Örn: IST → Koliler: IST-00001, IST-00002...' : 'Ex: IST → Boxes: IST-00001, IST-00002...'}</small>
               </div>
               <div className="form-group">
-                <label>{language === 'tr' ? 'Sevkiyat Adı' : 'Shipment Name'} *</label>
-                <input
-                  type="text"
-                  value={newShipment.name}
-                  onChange={(e) => setNewShipment({ ...newShipment, name: e.target.value })}
-                  placeholder={language === 'tr' ? 'Aralık 2024 Sevkiyatı' : 'December 2024 Shipment'}
-                  required
-                />
-              </div>
-              <div className="form-group">
                 <label>{language === 'tr' ? 'Kaynak Depo' : 'Source Warehouse'} *</label>
                 <select
-                  value={newShipment.source_warehouse_id}
-                  onChange={(e) => setNewShipment({ ...newShipment, source_warehouse_id: Number(e.target.value) })}
+                  value={newShipment.warehouse_id}
+                  onChange={(e) => setNewShipment({ ...newShipment, warehouse_id: Number(e.target.value) })}
                   required
                 >
                   {warehouses.map((w) => (
@@ -400,16 +385,6 @@ function Shipments() {
                       {w.name} ({w.code})
                     </option>
                   ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>{language === 'tr' ? 'Varsayılan Hedef' : 'Default Destination'}</label>
-                <select
-                  value={newShipment.default_destination}
-                  onChange={(e) => setNewShipment({ ...newShipment, default_destination: e.target.value as 'USA' | 'FBA' })}
-                >
-                  <option value="USA">USA Warehouse</option>
-                  <option value="FBA">FBA Warehouse</option>
                 </select>
               </div>
               <div className="form-group">
