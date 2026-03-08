@@ -56,6 +56,21 @@ class WarehouseService {
   }
 
   /**
+   * Get all warehouses including inactive (no cache — used for admin UI)
+   */
+  async getAllWarehousesIncludingInactive(): Promise<Warehouse[]> {
+    try {
+      const result = await pool.query(
+        'SELECT * FROM wms_warehouses ORDER BY is_active DESC, code'
+      );
+      return result.rows;
+    } catch (error) {
+      logger.error('[WarehouseService] getAllWarehousesIncludingInactive error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get warehouse by code (e.g. 'USA', 'TUR')
    */
   async getByCode(code: string): Promise<Warehouse | null> {

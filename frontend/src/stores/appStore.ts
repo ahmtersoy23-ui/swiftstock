@@ -47,7 +47,7 @@ export const useStore = create<AppState>()(
   persist(
     (set) => ({
       // Varsayılan değerler
-      currentWarehouse: 'TUR',
+      currentWarehouse: 'FACTORY',
       language: 'tr',
       lastScannedBarcode: null,
 

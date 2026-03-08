@@ -16,9 +16,12 @@ function handleError(res: Response, error: unknown, context: string): void {
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
-export const getAllWarehouses = async (_req: Request, res: Response) => {
+export const getAllWarehouses = async (req: Request, res: Response) => {
   try {
-    const data = await warehouseService.getAllWarehouses();
+    const includeInactive = req.query.all === 'true';
+    const data = includeInactive
+      ? await warehouseService.getAllWarehousesIncludingInactive()
+      : await warehouseService.getAllWarehouses();
     res.json({ success: true, data, message: `Found ${data.length} warehouses` });
   } catch (error) {
     handleError(res, error, 'getAllWarehouses');

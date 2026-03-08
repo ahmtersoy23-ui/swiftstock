@@ -8,7 +8,7 @@ import './Locations.css';
 
 function Locations() {
   const navigate = useNavigate();
-  const { language } = useStore();
+  const { language, currentWarehouse } = useStore();
   const t = translations[language];
   const [locations, setLocations] = useState<Location[]>([]);
   const [operationModes, setOperationModes] = useState<OperationMode[]>([]);
@@ -68,7 +68,7 @@ function Locations() {
 
   // Form state
   const [newLocation, setNewLocation] = useState({
-    warehouse_code: 'USA',
+    warehouse_code: currentWarehouse,
     location_code: '',
     qr_code: '',
     description: '',
@@ -127,7 +127,7 @@ function Locations() {
         setSuccess('Location created successfully!');
         setShowAddForm(false);
         setNewLocation({
-          warehouse_code: 'USA',
+          warehouse_code: currentWarehouse,
           location_code: '',
           qr_code: '',
           description: '',

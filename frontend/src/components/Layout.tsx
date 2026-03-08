@@ -1,7 +1,8 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../stores/appStore';
 import { useSSO } from '../hooks/useSSO';
+import api from '../lib/api';
 import './Layout.css';
 
 interface LayoutProps {
@@ -13,8 +14,17 @@ function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const { currentWarehouse, language, setCurrentWarehouse, setLanguage } = useStore();
   const { user, logout } = useSSO();
+  const [warehouses, setWarehouses] = useState<{ code: string; name: string; is_active: boolean }[]>([]);
 
   const isHomePage = location.pathname === '/';
+
+  useEffect(() => {
+    api.get('/warehouses?all=true').then((res) => {
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        setWarehouses(res.data.data);
+      }
+    }).catch(() => { /* fail silently — fallback to current value */ });
+  }, []);
 
   const handleWarehouseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCurrentWarehouse(e.target.value);
@@ -80,9 +90,15 @@ function Layout({ children }: LayoutProps) {
               onChange={handleWarehouseChange}
               className="warehouse-select"
             >
-              <option value="USA">USA</option>
-              <option value="TUR">TUR</option>
-              <option value="FAB">FAB</option>
+              {warehouses.length > 0 ? (
+                warehouses.map((w) => (
+                  <option key={w.code} value={w.code} disabled={!w.is_active}>
+                    {w.code}{!w.is_active ? ' (yakında)' : ''}
+                  </option>
+                ))
+              ) : (
+                <option value={currentWarehouse}>{currentWarehouse}</option>
+              )}
             </select>
             <button
               onClick={logout}
