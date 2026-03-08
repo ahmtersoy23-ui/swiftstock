@@ -134,18 +134,6 @@ export const apiClient = {
     const response = await api.get<ApiResponse<Product>>(`/products/${sku_code}`);
     return response.data;
   },
-  createProduct: async (data: Partial<Product>) => {
-    const response = await api.post<ApiResponse<Product>>('/products', data);
-    return response.data;
-  },
-  updateProduct: async (sku_code: string, data: Partial<Product>) => {
-    const response = await api.put<ApiResponse<Product>>(`/products/${sku_code}`, data);
-    return response.data;
-  },
-  deleteProduct: async (sku_code: string) => {
-    const response = await api.delete<ApiResponse>(`/products/${sku_code}`);
-    return response.data;
-  },
   searchProducts: async (query: string) => {
     const response = await api.get<ApiResponse<Product[]>>('/products/search', {
       params: { q: query },

@@ -31,19 +31,12 @@ export interface Location {
 }
 
 export interface Product {
+  id: string;
   sku_code: string;
   product_name: string;
-  description?: string;
-  barcode: string;
   category?: string;
-  base_unit: 'EACH' | 'BOX' | 'PALLET';
-  units_per_box: number;
-  boxes_per_pallet: number;
-  weight_kg?: number;
-  dimensions_cm?: string;
-  is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
+  base_cost?: number;
+  created_at?: Date;
 }
 
 export interface Container {
