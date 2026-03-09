@@ -10,10 +10,15 @@
 SwiftStock; üretimden sevkiyata kadar tüm fiziksel stok hareketini takip eden, çok depolu, barkod tabanlı bir Depo Yönetim Sistemi (WMS)'dir.
 
 ```
-ÜRETİM → FABRİKA DEPOSU → TR DEPO (Ana Sevk) → SANAL DEPO → HEDEF
-                                  ↑
-                           NJ / NL / UK Depo
-                           (ilerde eklenecek)
+ÜRETİM → FACTORY → TR (Ana Sevk) ──┬── NJ Depo ── Pazar Yeri (USA / FBA)
+                                    ├── NL Depo
+                                    ├── UK Depo
+                                    └── Pazar Yeri (USA / FBA)
+
+Sevkiyat rotaları:
+  TR  → NJ / NL / UK (depo transferi)  +  USA / FBA (pazar yeri)
+  NJ  → USA / FBA (pazar yeri) only
+  FACTORY / UK / NL → çıkış sevkiyatı yapılamaz
 ```
 
 ---
@@ -40,9 +45,9 @@ SwiftStock; üretimden sevkiyata kadar tüm fiziksel stok hareketini takip eden,
 |-----|-----|-----|-------|
 | `FACTORY` | Fabrika Deposu (OSTİM) | Şirket | Aktif |
 | `TR` | TR Ana Sevk Deposu (Ankara İvedik) | Şirket | Aktif |
-| `NJ` | New Jersey Deposu | Şirket | İlerde |
-| `NL` | Hollanda Deposu | Şirket | İlerde |
-| `UK` | İngiltere Deposu | Şirket | İlerde |
+| `NJ` | New Jersey Deposu | Şirket | Aktif |
+| `NL` | Hollanda Deposu | Şirket | Aktif |
+| `UK` | İngiltere Deposu | Şirket | Aktif |
 
 ### 3.2 Fabrika Deposu — Zone Yapısı
 
@@ -56,21 +61,13 @@ Her ürün kategorisi **kendi adıyla ayrı bir zone**'dur. Zone listesi `pricel
 | IWA Ahşap |
 | IWA Tabletop |
 | CFW Metal |
-| CFW Metal Üstü Ahşap |
 | CFW Ahşap Harita |
 | Shukran Cam |
-| Trend Ahşap |
 | Kanvas |
 | Mobilya |
-| Tekstil |
-| Takı |
-| İslami Takı |
 | Döküm |
 | Alsat |
 | Montaj Atölyesi |
-| Welter Atelier |
-| XSarfs |
-| Soba |
 | Diğer |
 
 **Kategori → Zone otomatik eşlemesi:**
@@ -161,7 +158,7 @@ SEVKİYAT (Sanal Depo)
 ## 7. Raf Sistemi
 
 - Her warehouse içinde **lokasyon/raf** hiyerarşisi tanımlanır
-- Lokasyon yapısı: `ZONE > AISLE > BAY > LEVEL`
+- Lokasyon yapısı: `ZONE > AISLE > BAY > LEVEL`; eski depolarda kullanılan düzen devam edebilir
 - Her lokasyona QR kod basılır
 - Ürünler spesifik raflara atanır
 
@@ -183,25 +180,33 @@ SEVKİYAT (Sanal Depo)
 
 ### 8.1 Transfer Rotaları
 - Raflar arası (aynı warehouse)
-- Depolar arası (FACTORY → TR, TR → NJ vb.)
-- Warehouse → Sanal Warehouse (sevkiyat hazırlığı)
+- Depolar arası: FACTORY → TR, TR → NJ / NL / UK
+- Warehouse → Sanal Warehouse (sevkiyat hazırlığı): TR veya NJ'den başlatılır
 
 ---
 
 ## 9. Sanal Warehouse (Sevkiyat Takibi)
 
 ### 9.1 Oluşturma
-- Sevkiyat başlangıcında kullanıcı sanal depo oluşturur
-- Ad: serbest metin (gemi adı, konteyner no, sevkiyat kodu, vb.)
-- Örnekler: `SHIP-ISTANBUL-2026-03`, `CNT-NJPOR-0045`
+- Yalnızca **TR** ve **NJ** depolarından sevkiyat başlatılabilir
+- Ad: serbest prefix (gemi adı, konteyner no, sevkiyat kodu — koli barkoduna önek olur)
+- Örnekler: `IST`, `NYC`, `CNT-NJ`
 
-### 9.2 Yükleme
-- Ürünler/koliler/paletler sanal depoya transfer edilir
-- Stok sayımına dahil olur (transit stok)
+### 9.2 Rota Kuralları
 
-### 9.3 Kapatma
-- **Şirket deposuna ulaşanlar:** Hedef depoya transfer → sanal depo otomatik kapanır
-- **Pazar yeri depolarına gidenler:** Manuel kapatma (API entegrasyonu ilerde)
+| Kaynak | Hedef Seçenekleri |
+|--------|-------------------|
+| **TR** | NJ Deposu / NL Deposu / UK Deposu / ABD Pazar (USA) / Amazon FBA |
+| **NJ** | ABD Pazar (USA) / Amazon FBA only |
+| FACTORY / UK / NL | — (çıkış sevkiyatı yapılamaz) |
+
+### 9.3 Yükleme
+- Koliler oluşturulurken hedef belirlenir (NJ / NL / UK / USA / FBA)
+- Koliler sanal depoya bağlanır → transit stok sayıma dahil olur
+
+### 9.4 Kapatma
+- **Şirket deposuna ulaşanlar** (NJ/NL/UK): Hedef depoya transfer → sanal depo kapanır
+- **Pazar yeri depolarına gidenler** (USA/FBA): Manuel kapatma
 
 ---
 
