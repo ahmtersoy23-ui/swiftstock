@@ -49,6 +49,8 @@ Sevkiyat rotaları:
 | `NL` | Hollanda Deposu | Şirket | Aktif |
 | `UK` | İngiltere Deposu | Şirket | Aktif |
 
+---
+
 ### 3.2 Fabrika Deposu — Zone Yapısı
 
 **Karar: Tek warehouse + zone bazlı lokasyon** (ayrı depolar yerine)
@@ -76,6 +78,8 @@ Her ürün kategorisi **kendi adıyla ayrı bir zone**'dur. Zone listesi `pricel
 - Personel önerilen zone'u onaylar ya da değiştirir
 
 **Gerekçe:** Tek warehouse = tek stok sorgusu, tek rapor, tek API. Zone field ile fiziksel ayrım sistem içinde karşılanır.
+
+---
 
 ### 3.3 Pazar Yeri Depoları (İlerde — DataBridge üzerinden)
 
@@ -120,6 +124,8 @@ SANAL DEPO / SEVKİYAT  →  "US-FBA-MARCH-2026"
 - Koli oluşturulurken mevcut sevkiyatlardan biri seçilir (zorunlu değil, sonradan da atanabilir)
 - Sevkiyata bağlı koliler sevkiyat detayında listelenir: kaç koli, toplam kaç ürün
 - Sevkiyat transfer edildiğinde bağlı tüm koliler otomatik olarak birlikte hareket eder
+
+---
 
 ### 5.3 Toplu Hareket
 - Koli/palet barkodu okutulduğunda **tüm içerik tek birim** gibi hareket eder
@@ -200,6 +206,8 @@ SEVKİYAT (Sanal Depo)
 | **NJ** | ABD Pazar (USA) / Amazon FBA only |
 | FACTORY / UK / NL | — (çıkış sevkiyatı yapılamaz) |
 
+---
+
 ### 9.3 Yükleme
 - Koliler oluşturulurken hedef belirlenir (NJ / NL / UK / USA / FBA)
 - Koliler sanal depoya bağlanır → transit stok sayıma dahil olur
@@ -254,18 +262,19 @@ SEVKİYAT (Sanal Depo)
 
 ---
 
-## 13. Mevcut Sistem Durumu (2026-03)
+## 13. Mevcut Sistem Durumu (2026-03-09)
 
 | Modül | Backend | Frontend | Notlar |
 |-------|---------|----------|--------|
-| Warehouse & Lokasyon | ✅ | ✅ | Tam çalışıyor |
-| Container (Koli/Palet) | ✅ | ⚠️ | Backend tam, UI sadece sorgu |
-| Ürün / SKU Kataloğu | ✅ | ✅ | Tam çalışıyor |
+| Warehouse & Lokasyon | ✅ | ✅ | Dinamik depo listesi; FACTORY/TR/NJ/NL/UK aktif |
+| Container (Koli/Palet) | ✅ | ⚠️ | Backend tam, UI sadece sorgu; display_name + shipment bağı henüz yok |
+| Ürün / SKU Kataloğu | ✅ | ✅ | PriceLab API'den salt okunur; SwiftStock'ta yazma yok |
+| Seri No Üretimi / Etiket | ✅ | ✅ | 400 hatası düzeltildi (sku_code alias); etiket basımı çalışıyor |
 | IN/OUT/TRANSFER Operasyonları | ✅ | ✅ | Tam çalışıyor |
 | Cycle Count / Sayım | ✅ | ✅ | Tam çalışıyor |
-| Sevkiyat (Sanal Depo) | ✅ | ✅ | Tam çalışıyor |
+| Sevkiyat (Sanal Depo) | ✅ | ✅ | 500 hatası düzeltildi; TR/NJ rota kuralları uygulandı |
 | RMA / İade | ✅ | ❌ | Backend tam, frontend yok |
 | Orders / Picking | ✅ | ❌ | Backend tam, frontend yok |
-| Seri No Takibi | ✅ | ⚠️ | Backend tam, UI güncellenmeli (zorunlu hale getirildi) |
-| Container — Kullanıcı Adı + Sevkiyat Bağı | ❌ | ❌ | Backend + UI yeni tasarım gerekiyor |
-| Kategori → Zone Otomatik Eşleme | ❌ | ❌ | pricelab_db entegrasyonu gerekiyor |
+| Seri No — IN'de Zorunlu Hale Getirme | ✅ | ❌ | Backend hazır; FACTORY+IN modunda UI validasyonu eklenmeli |
+| Container — Kullanıcı Adı + Sevkiyat Bağı | ❌ | ❌ | Migration + backend + UI gerekiyor |
+| Kategori → Zone Otomatik Eşleme | ❌ | ❌ | wms_category_zone_config tablosu + pricelab_db FDW entegrasyonu gerekiyor |
