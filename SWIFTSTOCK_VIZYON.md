@@ -267,14 +267,13 @@ SEVKİYAT (Sanal Depo)
 | Modül | Backend | Frontend | Notlar |
 |-------|---------|----------|--------|
 | Warehouse & Lokasyon | ✅ | ✅ | Dinamik depo listesi; FACTORY/TR/NJ/NL/UK aktif |
-| Container (Koli/Palet) | ✅ | ⚠️ | Backend tam, UI sadece sorgu; display_name + shipment bağı henüz yok |
 | Ürün / SKU Kataloğu | ✅ | ✅ | PriceLab API'den salt okunur; SwiftStock'ta yazma yok |
-| Seri No Üretimi / Etiket | ✅ | ✅ | 400 hatası düzeltildi (sku_code alias); etiket basımı çalışıyor |
+| Seri No Üretimi / Etiket Basımı | ✅ | ✅ | Etiket modal + print çalışıyor (Products sayfası) |
+| Seri No — FACTORY IN'de Zorunlu | ✅ | ✅ | Backend strict validation + Operations UI banner |
 | IN/OUT/TRANSFER Operasyonları | ✅ | ✅ | Tam çalışıyor |
 | Cycle Count / Sayım | ✅ | ✅ | Tam çalışıyor |
-| Sevkiyat (Sanal Depo) | ✅ | ✅ | 500 hatası düzeltildi; TR/NJ rota kuralları uygulandı |
+| Sevkiyat (Sanal Depo) | ✅ | ✅ | TR/NJ rota kuralları; 500 hatası düzeltildi |
+| Container — display_name + Sevkiyat Bağı | ✅ | ⚠️ | Migration (016) + backend tam; UI Operations modalında kısmi |
+| Kategori → Zone Otomatik Eşleme | ✅ | ✅ | Migration (017) + endpoint + Operations zone suggestion banner |
 | RMA / İade | ✅ | ❌ | Backend tam, frontend yok |
-| Orders / Picking | ✅ | ❌ | Backend tam, frontend yok |
-| Seri No — IN'de Zorunlu Hale Getirme | ✅ | ❌ | Backend hazır; FACTORY+IN modunda UI validasyonu eklenmeli |
-| Container — Kullanıcı Adı + Sevkiyat Bağı | ❌ | ❌ | Migration + backend + UI gerekiyor |
-| Kategori → Zone Otomatik Eşleme | ❌ | ❌ | wms_category_zone_config tablosu + pricelab_db FDW entegrasyonu gerekiyor |
+| Orders Sayfası | ✅ | ❌ | Backend tam, frontend yok; Picking akışı Operations'da mevcut |
