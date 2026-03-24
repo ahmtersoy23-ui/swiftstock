@@ -102,7 +102,31 @@ export const authenticateToken = async (
       return;
     }
 
-    // Verify token with SSO backend
+    // ── Test mode: local JWT verify (no SSO call) ─────────────────────
+    if (process.env.NODE_ENV === 'test') {
+      const secret = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only';
+      try {
+        const decoded = jwt.verify(token, secret) as AuthUser;
+        req.user = {
+          user_id: decoded.user_id,
+          username: decoded.username,
+          email: decoded.email,
+          full_name: decoded.full_name,
+          role: decoded.role,
+          warehouse_code: decoded.warehouse_code,
+        };
+        next();
+        return;
+      } catch {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          error: 'Invalid test token',
+        });
+        return;
+      }
+    }
+
+    // ── Production: Verify token with SSO backend ───────────────────
     const ssoResult = await verifySSOToken(token);
 
     if (!ssoResult || !ssoResult.success || !ssoResult.data) {

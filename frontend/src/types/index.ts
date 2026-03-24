@@ -30,15 +30,26 @@ export interface Location {
   updated_at?: Date;
 }
 
+/**
+ * Product type — dual naming for backward compatibility.
+ * Backend DB: product_sku (PK), name
+ * Legacy frontend: sku_code, product_name
+ * Both aliases work — backend returns both via SELECT *.
+ */
 export interface Product {
-  id: string;
+  id?: string;
   sku_code: string;
-  product_sku?: string;
+  product_sku?: string;       // DB canonical = product_sku
   product_name: string;
-  name?: string;
+  name?: string;              // DB canonical = name
   category?: string;
   base_cost?: number;
   created_at?: Date;
+  // Extended fields from various queries
+  description?: string;
+  brand?: string;
+  weight_kg?: number;
+  is_serialized?: boolean;
 }
 
 export interface Container {

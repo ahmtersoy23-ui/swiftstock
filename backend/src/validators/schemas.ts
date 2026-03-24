@@ -394,3 +394,88 @@ export const boxIdParamSchema = z.object({
 export const barcodeParamSchema = z.object({
   barcode: z.string().min(1, 'Barkod gerekli').max(200),
 });
+
+// ============================================
+// OMS SCHEMAS
+// ============================================
+
+export const reserveStockSchema = z.object({
+  product_sku: z.string().min(1, 'SKU gerekli'),
+  warehouse_code: z.string().min(1, 'Depo kodu gerekli').max(20),
+  quantity: z.number().int().positive('Miktar pozitif olmalı'),
+  order_reference: z.string().max(100).optional(),
+});
+
+export const pickRequestSchema = z.object({
+  order_reference: z.string().min(1, 'Sipariş referansı gerekli').max(100),
+  warehouse_code: z.string().min(1, 'Depo kodu gerekli').max(20),
+  priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']).default('NORMAL'),
+  items: z.array(z.object({
+    product_sku: z.string().min(1, 'SKU gerekli'),
+    quantity: z.number().int().positive('Miktar pozitif olmalı'),
+  })).min(1, 'En az bir ürün gerekli'),
+});
+
+export const webhookSchema = z.object({
+  url: z.string().url('Geçerli bir URL girin').max(500),
+  event_type: z.enum(['STOCK_CHANGE', 'SHIPMENT_STATUS', 'ORDER_STATUS'], { message: 'Geçersiz event tipi' }),
+  secret: z.string().max(200).optional(),
+});
+
+// ============================================
+// KITTING SCHEMAS
+// ============================================
+
+export const kitDefinitionSchema = z.object({
+  kit_sku: z.string().min(1, 'Kit SKU gerekli').max(100),
+  kit_name: z.string().min(1, 'Kit adı gerekli').max(200),
+  description: z.string().max(500).optional(),
+  components: z.array(z.object({
+    product_sku: z.string().min(1, 'Bileşen SKU gerekli'),
+    quantity: z.number().int().positive('Miktar pozitif olmalı'),
+  })).min(1, 'En az bir bileşen gerekli'),
+});
+
+export const kitBuildSchema = z.object({
+  warehouse_code: z.string().min(1, 'Depo kodu gerekli').max(20),
+  quantity: z.number().int().positive('Miktar pozitif olmalı').default(1),
+});
+
+// ============================================
+// ANALYTICS SCHEMAS
+// ============================================
+
+export const marketplaceStockSchema = z.object({
+  source: z.string().min(1, 'Kaynak gerekli').max(50),
+  items: z.array(z.object({
+    product_sku: z.string().min(1, 'SKU gerekli'),
+    depot_name: z.string().min(1, 'Depo adı gerekli').max(100),
+    quantity: z.number().int().nonnegative().default(0),
+    reserved: z.number().int().nonnegative().default(0),
+    inbound: z.number().int().nonnegative().default(0),
+  })).min(1, 'En az bir kayıt gerekli'),
+});
+
+export const waveCreateSchema = z.object({
+  order_ids: z.array(z.number().int().positive()).min(1, 'En az bir sipariş gerekli'),
+  wave_name: z.string().max(100).optional(),
+});
+
+// ============================================
+// ALERT SCHEMAS
+// ============================================
+
+export const alertIdParamSchema = z.object({
+  alert_id: z.coerce.number().int().positive('Geçersiz alert ID'),
+});
+
+// ============================================
+// QC SCHEMAS
+// ============================================
+
+export const qcInspectSchema = z.object({
+  barcode: z.string().min(1, 'Barkod gerekli'),
+  qc_status: z.enum(['PASS', 'FAIL', 'HOLD'], { message: 'Geçersiz QC durumu' }),
+  notes: z.string().max(500).optional(),
+  defect_type: z.string().max(100).optional(),
+});
