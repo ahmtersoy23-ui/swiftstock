@@ -18,6 +18,7 @@ interface PendingTransactionItem {
 interface AppState {
   // Ayarlar (persist edilir)
   currentWarehouse: string;
+  selectedWarehouse: string;
   language: 'tr' | 'en';
   setCurrentWarehouse: (warehouse: string) => void;
   setLanguage: (language: 'tr' | 'en') => void;
@@ -48,6 +49,7 @@ export const useStore = create<AppState>()(
     (set) => ({
       // Varsayılan değerler
       currentWarehouse: 'FACTORY',
+      selectedWarehouse: 'FACTORY',
       language: 'tr',
       lastScannedBarcode: null,
 
@@ -60,7 +62,7 @@ export const useStore = create<AppState>()(
       error: null,
 
       // Ayar aksiyonları
-      setCurrentWarehouse: (warehouse) => set({ currentWarehouse: warehouse }),
+      setCurrentWarehouse: (warehouse) => set({ currentWarehouse: warehouse, selectedWarehouse: warehouse }),
       setLanguage: (language) => set({ language }),
       setLastScannedBarcode: (barcode) => set({ lastScannedBarcode: barcode }),
 
@@ -106,6 +108,7 @@ export const useStore = create<AppState>()(
       // Sadece ayarları persist et, geçici state'leri değil
       partialize: (state) => ({
         currentWarehouse: state.currentWarehouse,
+        selectedWarehouse: state.selectedWarehouse,
         language: state.language,
       }),
     }

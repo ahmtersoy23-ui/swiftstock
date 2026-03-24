@@ -509,7 +509,7 @@ function Products() {
       {labelModal.product && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-          onClick={() => !labelModal.loading && setLabelModal({ product: null, quantity: 1, loading: false })}
+          onClick={() => !labelModal.loading && setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' })}
         >
           <div
             style={{ background: 'white', borderRadius: 12, padding: 28, width: 340, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}

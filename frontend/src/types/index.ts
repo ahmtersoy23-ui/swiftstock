@@ -33,7 +33,9 @@ export interface Location {
 export interface Product {
   id: string;
   sku_code: string;
+  product_sku?: string;
   product_name: string;
+  name?: string;
   category?: string;
   base_cost?: number;
   created_at?: Date;
@@ -250,6 +252,13 @@ export interface ApiResponse<T = any> {
   data?: T;
   message?: string;
   error?: string;
+  unread_count?: number;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {

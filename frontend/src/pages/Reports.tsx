@@ -45,6 +45,7 @@ interface CountReportDetail {
 
 interface InventoryReportItem {
   sku_code: string;
+  product_sku?: string;
   product_name: string;
   barcode: string;
   quantity: number;

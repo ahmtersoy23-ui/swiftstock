@@ -13,6 +13,8 @@ interface TransactionWithDetails {
   warehouse_code: string;
   location_id?: number;
   location_code?: string;
+  product_sku?: string;
+  total_quantity?: number;
   reference_no?: string;
   notes?: string;
   created_by: string;

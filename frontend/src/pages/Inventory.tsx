@@ -335,7 +335,8 @@ function Inventory() {
             if (data.length === 0) return;
             import('../utils/exportXlsx').then(({ exportToXlsx }) => {
               exportToXlsx(
-                data.map((item: Record<string, unknown>) => ({
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (data as any[]).map((item: Record<string, unknown>) => ({
                   SKU: item.product_sku || item.sku_code || '',
                   Product: item.product_name || '',
                   Location: item.location_code || '',
