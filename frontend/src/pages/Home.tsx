@@ -1,10 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../lib/api/client';
 import { apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
 import { useSSOStore } from '../stores/ssoStore';
 import { translations } from '../i18n/translations';
 import './Home.css';
+
+interface DashboardStats {
+  today: { in: number; out: number; transfer: number; adjust: number; total: number };
+  pending_orders: number;
+  active_shipments: number;
+  low_stock_items: number;
+  active_counts: number;
+  pending_rmas: number;
+  total_skus: number;
+  total_units: number;
+  trend: Array<{ date: string; count: number }>;
+}
 
 interface ModuleCard {
   id: string;
@@ -116,24 +129,29 @@ function Home() {
   const { wmsUser: user } = useSSOStore();
   const t = translations[language];
   const [health, setHealth] = useState<{ success: boolean; data?: { database?: string } } | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';
 
   useEffect(() => {
-    const checkHealth = async () => {
+    const load = async () => {
       try {
-        const response = await apiClient.health();
-        setHealth(response);
+        const [healthRes, statsRes] = await Promise.all([
+          apiClient.health(),
+          api.get('/dashboard/stats', { params: { warehouse_code: currentWarehouse } }).then(r => r.data).catch(() => null),
+        ]);
+        setHealth(healthRes);
+        if (statsRes?.success) setStats(statsRes.data);
       } catch (error) {
-        console.error('Health check failed:', error);
+        console.error('Dashboard load failed:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    checkHealth();
-  }, []);
+    load();
+  }, [currentWarehouse]);
 
   const filteredModules = modules.filter(m => !m.adminOnly || isAdminOrManager);
 
@@ -157,6 +175,66 @@ function Home() {
           )}
         </div>
       </div>
+
+      {/* KPI Stats */}
+      {stats && (
+        <div className="kpi-section">
+          <div className="kpi-grid">
+            <div className="kpi-card kpi-primary">
+              <div className="kpi-value">{stats.today.total}</div>
+              <div className="kpi-label">{language === 'tr' ? 'Bugün Hareket' : "Today's Moves"}</div>
+              <div className="kpi-breakdown">
+                <span className="kpi-tag kpi-in">IN {stats.today.in}</span>
+                <span className="kpi-tag kpi-out">OUT {stats.today.out}</span>
+                <span className="kpi-tag kpi-trf">TRF {stats.today.transfer}</span>
+              </div>
+            </div>
+            <Link to="/orders" className="kpi-card kpi-clickable">
+              <div className="kpi-value">{stats.pending_orders}</div>
+              <div className="kpi-label">{language === 'tr' ? 'Bekleyen Sipariş' : 'Pending Orders'}</div>
+            </Link>
+            <Link to="/shipments" className="kpi-card kpi-clickable">
+              <div className="kpi-value">{stats.active_shipments}</div>
+              <div className="kpi-label">{language === 'tr' ? 'Aktif Sevkiyat' : 'Active Shipments'}</div>
+            </Link>
+            <div className="kpi-card kpi-warn">
+              <div className="kpi-value">{stats.low_stock_items}</div>
+              <div className="kpi-label">{language === 'tr' ? 'Düşük Stok' : 'Low Stock'}</div>
+            </div>
+          </div>
+          <div className="kpi-row-secondary">
+            <div className="kpi-mini">
+              <span className="kpi-mini-value">{stats.total_skus}</span>
+              <span className="kpi-mini-label">SKU</span>
+            </div>
+            <div className="kpi-mini">
+              <span className="kpi-mini-value">{stats.total_units.toLocaleString()}</span>
+              <span className="kpi-mini-label">{language === 'tr' ? 'Toplam Adet' : 'Total Units'}</span>
+            </div>
+            <div className="kpi-mini">
+              <span className="kpi-mini-value">{stats.pending_rmas}</span>
+              <span className="kpi-mini-label">RMA</span>
+            </div>
+            <div className="kpi-mini">
+              <span className="kpi-mini-value">{stats.active_counts}</span>
+              <span className="kpi-mini-label">{language === 'tr' ? 'Sayım' : 'Counts'}</span>
+            </div>
+          </div>
+          {/* Mini trend bar */}
+          <div className="kpi-trend">
+            {stats.trend.map((d, i) => {
+              const max = Math.max(...stats.trend.map(t => t.count), 1);
+              const h = Math.max(4, (d.count / max) * 32);
+              return (
+                <div key={i} className="trend-bar-wrap" title={`${d.date}: ${d.count}`}>
+                  <div className="trend-bar" style={{ height: `${h}px` }} />
+                  <span className="trend-day">{new Date(d.date).toLocaleDateString(language === 'tr' ? 'tr' : 'en', { weekday: 'narrow' })}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Module Grid */}
       <div className="module-grid">

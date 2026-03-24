@@ -330,6 +330,25 @@ function Inventory() {
             ←
           </button>
           <h2>{t.inventoryQuery}</h2>
+          <button onClick={() => {
+            const data = queryMode === 'SKU' ? skuResults : queryMode === 'LOCATION' ? locationResults : [];
+            if (data.length === 0) return;
+            import('../utils/exportXlsx').then(({ exportToXlsx }) => {
+              exportToXlsx(
+                data.map((item: Record<string, unknown>) => ({
+                  SKU: item.product_sku || item.sku_code || '',
+                  Product: item.product_name || '',
+                  Location: item.location_code || '',
+                  Quantity: item.quantity_each ?? item.quantity ?? 0,
+                  Type: item.unit_type || 'EACH',
+                })),
+                `inventory-${currentWarehouse}-${queryMode}-${new Date().toISOString().slice(0, 10)}`,
+                'Inventory',
+              );
+            });
+          }} className="add-btn" style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', background: 'rgba(255,255,255,0.2)', border: '2px solid rgba(255,255,255,0.3)', color: 'white', borderRadius: '8px', cursor: 'pointer' }} disabled={(queryMode === 'SKU' ? skuResults : locationResults).length === 0}>
+            ↓ XLSX
+          </button>
           <div className="warehouse-badge">{currentWarehouse}</div>
         </div>
 

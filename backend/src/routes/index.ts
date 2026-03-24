@@ -25,6 +25,8 @@ import qualityRoutes from './quality.routes';
 import shipmentsRoutes from './shipments.routes';
 import returnsRoutes from './returns.routes';
 import operationsRoutes from './operations.routes';
+import dashboardRoutes from './dashboard.routes';
+import alertsRoutes from './alerts.routes';
 
 const router = Router();
 
@@ -38,6 +40,8 @@ router.use('/', qualityRoutes);    // Module 5: Cycle Count & Quality
 router.use('/', shipmentsRoutes);  // Module 6: Shipments
 router.use('/', returnsRoutes);    // Module 7: Returns / RMA
 router.use('/', operationsRoutes); // Module 8: Operations Engine
+router.use('/', dashboardRoutes);  // Dashboard KPIs
+router.use('/', alertsRoutes);     // Alerts / Notifications
 
 // ── Health Check ───────────────────────────────────────────────────────────
 router.get('/health', (_req, res) => {

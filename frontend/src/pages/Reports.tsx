@@ -139,6 +139,40 @@ function Reports() {
             ←
           </button>
           <h2>{language === 'tr' ? 'Raporlar' : 'Reports'}</h2>
+          <button onClick={() => {
+            if (reportType === 'INVENTORY' && inventoryReport?.items?.length) {
+              import('../utils/exportXlsx').then(({ exportToXlsx }) => {
+                exportToXlsx(
+                  inventoryReport.items.map(item => ({
+                    SKU: item.product_sku || item.sku_code || '',
+                    Product: item.product_name || '',
+                    Barcode: item.barcode || '',
+                    Quantity: item.quantity || 0,
+                    Locations: item.location_count || 0,
+                  })),
+                  `inventory-report-${currentWarehouse}-${new Date().toISOString().slice(0, 10)}`,
+                  'Inventory',
+                );
+              });
+            } else if (reportType === 'COUNT' && countReports.length) {
+              import('../utils/exportXlsx').then(({ exportToXlsx }) => {
+                exportToXlsx(
+                  countReports.map(r => ({
+                    Report: r.report_number,
+                    Date: r.report_date,
+                    Locations: r.total_locations,
+                    Expected: r.total_expected,
+                    Counted: r.total_counted,
+                    Variance: r.total_variance,
+                  })),
+                  `count-reports-${new Date().toISOString().slice(0, 10)}`,
+                  'Count Reports',
+                );
+              });
+            }
+          }} className="add-btn" style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', background: 'rgba(255,255,255,0.2)', border: '2px solid rgba(255,255,255,0.3)', color: 'white', borderRadius: '8px', cursor: 'pointer' }}>
+            ↓ XLSX
+          </button>
           <div className="warehouse-badge">{currentWarehouse}</div>
         </div>
 

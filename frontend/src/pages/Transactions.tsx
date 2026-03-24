@@ -233,6 +233,28 @@ function Transactions() {
             ←
           </button>
           <h2>{t.transactionHistory}</h2>
+          <button onClick={() => {
+            if (filteredTransactions.length === 0) return;
+            import('../utils/exportXlsx').then(({ exportToXlsx }) => {
+              exportToXlsx(
+                filteredTransactions.map(tx => ({
+                  ID: tx.transaction_id,
+                  Type: tx.transaction_type,
+                  Warehouse: tx.warehouse_code,
+                  SKU: tx.product_sku || '',
+                  Quantity: tx.total_quantity,
+                  Location: tx.location_code || '',
+                  Reference: tx.reference_no || '',
+                  Date: new Date(tx.created_at).toLocaleString(),
+                  User: tx.created_by,
+                })),
+                `transactions-${new Date().toISOString().slice(0, 10)}`,
+                'Transactions',
+              );
+            });
+          }} className="refresh-btn" disabled={filteredTransactions.length === 0} title="Export XLSX">
+            ↓ XLSX
+          </button>
           <button onClick={loadTransactions} className="refresh-btn" disabled={loading}>
             🔄 {t.refresh}
           </button>
