@@ -44,4 +44,9 @@ export const containerApi = {
     const response = await api.patch<ApiResponse>(`/containers/${container_id}/shipment`, { shipment_id });
     return response.data;
   },
+
+  breakByProduct: async (container_id: number, product_sku: string) => {
+    const response = await api.post<ApiResponse>(`/containers/${container_id}/break`, { product_sku });
+    return response.data;
+  },
 };

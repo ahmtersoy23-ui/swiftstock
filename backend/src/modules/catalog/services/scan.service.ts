@@ -5,6 +5,7 @@
 
 import pool from '../../../config/database';
 import { parseSerialBarcode } from './serial.service';
+import { containerService } from '../../warehouse/services/container.service';
 
 // ── Service ───────────────────────────────────────────────────────────────────
 
@@ -39,9 +40,12 @@ class ScanService {
         [product.product_sku, warehouse_id],
       );
 
+      // Check if product is inside an active container
+      const inContainer = await containerService.findContainerByProduct(product.product_sku, warehouse_id);
+
       return {
         type: 'PRODUCT',
-        data: { product, inventory: inventoryResult.rows[0] ?? null },
+        data: { product, inventory: inventoryResult.rows[0] ?? null, in_container: inContainer },
       };
     }
 
@@ -138,6 +142,8 @@ class ScanService {
           [serial.product_sku, warehouse_id],
         );
 
+        const inContainer = await containerService.findContainerByProduct(serial.sku_code, warehouse_id);
+
         return {
           type: 'PRODUCT',
           data: {
@@ -149,6 +155,7 @@ class ScanService {
               full_barcode: serial.full_barcode,
               status: serial.status,
             },
+            in_container: inContainer,
           },
         };
       }
@@ -170,6 +177,8 @@ class ScanService {
           [product.product_sku, warehouse_id],
         );
 
+        const inContainer = await containerService.findContainerByProduct(product.product_sku, warehouse_id);
+
         return {
           type: 'PRODUCT',
           data: {
@@ -181,6 +190,7 @@ class ScanService {
               full_barcode: barcode,
               status: 'UNKNOWN',
             },
+            in_container: inContainer,
           },
         };
       }

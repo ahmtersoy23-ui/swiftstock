@@ -111,6 +111,8 @@ US WAYFAIR MDN CG | US WF SH CG | ZA TAKEALOT
 - İsim benzersiz olmalıdır; sistem çakışma uyarısı verir
 - Oluşturma sırasında **isteğe bağlı olarak bir sevkiyat (sanal depo) ile ilişkilendirilebilir**
 
+---
+
 ### 5.2 Sevkiyat ile İlişkilendirme
 Koli/palet, bir sanal depo (sevkiyat) altına bağlanabilir:
 ```
@@ -136,6 +138,8 @@ SANAL DEPO / SEVKİYAT  →  "US-FBA-MARCH-2026"
   - Container otomatik olarak **dağıtılır**
   - Geri kalan ürünler **tekil** olarak bulundukları rafa kaydedilir
   - Dağıtılan container kapatılır
+
+---
 
 ### 5.5 Hiyerarşi
 ```
@@ -198,6 +202,8 @@ SEVKİYAT (Sanal Depo)
 - Ad: serbest prefix (gemi adı, konteyner no, sevkiyat kodu — koli barkoduna önek olur)
 - Örnekler: `IST`, `NYC`, `CNT-NJ`
 
+---
+
 ### 9.2 Rota Kuralları
 
 | Kaynak | Hedef Seçenekleri |
@@ -251,6 +257,8 @@ SEVKİYAT (Sanal Depo)
 - Shopify, Amazon, Etsy, Walmart, Wayfair, bol.com…
 - DataBridge üzerinden otomatik stok senkronizasyonu
 
+---
+
 ### Kargo Entegrasyonu
 - Kargo fiyatı karşılaştırma
 - Siparişin hangi depodan çıkacağına karar
@@ -270,6 +278,11 @@ SEVKİYAT (Sanal Depo)
 | Ürün / SKU Kataloğu | ✅ | ✅ | PriceLab API'den salt okunur; SwiftStock'ta yazma yok |
 | Seri No Üretimi / Etiket Basımı | ✅ | ✅ | Etiket modal + print çalışıyor (Products sayfası) |
 | Seri No — FACTORY IN'de Zorunlu | ✅ | ✅ | Backend strict validation + Operations UI banner |
+
+---
+
+| Modül | Backend | Frontend | Notlar |
+|-------|---------|----------|--------|
 | IN/OUT/TRANSFER Operasyonları | ✅ | ✅ | Tam çalışıyor |
 | Cycle Count / Sayım | ✅ | ✅ | Tam çalışıyor |
 | Sevkiyat (Sanal Depo) | ✅ | ✅ | TR/NJ rota kuralları; 500 hatası düzeltildi |

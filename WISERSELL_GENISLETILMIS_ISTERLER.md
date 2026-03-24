@@ -1,3 +1,47 @@
+---
+marp: true
+theme: default
+paginate: true
+width: 794
+height: 1123
+style: |
+  section {
+    font-size: 14px;
+    padding: 36px 56px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #1e293b;
+  }
+  h1 { font-size: 26px; color: #0f172a; border-bottom: 3px solid #3b82f6; padding-bottom: 8px; }
+  h2 { font-size: 19px; color: #1e40af; border-bottom: 1.5px solid #93c5fd; padding-bottom: 4px; margin-top: 16px; margin-bottom: 8px; }
+  h3 { font-size: 15px; color: #1e3a8a; margin-top: 10px; margin-bottom: 4px; }
+  pre { font-size: 11.5px; background: #f1f5f9; border-left: 3px solid #3b82f6; padding: 8px 12px; border-radius: 3px; }
+  code { font-size: 12.5px; background: #e2e8f0; padding: 1px 5px; border-radius: 2px; }
+  table { font-size: 13px; width: 100%; border-collapse: collapse; }
+  th { background: #1e40af; color: white; padding: 5px 8px; }
+  td { padding: 4px 8px; border-bottom: 1px solid #e2e8f0; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  blockquote { border-left: 4px solid #3b82f6; background: #eff6ff; padding: 6px 12px; margin: 8px 0; font-size: 13px; }
+  ul, ol { margin: 4px 0; padding-left: 20px; }
+  li { margin: 2px 0; }
+  p { margin: 5px 0; }
+
+  /* Sadece uzun sayfalar için küçük class */
+  section.small {
+    font-size: 11px;
+    padding: 28px 48px;
+  }
+  section.small h2 { font-size: 15px; margin-top: 10px; margin-bottom: 5px; }
+  section.small h3 { font-size: 12px; margin-top: 6px; margin-bottom: 2px; }
+  section.small pre { font-size: 9.5px; padding: 5px 8px; }
+  section.small code { font-size: 10px; }
+  section.small table { font-size: 10.5px; }
+  section.small th { padding: 3px 6px; }
+  section.small td { padding: 2px 6px; }
+  section.small li { margin: 1px 0; }
+  section.small ul, section.small ol { margin: 2px 0; }
+  section.small p { margin: 3px 0; }
+---
+
 # Wisersell — Genişletilmiş OMS + WMS Platform İsterleri
 
 > **Belge Tipi:** Fonksiyonel Gereksinim Belgesi
@@ -52,6 +96,7 @@ Wisersell; e-ticaret sipariş yönetimi (OMS), fiziksel depo operasyonları (WMS
 
 ---
 
+<!-- _class: small -->
 ## 3. Depo Yapısı
 
 ### 3.1 Fiziksel Depolar (Şirket Kontrolünde)
@@ -60,11 +105,13 @@ Wisersell; e-ticaret sipariş yönetimi (OMS), fiziksel depo operasyonları (WMS
 |-----|-----|-------|
 | `FACTORY` | Fabrika Deposu (OSTİM) | Aktif |
 | `TR` | TR Ana Sevk Deposu (Ankara İvedik) | Aktif |
-| `NJ` | New Jersey Deposu | İlerde |
-| `NL` | Hollanda Deposu | İlerde |
-| `UK` | İngiltere Deposu | İlerde |
+| `NJ` | New Jersey Deposu | Aktif |
+| `NL` | Hollanda Deposu | Aktif |
+| `UK` | İngiltere Deposu | Aktif |
 
 Yeni depo ekleme yazılım değişikliği gerektirmez — sistem konfigürasyonundan yapılır.
+
+---
 
 ### 3.2 Fabrika Deposu Zone Yapısı
 
@@ -76,27 +123,21 @@ Her ürün kategorisi **kendi adıyla ayrı bir zone**'dur. Zone listesi `pricel
 | IWA Ahşap |
 | IWA Tabletop |
 | CFW Metal |
-| CFW Metal Üstü Ahşap |
 | CFW Ahşap Harita |
 | Shukran Cam |
-| Trend Ahşap |
 | Kanvas |
 | Mobilya |
-| Tekstil |
-| Takı |
-| İslami Takı |
 | Döküm |
 | Alsat |
 | Montaj Atölyesi |
-| Welter Atelier |
-| XSarfs |
-| Soba |
 | Diğer |
 
 **Kategori → Zone otomatik eşlemesi:**
-- Ürün `FACTORY`'e kabul edilirken sistem `pricelab_db.products.category` değerini okur ve doğrudan zone olarak önerir
+- Ürün `FACTORY`'e kabul edilirken sistem katalogtan kategori değerini okur ve doğrudan zone olarak önerir
 - Zone listesi ve isimleri pricelab_db'deki kategorilerle senkronize kalır; yeni kategori = otomatik yeni zone
 - Personel önerilen zone'u onaylar ya da değiştirir
+
+---
 
 ### 3.3 Pazar Yeri Depoları (Sanal Stok Noktaları)
 
@@ -110,12 +151,13 @@ US WAYFAIR MDN CG | US WF SH CG | ZA TAKEALOT
 
 ### 3.4 Lokasyon / Raf Sistemi
 
-- Her depo içinde `ZONE > AISLE > BAY > LEVEL` hiyerarşisinde raf tanımlanır
+- Her depo içinde `ZONE > AISLE > BAY > LEVEL` hiyerarşisinde raf tanımlanır. Eski depoalrda kullanılan düzen devam edebilir
 - Her rafa QR kod basılır; mobil uygulama ile taranır
-- Lokasyon tipleri: `RACK`, `FLOOR`, `RECEIVING`, `STAGING`
+- Lokasyon tipleri: `RACK`, `FLOOR`, `RECEIVING`, `STAGING` vs.
 
 ---
 
+<!-- _class: small -->
 ## 4. WMS Modülü — Depo Operasyonları
 
 ### 4.1 Temel Operasyon Modları
@@ -142,6 +184,8 @@ US WAYFAIR MDN CG | US WF SH CG | ZA TAKEALOT
 
 **Geçici Havuz (Opsiyonel):**
 - Ürünler önce `RECEIVING` lokasyonuna alınır, sonra raflara dağıtılır
+
+---
 
 ### 4.4 Koli / Palet (Container) Yönetimi
 
@@ -173,6 +217,8 @@ SANAL DEPO / SEVKİYAT  →  "US-FBA-MARCH-2026"
 SEVKİYAT (Sanal Depo) [opsiyonel üst katman]
   └── PALET → KOLİ → ÜRÜN (IWASKU-SERIALNO)
 ```
+
+---
 
 ### 4.5 Transfer
 
@@ -242,6 +288,8 @@ Sipariş geldiğinde hangi depodan karşılanacağı otomatik belirlenir:
 - Örnek: stokun %20'si Amazon, %80'i Wayfair
 - Belirli seviyenin altında ilgili kanalda stok sıfırlanır
 
+---
+
 ### 5.3 Sipariş Durumları
 
 `PENDING → ALLOCATED → PICKING → PACKED → SHIPPED → DELIVERED`
@@ -283,6 +331,8 @@ Sipariş geldiğinde hangi depodan karşılanacağı otomatik belirlenir:
 - SP-API ile sipariş ve stok senkronizasyonu
 - FBA Inbound Shipment takibi (sanal depo → FBA)
 - MFN siparişleri Wisersell OMS'e düşer
+
+---
 
 ### 6.3 Diğer Kanallar
 
@@ -346,7 +396,7 @@ Wisersell'in WMS operasyon ekranı; depo personelinin kullandığı, barkod odak
 
 ---
 
-## 10. Kargo Entegrasyonu (İlerde)
+## 10. Kargo Entegrasyonu
 
 - Kargo şirketi API'leri Wisersell'e entegre edilir
 - Allocation kararından sonra kargo hesabı yapılır
@@ -379,25 +429,24 @@ Wisersell'in WMS operasyon ekranı; depo personelinin kullandığı, barkod odak
 | `OPERATOR` | Depo operasyonları (barkod, transfer, sayım) |
 | `VIEWER` | Salt okunur |
 
-SSO ile merkezi kimlik doğrulama; Google OAuth desteklenir.
-
 ---
 
+<!-- _class: small -->
 ## 13. Gereksinim Önceliklendirme
 
-### Faz 1 — WMS Çekirdek (Şu An Geliştiriliyor)
+### Faz 1 — WMS Çekirdek
 
-- [x] Çok depolu fiziksel stok yönetimi
-- [x] Barkod/QR operasyonları (IN/OUT/TRANSFER/COUNT)
-- [x] Lokasyon/raf sistemi
-- [x] Koli/palet yönetimi
-- [x] Sanal depo — transit stok takibi
-- [x] Cycle count
-- [x] Mobil/PWA operasyon ekranı
+- [ ] Çok depolu fiziksel stok yönetimi
+- [ ] Barkod/QR operasyonları (IN/OUT/TRANSFER/COUNT)
+- [ ] Lokasyon/raf sistemi
+- [ ] Koli/palet yönetimi
+- [ ] Sanal depo — transit stok takibi
+- [ ] Cycle count
+- [ ] Mobil/PWA operasyon ekranı
 - [ ] Container kırma otomasyonu
 - [ ] Seri no zorunlu hale getirme (backend + UI güncelleme)
 - [ ] Container — kullanıcı adı + sevkiyat bağı (backend + UI)
-- [ ] Kategori → Zone otomatik eşleme (pricelab_db entegrasyonu)
+- [ ] Kategori → Zone otomatik eşleme
 
 ### Faz 2 — OMS + Kanal Entegrasyonu
 

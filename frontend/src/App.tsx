@@ -10,6 +10,9 @@ import Operations from './pages/Operations';
 import Reports from './pages/Reports';
 import Admin from './pages/Admin';
 import Shipments from './pages/Shipments';
+import Orders from './pages/Orders';
+import Returns from './pages/Returns';
+import Containers from './pages/Containers';
 import { useSSO } from './hooks/useSSO';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -83,6 +86,17 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/shipments" element={<Shipments />} />
+            <Route path="/containers" element={<Containers />} />
+            <Route path="/orders" element={
+              <ProtectedRoute requiredRole={['ADMIN', 'MANAGER']}>
+                <Orders />
+              </ProtectedRoute>
+            } />
+            <Route path="/returns" element={
+              <ProtectedRoute requiredRole={['ADMIN', 'MANAGER']}>
+                <Returns />
+              </ProtectedRoute>
+            } />
           </Routes>
         </Layout>
       </Router>

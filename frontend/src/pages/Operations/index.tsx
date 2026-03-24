@@ -149,7 +149,7 @@ function Operations() {
             handleLocationScan(scanResult.location!, currentWorkflow);
             break;
           case 'PRODUCT':
-            handleProductScan(scanResult.product!, scanResult.inventory, scanResult.serial, currentWorkflow);
+            handleProductScan(scanResult.product!, scanResult.inventory, scanResult.serial, currentWorkflow, scanResult.in_container);
             break;
           case 'CONTAINER':
             handleContainerScan(scanResult.container!, scanResult.contents || [], currentWorkflow);
@@ -343,7 +343,7 @@ function Operations() {
     }
   };
 
-  const handleProductScan = (product: Product, inventory: Inventory | Inventory[] | undefined, serial: { serial_no: string; full_barcode: string; status: string } | undefined, currentWorkflow: WorkflowState) => {
+  const handleProductScan = (product: Product, inventory: Inventory | Inventory[] | undefined, serial: { serial_no: string; full_barcode: string; status: string } | undefined, currentWorkflow: WorkflowState, inContainer?: { container_id: number; barcode: string; display_name?: string; container_type: string } | null) => {
     const latestWorkflow = workflowRef.current;
     if (!currentWorkflow.mode && !latestWorkflow.mode) {
       playScanSound.error();
@@ -465,6 +465,22 @@ function Operations() {
     const serialInfo = serial?.full_barcode ? ` (${serial.serial_no})` : '';
     setLastAction(`+1 ${product.product_name}${serialInfo}`);
     setSuccess(`${t.successAdded}: ${product.sku_code}`);
+
+    // Container kırma otomasyonu: ürün bir container içindeyse otomatik dağıt
+    if (inContainer) {
+      containerApi.breakByProduct(inContainer.container_id, product.sku_code)
+        .then((res) => {
+          if (res.success) {
+            const ctrName = inContainer.display_name || inContainer.barcode;
+            const msg = language === 'tr'
+              ? `📦 ${ctrName} dağıtıldı — ${res.data.remaining_items} ürün stoka alındı`
+              : `📦 ${ctrName} broken — ${res.data.remaining_items} items moved to stock`;
+            setSuccess(msg);
+            setLastAction(msg);
+          }
+        })
+        .catch(() => { /* container break failed silently — product already added */ });
+    }
   };
 
   const handleContainerScan = (container: Container, contents: Array<{ sku_code: string; product_name?: string; product_barcode?: string; quantity: number }>, currentWorkflow: WorkflowState) => {

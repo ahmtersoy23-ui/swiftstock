@@ -24,6 +24,12 @@ export const translations = {
     transactionsDesc: 'İşlem geçmişi',
     shipments: 'Sevkiyat',
     shipmentsDesc: 'Toplu gönderim yönetimi',
+    orders: 'Siparişler',
+    ordersDesc: 'Sipariş ve toplama yönetimi',
+    returns: 'İadeler (RMA)',
+    returnsDesc: 'İade ve geri alma yönetimi',
+    containers: 'Koli / Palet',
+    containersDesc: 'Koli ve palet yönetimi',
 
     // Operations Page
     warehouseOperationsTitle: 'Depo Operasyonları',
@@ -335,6 +341,12 @@ export const translations = {
     transactionsDesc: 'Transaction history',
     shipments: 'Shipments',
     shipmentsDesc: 'Bulk shipment management',
+    orders: 'Orders',
+    ordersDesc: 'Order and picking management',
+    returns: 'Returns (RMA)',
+    returnsDesc: 'Return merchandise management',
+    containers: 'Containers',
+    containersDesc: 'Box and pallet management',
 
     // Operations Page
     warehouseOperationsTitle: 'Warehouse Operations',

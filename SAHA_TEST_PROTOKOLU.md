@@ -55,6 +55,8 @@
 | 4 | Sadece IWASKU barkodunu okut (seri nosuz) | `"Seri numarası zorunlu"` uyarısı görünüyor | |
 | 5 | İşlem devam etmiyor | Hata mesajı ekranda kalıyor | |
 
+---
+
 ### 2B: Seri Numara ile Başarılı Giriş
 
 | # | Adım | Beklenen Sonuç | ✓/✗ |
@@ -103,6 +105,8 @@
 | 3 | Kaynak Depo: **TR Ana Sevk Deposu (TR)** seçili olduğunu kontrol et | Sadece TR ve NJ seçilebilir (FACTORY/UK/NL yok) | |
 | 4 | Prefix: `TST` gir | Otomatik büyük harfe çevriliyor | |
 | 5 | **Oluştur** tıkla | Sevkiyat listesinde `TST` görünüyor; durum: Açık | |
+
+---
 
 ### 4B: NJ Hedefli Koli Oluşturma
 

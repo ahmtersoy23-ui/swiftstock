@@ -15,6 +15,8 @@ export { userApi } from './users';
 export { reportApi } from './reports';
 export { shipmentApi } from './shipments';
 export { catalogApi } from './catalog';
+export { orderApi } from './orders';
+export { rmaApi } from './rma';
 
 // ============================================
 // BACKWARD COMPATIBILITY - apiClient

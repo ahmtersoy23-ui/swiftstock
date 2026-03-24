@@ -39,5 +39,6 @@ router.get('/containers', authenticateToken, containerController.getAllContainer
 router.get('/containers/:barcode', authenticateToken, validateParams(barcodeParamSchema), containerController.getContainerByBarcode);
 router.post('/containers/:barcode/open', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), validateParams(barcodeParamSchema), validateBody(openContainerSchema), containerController.openContainer);
 router.patch('/containers/:container_id/shipment', authenticateToken, requireRole('ADMIN', 'MANAGER'), containerController.linkContainerToShipment);
+router.post('/containers/:container_id/break', authenticateToken, requireRole('ADMIN', 'MANAGER', 'OPERATOR'), containerController.breakContainer);
 
 export default router;

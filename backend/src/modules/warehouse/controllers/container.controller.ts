@@ -101,6 +101,31 @@ export const getAllContainers = async (req: Request, res: Response) => {
   }
 };
 
+export const breakContainer = async (req: AuthRequest, res: Response) => {
+  const container_id = parseInt(req.params.container_id);
+  const { product_sku } = req.body;
+
+  if (isNaN(container_id) || !product_sku) {
+    res.status(400).json({ success: false, error: 'container_id ve product_sku gereklidir' });
+    return;
+  }
+
+  try {
+    const data = await containerService.breakContainer(
+      container_id,
+      product_sku,
+      req.user?.user_id ?? 0,
+    );
+    res.json({
+      success: true,
+      data,
+      message: `Container ${data.container_barcode} dağıtıldı. ${data.remaining_items} kalan ürün stoka kaydedildi.`,
+    });
+  } catch (error) {
+    handleError(res, error, 'breakContainer');
+  }
+};
+
 export const openContainer = async (req: AuthRequest, res: Response) => {
   const { location_qr, created_by } = req.body;
 

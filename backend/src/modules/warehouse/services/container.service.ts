@@ -330,6 +330,117 @@ class ContainerService {
       client.release();
     }
   }
+  /**
+   * Break (dağıt) a container by extracting a single product.
+   * - Removes the specified product from container contents
+   * - If remaining items exist, each is registered individually at the container's location
+   * - Container is marked as OPENED
+   * - Emits 'container:opened' so inventory module picks up remaining items
+   *
+   * Returns: { broken: true, container_barcode, extracted_sku, remaining_items }
+   */
+  async breakContainer(
+    containerId: number,
+    extractedProductSku: string,
+    openedByUserId: number,
+  ) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Get container
+      const containerResult = await client.query(
+        "SELECT * FROM wms_containers WHERE container_id = $1 AND status = 'ACTIVE'",
+        [containerId],
+      );
+
+      if (containerResult.rows.length === 0) {
+        throw new ContainerError(404, 'Active container not found');
+      }
+
+      const container = containerResult.rows[0];
+
+      // Get contents
+      const contentsResult = await client.query(
+        'SELECT * FROM wms_container_contents WHERE container_id = $1',
+        [containerId],
+      );
+
+      const contents = contentsResult.rows;
+      const extractedItem = contents.find(
+        (c: { product_sku: string }) => c.product_sku === extractedProductSku,
+      );
+
+      if (!extractedItem) {
+        throw new ContainerError(404, `Ürün (${extractedProductSku}) bu container içinde bulunamadı`);
+      }
+
+      // Remove extracted product from container contents
+      await client.query(
+        'DELETE FROM wms_container_contents WHERE container_id = $1 AND product_sku = $2',
+        [containerId, extractedProductSku],
+      );
+
+      // Mark container as OPENED
+      await client.query(
+        "UPDATE wms_containers SET status = 'OPENED', opened_at = NOW() WHERE container_id = $1",
+        [containerId],
+      );
+
+      await client.query('COMMIT');
+
+      // Remaining items (excluding extracted) — emit so inventory module registers them
+      const remainingContents = contents
+        .filter((c: { product_sku: string }) => c.product_sku !== extractedProductSku)
+        .map((row: { product_sku: string; quantity: number }) => ({
+          productSku: row.product_sku,
+          quantity: row.quantity,
+        }));
+
+      // Resolve location_id from container
+      const locationId: number | null = container.location_id ?? null;
+
+      if (remainingContents.length > 0) {
+        eventBus.emit('container:opened', {
+          containerId: container.container_id as number,
+          containerBarcode: container.barcode as string,
+          warehouseId: container.warehouse_id as number,
+          locationId,
+          contents: remainingContents,
+          openedByUserId,
+        });
+      }
+
+      return {
+        broken: true,
+        container_barcode: container.barcode,
+        extracted_sku: extractedProductSku,
+        remaining_items: remainingContents.length,
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Check if a product_sku is inside any ACTIVE container in a given warehouse.
+   * Returns the container info if found, null otherwise.
+   */
+  async findContainerByProduct(productSku: string, warehouseId: number) {
+    const result = await pool.query(
+      `SELECT c.container_id, c.barcode, c.display_name, c.container_type, c.status
+       FROM wms_container_contents cc
+       JOIN wms_containers c ON cc.container_id = c.container_id
+       WHERE cc.product_sku = $1 AND c.warehouse_id = $2 AND c.status = 'ACTIVE'
+       LIMIT 1`,
+      [productSku, warehouseId],
+    );
+
+    return result.rows.length > 0 ? result.rows[0] : null;
+  }
 }
 
 export const containerService = new ContainerService();

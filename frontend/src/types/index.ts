@@ -191,6 +191,13 @@ export interface ScanResponse {
     full_barcode: string;
     status: string;
   };
+  in_container?: {
+    container_id: number;
+    barcode: string;
+    display_name?: string;
+    container_type: string;
+    status: string;
+  } | null;
 }
 
 export interface TransactionCreateRequest {
@@ -327,4 +334,111 @@ export interface AddItemToBoxRequest {
   sku_code: string;
   quantity: number;
   added_by: string;
+}
+
+// ============================================
+// ORDER / PICKING TYPES (Sipariş & Toplama)
+// ============================================
+
+export type OrderStatus = 'PENDING' | 'READY_TO_PICK' | 'PICKING' | 'PICKED' | 'SHIPPED' | 'CANCELLED';
+export type OrderPriority = 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW';
+
+export interface ShipmentOrder {
+  order_id: number;
+  order_number: string;
+  external_order_id?: string;
+  warehouse_code: string;
+  warehouse_name?: string;
+  customer_name: string;
+  customer_address?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  status: OrderStatus;
+  priority: OrderPriority;
+  assigned_picker_id?: number;
+  picker_username?: string;
+  picker_full_name?: string;
+  requested_ship_date?: string;
+  order_date: string;
+  picking_started_at?: string;
+  picking_completed_at?: string;
+  total_items?: number;
+  notes?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  items?: ShipmentOrderItem[];
+}
+
+export interface ShipmentOrderItem {
+  item_id: number;
+  order_id: number;
+  line_number: number;
+  product_sku: string;
+  product_name: string;
+  barcode?: string;
+  quantity_ordered: number;
+  quantity_picked: number;
+  status: string;
+  location_id?: number;
+  location_code?: string;
+  picked_by?: number;
+  picked_by_username?: string;
+  picked_at?: string;
+}
+
+// ============================================
+// RMA / RETURNS TYPES (İade Yönetimi)
+// ============================================
+
+export type RMAStatus = 'PENDING' | 'APPROVED' | 'IN_PROCESS' | 'COMPLETED';
+export type RMAAction = 'REFUND' | 'REPLACE' | 'REPAIR' | 'DISCARD';
+export type ReturnCondition = 'NEW' | 'GOOD' | 'DAMAGED' | 'DEFECTIVE';
+
+export interface RMARequest {
+  rma_id: number;
+  rma_number: string;
+  warehouse_id: number;
+  warehouse_name?: string;
+  warehouse_code?: string;
+  customer_name?: string;
+  customer_email?: string;
+  order_number?: string;
+  status: RMAStatus;
+  reason: string;
+  priority: string;
+  notes?: string;
+  internal_notes?: string;
+  created_by: string;
+  approved_by?: string;
+  approved_date?: string;
+  completed_date?: string;
+  created_at: string;
+  updated_at: string;
+  total_items?: number;
+  total_quantity?: number;
+}
+
+export interface RMAItem {
+  item_id: number;
+  rma_id: number;
+  product_sku: string;
+  product_name?: string;
+  quantity_requested: number;
+  quantity_received: number;
+  unit_price?: number;
+  action: RMAAction;
+  condition?: ReturnCondition;
+  updated_at?: string;
+}
+
+export interface RMAHistory {
+  history_id: number;
+  rma_id: number;
+  action: string;
+  old_status?: string;
+  new_status: string;
+  performed_by: string;
+  notes?: string;
+  created_at: string;
 }
