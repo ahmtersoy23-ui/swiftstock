@@ -43,4 +43,28 @@ pool.on('remove', () => {
   logger.info('[DB] Client removed from pool');
 });
 
+// ── Shared pricelab_db pool (read-only — FBA inventory, marketplace data) ────
+// Lazy-initialized: only connects when first used
+let _pricelabPool: Pool | null = null;
+
+export function getPricelabPool(): Pool {
+  if (!_pricelabPool) {
+    _pricelabPool = new Pool({
+      host: process.env.PRICELAB_DB_HOST || process.env.DB_HOST || '/var/run/postgresql',
+      port: process.env.PRICELAB_DB_HOST ? parseInt(process.env.PRICELAB_DB_PORT || '5432') : undefined,
+      database: process.env.PRICELAB_DB_NAME || 'pricelab_db',
+      user: process.env.PRICELAB_DB_USER || process.env.DB_USER || 'swiftstock',
+      password: process.env.PRICELAB_DB_PASSWORD || process.env.DB_PASSWORD,
+      max: 3, // Low — read-only, infrequent
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    });
+    _pricelabPool.on('error', (err: Error) => {
+      logger.error('[PricelabDB] Idle client error:', err.message);
+    });
+    logger.info('[PricelabDB] Shared pool initialized (pricelab_db)');
+  }
+  return _pricelabPool;
+}
+
 export default pool;

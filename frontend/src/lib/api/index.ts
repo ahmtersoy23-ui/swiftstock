@@ -18,6 +18,7 @@ export { catalogApi } from './catalog';
 export { orderApi } from './orders';
 export { rmaApi } from './rma';
 export { alertApi } from './alerts';
+export { analyticsApi } from './analytics';
 
 // ============================================
 // BACKWARD COMPATIBILITY - apiClient

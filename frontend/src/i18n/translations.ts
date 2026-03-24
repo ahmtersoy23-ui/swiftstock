@@ -30,6 +30,10 @@ export const translations = {
     returnsDesc: 'İade ve geri alma yönetimi',
     containers: 'Koli / Palet',
     containersDesc: 'Koli ve palet yönetimi',
+    stockDashboard: 'Stok Görünümü',
+    stockDashboardDesc: 'Tüm depolar + Marketplace — IWASKU bazlı',
+    analytics: 'Analitik',
+    analyticsDesc: 'Dead stock, DOS, performans, slotting',
 
     // Operations Page
     warehouseOperationsTitle: 'Depo Operasyonları',
@@ -347,6 +351,10 @@ export const translations = {
     returnsDesc: 'Return merchandise management',
     containers: 'Containers',
     containersDesc: 'Box and pallet management',
+    stockDashboard: 'Stock Overview',
+    stockDashboardDesc: 'All warehouses + Marketplace — per IWASKU',
+    analytics: 'Analytics',
+    analyticsDesc: 'Dead stock, DOS, performance, slotting',
 
     // Operations Page
     warehouseOperationsTitle: 'Warehouse Operations',

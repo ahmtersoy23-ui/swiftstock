@@ -1,0 +1,135 @@
+.stock-dashboard-page {
+  min-height: calc(100vh - 120px);
+  background: #f1f5f9;
+  padding: 1rem;
+}
+
+.stock-dashboard-card {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.stock-dashboard-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+  color: white;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stock-dashboard-header h2 {
+  margin: 0; color: white; font-size: 1.25rem; font-weight: 700; flex: 1;
+}
+
+.stock-dashboard-content { padding: 1rem; }
+
+/* Filters */
+.sd-filters {
+  display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;
+}
+.sd-filters input, .sd-filters select {
+  padding: 0.5rem 0.75rem; border: 2px solid #e2e8f0; border-radius: 8px;
+  font-size: 0.875rem; background: white;
+}
+.sd-filters input:focus, .sd-filters select:focus { outline: none; border-color: #3b82f6; }
+.sd-filters input { flex: 1; min-width: 150px; }
+
+/* Table */
+.sd-table {
+  width: 100%; border-collapse: collapse; font-size: 0.8rem;
+}
+.sd-table th {
+  background: #f8fafc; padding: 0.5rem 0.625rem; text-align: left;
+  font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;
+  border-bottom: 2px solid #e2e8f0; white-space: nowrap;
+}
+.sd-table td {
+  padding: 0.5rem 0.625rem; border-bottom: 1px solid #f1f5f9; vertical-align: top;
+}
+.sd-table tr:hover td { background: #f8fafc; }
+
+.sd-sku {
+  font-family: monospace; font-weight: 700; color: #1e293b; font-size: 0.75rem;
+}
+.sd-name {
+  font-size: 0.7rem; color: #64748b; max-width: 200px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sd-category {
+  font-size: 0.6rem; color: #94a3b8; background: #f1f5f9;
+  padding: 0.1rem 0.3rem; border-radius: 3px;
+}
+
+/* Stock cells */
+.sd-num {
+  font-weight: 700; font-family: monospace; text-align: right;
+}
+.sd-num.positive { color: #16a34a; }
+.sd-num.zero { color: #cbd5e1; }
+.sd-num.warning { color: #d97706; }
+.sd-num.grand { color: #1e293b; font-size: 0.9rem; }
+
+/* Warehouse mini badges in physical column */
+.sd-wh-list {
+  display: flex; flex-wrap: wrap; gap: 0.2rem; justify-content: flex-end;
+}
+.sd-wh-badge {
+  font-size: 0.55rem; padding: 0.1rem 0.25rem; border-radius: 3px; font-weight: 700;
+}
+.sd-wh-badge.wh-factory { background: #fef3c7; color: #b45309; }
+.sd-wh-badge.wh-tr { background: #dbeafe; color: #1d4ed8; }
+.sd-wh-badge.wh-nj { background: #dcfce7; color: #15803d; }
+.sd-wh-badge.wh-nl { background: #ede9fe; color: #6d28d9; }
+.sd-wh-badge.wh-uk { background: #fce7f3; color: #9d174d; }
+
+/* Marketplace mini badges */
+.sd-mp-list {
+  display: flex; flex-wrap: wrap; gap: 0.2rem; justify-content: flex-end;
+}
+.sd-mp-badge {
+  font-size: 0.55rem; padding: 0.1rem 0.25rem; border-radius: 3px;
+  font-weight: 600; background: #fef3c7; color: #92400e;
+}
+
+/* Pagination */
+.sd-pagination {
+  display: flex; justify-content: center; align-items: center; gap: 0.5rem;
+  margin-top: 1rem; padding: 0.5rem;
+}
+.sd-pagination button {
+  padding: 0.375rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px;
+  background: white; cursor: pointer; font-size: 0.8rem;
+}
+.sd-pagination button:disabled { opacity: 0.4; cursor: default; }
+.sd-pagination button:hover:not(:disabled) { background: #f1f5f9; }
+.sd-pagination span { font-size: 0.8rem; color: #64748b; }
+
+/* Shared */
+.back-btn {
+  background: rgba(255,255,255,0.2); border: none; color: white;
+  width: 36px; height: 36px; border-radius: 8px; font-size: 1.125rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.back-btn:hover { background: rgba(255,255,255,0.3); }
+
+.loading { text-align: center; padding: 2rem; color: #64748b; }
+.empty-state { text-align: center; padding: 2rem; color: #94a3b8; }
+.error-message { padding: 0.75rem; background: #fee2e2; color: #dc2626; border-radius: 8px; margin-bottom: 1rem; }
+
+.add-btn {
+  padding: 0.5rem 1rem; background: rgba(255,255,255,0.2); color: white;
+  border: 2px solid rgba(255,255,255,0.3); border-radius: 8px;
+  font-weight: 600; cursor: pointer; font-size: 0.8rem;
+}
+.add-btn:hover { background: rgba(255,255,255,0.3); }
+
+@media (max-width: 768px) {
+  .sd-table { font-size: 0.7rem; }
+  .sd-table th, .sd-table td { padding: 0.375rem; }
+  .sd-name { max-width: 120px; }
+}

@@ -31,6 +31,14 @@ interface ModuleCard {
 
 const modules: ModuleCard[] = [
   {
+    id: 'stock-dashboard',
+    path: '/stock-dashboard',
+    icon: '🌍',
+    titleKey: 'stockDashboard',
+    descKey: 'stockDashboardDesc',
+    color: '#0f172a',
+  },
+  {
     id: 'operations',
     path: '/operations',
     icon: '🎯',
@@ -111,6 +119,15 @@ const modules: ModuleCard[] = [
     titleKey: 'returns',
     descKey: 'returnsDesc',
     color: '#f59e0b',
+    adminOnly: true,
+  },
+  {
+    id: 'analytics',
+    path: '/analytics',
+    icon: '📈',
+    titleKey: 'analytics',
+    descKey: 'analyticsDesc',
+    color: '#7c3aed',
     adminOnly: true,
   },
   {

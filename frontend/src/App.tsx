@@ -13,6 +13,8 @@ import Shipments from './pages/Shipments';
 import Orders from './pages/Orders';
 import Returns from './pages/Returns';
 import Containers from './pages/Containers';
+import StockDashboard from './pages/StockDashboard';
+import Analytics from './pages/Analytics';
 import { useSSO } from './hooks/useSSO';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -87,6 +89,8 @@ function App() {
             } />
             <Route path="/shipments" element={<Shipments />} />
             <Route path="/containers" element={<Containers />} />
+            <Route path="/stock-dashboard" element={<StockDashboard />} />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="/orders" element={
               <ProtectedRoute requiredRole={['ADMIN', 'MANAGER']}>
                 <Orders />

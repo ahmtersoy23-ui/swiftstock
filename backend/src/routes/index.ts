@@ -29,6 +29,7 @@ import dashboardRoutes from './dashboard.routes';
 import alertsRoutes from './alerts.routes';
 import omsRoutes from './oms.routes';
 import kittingRoutes from './kitting.routes';
+import analyticsRoutes from './analytics.routes';
 
 const router = Router();
 
@@ -46,6 +47,7 @@ router.use('/', dashboardRoutes);  // Dashboard KPIs
 router.use('/', alertsRoutes);     // Alerts / Notifications
 router.use('/', omsRoutes);        // OMS Integration API
 router.use('/', kittingRoutes);    // Kitting / Assembly
+router.use('/', analyticsRoutes);  // Analytics & Intelligence
 
 // ── Health Check ───────────────────────────────────────────────────────────
 router.get('/health', (_req, res) => {
