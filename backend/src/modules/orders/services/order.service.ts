@@ -180,7 +180,7 @@ class OrderService {
        LEFT JOIN wms_locations l ON soi.location_id = l.location_id
        LEFT JOIN wms_users u ON soi.picked_by = u.user_id
        WHERE soi.order_id = $1
-       ORDER BY soi.line_number`,
+       ORDER BY l.aisle NULLS LAST, l.bay NULLS LAST, l.level NULLS LAST, soi.line_number`,
       [order_id],
     );
 

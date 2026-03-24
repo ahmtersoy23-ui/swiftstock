@@ -103,3 +103,40 @@ eventBus.on('error' as keyof WmsEvents, (err: unknown) => {
 
 // EventEmitter memory leak uyarısını bastır — çok sayıda listener normal
 eventBus.setMaxListeners(50);
+
+// ── OMS Webhook Dispatch Listeners ────────────────────────────────────────
+// Lazy import to avoid circular dependency (oms.routes → event-bus → oms.routes)
+const lazyDispatch = async (eventType: string, payload: Record<string, unknown>) => {
+  try {
+    const { dispatchWebhook } = await import('../../../routes/oms.routes');
+    dispatchWebhook(eventType, payload);
+  } catch {
+    // OMS module not loaded yet or dispatch failed — silent
+  }
+};
+
+eventBus.on('inventory:adjusted', (payload) => {
+  lazyDispatch('STOCK_CHANGE', {
+    product_sku: payload.productSku,
+    warehouse_id: payload.warehouseId,
+    delta: payload.delta,
+    reason: payload.reason,
+  });
+});
+
+eventBus.on('container:opened', (payload) => {
+  lazyDispatch('STOCK_CHANGE', {
+    event: 'container_opened',
+    container_barcode: payload.containerBarcode,
+    warehouse_id: payload.warehouseId,
+    items_count: payload.contents.length,
+  });
+});
+
+eventBus.on('order:picked', (payload) => {
+  lazyDispatch('ORDER_STATUS', {
+    order_id: payload.orderId,
+    status: 'PICKED',
+    items: payload.items,
+  });
+});
