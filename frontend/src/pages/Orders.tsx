@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { orderApi } from '../lib/api/orders';
-import { apiClient } from '../lib/api';
 import { userApi } from '../lib/api';
 import { useStore } from '../stores/appStore';
-import { useSSOStore } from '../stores/ssoStore';
 import type { ShipmentOrder, ShipmentOrderItem } from '../types';
 import './Orders.css';
 
@@ -40,7 +38,6 @@ interface NewOrderItem {
 function Orders() {
   const navigate = useNavigate();
   const { currentWarehouse, language } = useStore();
-  const { wmsUser: user } = useSSOStore();
   const t = language === 'tr' ? 'tr' : 'en';
 
   // List state

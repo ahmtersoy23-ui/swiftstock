@@ -81,7 +81,7 @@ function Products() {
       openBulkPrintPopup(allSerials);
       setBulkMode(false);
       setSelectedSkus(new Set());
-    } catch (err) {
+    } catch {
       setError('Toplu etiket üretimi başarısız');
     } finally {
       setBulkLoading(false);
@@ -93,7 +93,7 @@ function Products() {
     if (!printWindow) return;
     const totalLabels = items.reduce((s, i) => s + i.barcodes.length, 0);
     printWindow.document.write(`<!DOCTYPE html><html><head><title>${totalLabels} Etiket</title>
-      <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+      <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js">${'<'}/script>
       <style>
         @page { size: 100mm 30mm; margin: 0; }
         body { margin: 0; padding: 0; }

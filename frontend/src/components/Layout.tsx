@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState, useRef } from 'react';
+import { type ReactNode, useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../stores/appStore';
 import { useSSO } from '../hooks/useSSO';
@@ -108,15 +108,16 @@ function Layout({ children }: LayoutProps) {
     }
   };
 
-  const formatAlertTime = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
+  const formatAlertTime = useCallback((dateStr: string) => {
+    const now = performance.timeOrigin + performance.now();
+    const diff = now - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return language === 'tr' ? 'Az önce' : 'Just now';
     if (mins < 60) return `${mins}${language === 'tr' ? 'dk' : 'm'}`;
     const hours = Math.floor(mins / 60);
     if (hours < 24) return `${hours}${language === 'tr' ? 'sa' : 'h'}`;
     return `${Math.floor(hours / 24)}${language === 'tr' ? 'g' : 'd'}`;
-  };
+  }, [language]);
 
   return (
     <div className={`layout layout-minimal theme-${currentWarehouse}`}>

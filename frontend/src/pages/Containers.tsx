@@ -45,7 +45,7 @@ function Containers() {
   const t = language === 'tr' ? 'tr' : 'en';
 
   const [containers, setContainers] = useState<Container[]>([]);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [, setWarehouses] = useState<Warehouse[]>([]);
   const [shipments, setShipments] = useState<VirtualShipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

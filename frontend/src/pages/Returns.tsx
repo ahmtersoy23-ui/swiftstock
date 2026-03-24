@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { rmaApi } from '../lib/api/rma';
 import { apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
-import { useSSOStore } from '../stores/ssoStore';
 import type { RMARequest, RMAItem, RMAHistory, Warehouse } from '../types';
 import './Returns.css';
 
@@ -37,7 +36,6 @@ interface NewRMAItem {
 function Returns() {
   const navigate = useNavigate();
   const { language } = useStore();
-  const { wmsUser: user } = useSSOStore();
   const t = language === 'tr' ? 'tr' : 'en';
 
   const [rmas, setRmas] = useState<RMARequest[]>([]);
