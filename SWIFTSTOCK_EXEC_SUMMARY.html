@@ -42,8 +42,9 @@
     inset: 0;
     display: none;
     flex-direction: column;
-    padding: 40px 56px 64px;
+    padding: 36px 56px 72px;
     overflow-y: auto;
+    scrollbar-width: thin;
   }
   .slide.active { display: flex; }
 
@@ -257,46 +258,35 @@
   <div class="slide" data-slide="2">
     <div class="slide-tag">Mimari</div>
     <h2>Sistem <span class="highlight">Mimarisi</span></h2>
-    <div class="col-layout">
-      <div class="col">
-        <div class="card">
-          <div class="card-icon">🖥️</div>
-          <h3>Frontend (PWA)</h3>
-          <p>React 19 + Vite + Custom CSS<br>Capacitor (mobil paketleme)<br>Workbox offline cache</p>
-          <div class="tag-list">
-            <span class="tag">React 19</span>
-            <span class="tag">Vite</span>
-            <span class="tag">PWA</span>
-            <span class="tag">Capacitor</span>
-          </div>
+    <div class="col-layout" style="gap:20px;">
+      <div class="col" style="gap:12px;">
+        <div class="card" style="padding:16px 20px;">
+          <h3>🖥️ Frontend (PWA)</h3>
+          <p>React 19 + Vite + Custom CSS | Capacitor (mobil) | Workbox offline cache</p>
+          <div class="tag-list"><span class="tag">React 19</span><span class="tag">Vite</span><span class="tag">PWA</span><span class="tag">Capacitor</span></div>
         </div>
-        <div class="card">
-          <div class="card-icon">⚙️</div>
-          <h3>Backend (API)</h3>
-          <p>Express TS + PostgreSQL<br>15 route modülü, 129 endpoint, Zod v4<br>Helmet + Rate Limiting + SSO</p>
-          <div class="tag-list">
-            <span class="tag">Express</span>
-            <span class="tag">TypeScript</span>
-            <span class="tag">PostgreSQL</span>
-            <span class="tag">PM2</span>
-          </div>
+        <div class="card" style="padding:16px 20px;">
+          <h3>⚙️ Backend (API)</h3>
+          <p>Express TS + PostgreSQL | 15 route modülü, 129 endpoint | Zod v4 validation</p>
+          <div class="tag-list"><span class="tag">Express</span><span class="tag">TypeScript</span><span class="tag">PostgreSQL</span><span class="tag">PM2</span></div>
+        </div>
+        <div class="card" style="padding:16px 20px; border-color: var(--green);">
+          <h3>🔗 Entegrasyonlar</h3>
+          <p>PriceLab (ürün kataloğu) | DataBridge (FBA + Wayfair stok) | Apps-SSO (kimlik doğrulama)</p>
         </div>
       </div>
-      <div class="col">
-        <div class="card">
-          <div class="card-icon">🔐</div>
-          <h3>Güvenlik</h3>
-          <p>Apps-SSO entegrasyonu (Google OAuth)<br>Role-based access (ADMIN/MANAGER/OPERATOR/VIEWER)<br>Depo bazlı izolasyon</p>
+      <div class="col" style="gap:12px;">
+        <div class="card" style="padding:16px 20px;">
+          <h3>🔐 Güvenlik</h3>
+          <p>Apps-SSO (Google OAuth) | RBAC (ADMIN/MANAGER/OPERATOR/VIEWER) | Depo bazlı izolasyon | Helmet + Rate Limiting</p>
         </div>
-        <div class="card">
-          <div class="card-icon">🚀</div>
-          <h3>Deploy & Altyapı</h3>
-          <p>GitHub Actions CI/CD<br>Hetzner VPS (Ubuntu 24.04)<br>Nginx reverse proxy + SSL<br>PM2 process manager</p>
+        <div class="card" style="padding:16px 20px;">
+          <h3>🚀 Deploy & Altyapı</h3>
+          <p>GitHub Actions CI/CD | Hetzner VPS (Ubuntu 24.04) | Nginx reverse proxy + SSL | PM2 process manager</p>
         </div>
-        <div class="card" style="border-color: var(--green);">
-          <div class="card-icon">🔗</div>
-          <h3>Entegrasyonlar</h3>
-          <p>PriceLab (ürün kataloğu)<br>DataBridge (FBA + Wayfair stok)<br>Apps-SSO (kimlik doğrulama)</p>
+        <div class="card" style="padding:16px 20px;">
+          <h3>📊 Veritabanı</h3>
+          <p>swiftstock_db (ana WMS verisi) | pricelab_db (FBA inventory, read-only) | Lazy pool bağlantısı</p>
         </div>
       </div>
     </div>
@@ -307,38 +297,56 @@
     <div class="slide-tag">Depo Ağı</div>
     <h2>Çok Depolu <span class="highlight">Stok Yönetimi</span></h2>
     <div class="section-content">
-      <div class="wh-map">
-        <div class="wh-node primary">
-          <div class="wh-code">FACTORY</div>
-          <div class="wh-name">Fabrika (OSTİM)</div>
+      <!-- Depo Haritası -->
+      <div style="display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap; padding:8px 0;">
+        <div style="display:flex; flex-direction:column; gap:8px; align-items:center;">
+          <div class="wh-node primary" style="min-width:110px;">
+            <div class="wh-code">FACTORY</div>
+            <div class="wh-name">Fabrika (OSTİM)</div>
+          </div>
+          <span style="font-size:10px; color:var(--text-muted);">↓ Müşteri</span>
         </div>
         <div class="wh-arrow">→</div>
-        <div class="wh-node primary">
-          <div class="wh-code">TR</div>
-          <div class="wh-name">Ana Sevk (İvedik)</div>
+        <div style="display:flex; flex-direction:column; gap:8px; align-items:center;">
+          <div class="wh-node primary" style="min-width:110px;">
+            <div class="wh-code">TR</div>
+            <div class="wh-name">Ana Sevk (İvedik)</div>
+          </div>
+          <span style="font-size:10px; color:var(--green);">Ana sevk noktası</span>
         </div>
         <div class="wh-arrow">→</div>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <div class="wh-node"><div class="wh-code">NJ</div><div class="wh-name">New Jersey</div></div>
-          <div class="wh-node"><div class="wh-code">NL</div><div class="wh-name">Hollanda</div></div>
-          <div class="wh-node"><div class="wh-code">UK</div><div class="wh-name">İngiltere</div></div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div class="wh-node" style="min-width:90px;"><div class="wh-code">NJ</div><div class="wh-name">New Jersey</div></div>
+          <div class="wh-node" style="min-width:90px;"><div class="wh-code">NL</div><div class="wh-name">Hollanda</div></div>
+          <div class="wh-node" style="min-width:90px;"><div class="wh-code">UK</div><div class="wh-name">İngiltere</div></div>
         </div>
         <div class="wh-arrow">→</div>
-        <div style="display:flex; flex-direction:column; gap:6px; font-size:12px; color: var(--text-muted);">
+        <div style="display:flex; flex-direction:column; gap:5px; font-size:12px;">
           <span class="badge badge-blue">Amazon FBA (7 ülke)</span>
           <span class="badge badge-purple">Wayfair CG</span>
           <span class="badge badge-amber">Takealot ZA</span>
           <span class="badge badge-green">Direkt Müşteri</span>
         </div>
       </div>
-      <div class="grid-4" style="margin-top: 12px;">
-        <div class="stat"><div class="stat-value" style="font-size:28px;">5</div><div class="stat-label">Fiziksel Depo</div></div>
-        <div class="stat"><div class="stat-value" style="font-size:28px;">15+</div><div class="stat-label">Sanal Depo (FBA/CG)</div></div>
-        <div class="stat"><div class="stat-value" style="font-size:28px;">7</div><div class="stat-label">Amazon Ülkesi</div></div>
-        <div class="stat"><div class="stat-value" style="font-size:28px;">2</div><div class="stat-label">Sevk Rotası (TR, NJ)</div></div>
-      </div>
-      <div class="card" style="margin-top:8px; padding: 14px 20px;">
-        <p style="font-size:13px;"><strong>Sevkiyat Kuralları:</strong> TR → NJ/NL/UK/USA/FBA | NJ → USA/FBA only | FACTORY/UK/NL → doğrudan çıkış yok</p>
+
+      <!-- Rota Tablosu -->
+      <table class="mini-table" style="margin-top:8px;">
+        <thead>
+          <tr><th>Kaynak</th><th>Hedef Seçenekleri</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>FACTORY</strong></td><td>TR (ana rota) | Direkt müşteri (özel sipariş)</td></tr>
+          <tr><td><strong>TR</strong></td><td>NJ / NL / UK (depo transferi) | Amazon FBA | Direkt müşteri (USA, TR)</td></tr>
+          <tr><td><strong>NJ</strong></td><td>Amazon FBA (USA) | Wayfair CG | Direkt müşteri (USA)</td></tr>
+          <tr><td style="color:var(--text-muted);">NL / UK</td><td style="color:var(--text-muted);">Çıkış sevkiyatı yapılamaz (yalnızca depo içi)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="grid-4" style="margin-top: 8px;">
+        <div class="stat"><div class="stat-value" style="font-size:26px;">5</div><div class="stat-label">Fiziksel Depo</div></div>
+        <div class="stat"><div class="stat-value" style="font-size:26px;">15+</div><div class="stat-label">Sanal Depo (FBA/CG)</div></div>
+        <div class="stat"><div class="stat-value" style="font-size:26px;">7</div><div class="stat-label">Amazon Ülkesi</div></div>
+        <div class="stat"><div class="stat-value" style="font-size:26px;">3</div><div class="stat-label">Sevk Noktası</div></div>
       </div>
     </div>
   </div>
@@ -391,13 +399,14 @@
       <div class="col">
         <div class="card" style="border-color: var(--accent);">
           <h3>Ürün Kimliği</h3>
-          <p style="font-size:14px; margin: 8px 0;">Her ürün <strong>IWASKU</strong> (ürün kodu) + <strong>seri numarası</strong> çifti ile takip edilir. Her barkod unique'tir.</p>
-          <div style="background:var(--surface-2); padding:12px; border-radius:8px; font-family:monospace; font-size:15px; text-align:center; margin-top:8px;">
+          <p style="font-size:13px; margin: 6px 0;">Her ürün <strong>IWASKU</strong> (ürün kodu) + <strong>seri numarası</strong> çifti ile takip edilir. Her barkod unique'tir.</p>
+          <div style="background:var(--surface-2); padding:10px; border-radius:8px; font-family:monospace; font-size:15px; text-align:center; margin-top:6px;">
             <span style="color:var(--amber);">IM05600RF2RD</span><span style="color:var(--text-muted);">-</span><span style="color:var(--green);">000142</span>
           </div>
-          <div style="display:flex; justify-content:center; gap:24px; margin-top:8px; font-size:11px; color:var(--text-muted);">
+          <div style="display:flex; justify-content:center; gap:24px; margin-top:4px; font-size:11px; color:var(--text-muted);">
             <span>← IWASKU →</span><span>← Seri No →</span>
           </div>
+          <p style="font-size:12px; margin-top:8px; color:var(--cyan);">Alternatif: EAN bazlı ürünler de desteklenir (product_eans tablosu). Tarama sırasında EAN → IWASKU otomatik eşlenir.</p>
         </div>
         <div class="card">
           <h3>Lokasyon Sistemi</h3>
