@@ -383,9 +383,11 @@ REQUESTED → APPROVED → RECEIVED → COMPLETED
 
 ### 8.2 Kargo ve Allocation İlişkisi
 
-- Allocation kararı kargo maliyetini etkileyebilir (NJ → ABD ucuz, TR → ABD pahalı)
-- OMS, kargo fiyatını allocation kararında opsiyonel ağırlık olarak kullanabilir
-- Kargo şirketi seçimi siparişin çıkış deposuna bağlıdır
+- Allocation motoru her rota için tahmini kargo maliyetini hesaplar (Sec 4.2)
+- Alternatif rotalar bedelleriyle birlikte gösterilir → operatör en uygununu seçer
+- Kargo fiyatı farkı > eşik (örn. $15) → otomatik ucuz rota seçimi
+- FBA aging stok varsa kargo = $0 olarak değerlendirilir (Sec 4.3)
+- Kargo şirketi seçimi çıkış deposuna bağlıdır (NJ → UPS/FedEx, TR → DHL/UPS)
 
 ---
 
@@ -520,7 +522,7 @@ Wisersell, OMS katmanı olarak sipariş yönetimini üstlenir. SwiftStock WMS il
 - [ ] Shopify entegrasyonu (6 mağaza — webhook sipariş alma + stok push)
 - [ ] Amazon SP-API entegrasyonu (3 account — MFN sipariş)
 - [ ] Etsy, Walmart, Wayfair sipariş entegrasyonları
-- [ ] Wisersell geçiş planı ve paralel çalışma
+- [ ] Wisersell ↔ WMS entegrasyon kurulumu (API bağlantısı + webhook)
 
 ---
 
