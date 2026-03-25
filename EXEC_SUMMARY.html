@@ -56,6 +56,25 @@
   .wn{background:var(--sf);border:2px solid var(--bd);border-radius:10px;padding:12px 18px;text-align:center;min-width:90px}
   .wn.pr{border-color:var(--ac);box-shadow:0 0 16px rgba(59,130,246,.12)}
   .wn .wc{font-size:16px;font-weight:800} .wn .wl{font-size:9px;color:var(--tm);margin-top:1px}
+
+  /* ── Print mode: tüm slaytlar alt alta ─── */
+  @media print {
+    body{overflow:visible;height:auto;width:auto}
+    .deck{height:auto}
+    .nav{display:none!important}
+    .slide{
+      display:flex!important;
+      position:relative!important;
+      break-after:page;
+      page-break-after:always;
+      height:100vh;
+      width:100%;
+      overflow:hidden;
+      padding:28px 40px 28px;
+    }
+    .slide:last-child{break-after:auto;page-break-after:auto}
+  }
+  @page{size:landscape;margin:0}
 </style>
 </head>
 <body>
@@ -565,6 +584,7 @@
   <div id="dots" style="display:flex;gap:4px;align-items:center"></div>
   <span class="pn" id="pn">1 / 15</span>
   <button onclick="go(1)">›</button>
+  <button onclick="window.print()" title="PDF olarak kaydet" style="margin-left:8px;font-size:13px">🖨</button>
 </div>
 <script>
 const ss=document.querySelectorAll('.slide'),tt=ss.length;let cc=0;
