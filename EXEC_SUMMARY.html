@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SwiftStock WMS + OMS — Executive Summary</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#0a0f1a;--sf:#111827;--sf2:#1e293b;--bd:#1e3a5f;--tx:#e2e8f0;--tm:#94a3b8;--ac:#3b82f6;--gn:#22c55e;--am:#f59e0b;--rd:#ef4444;--pp:#a855f7;--cy:#06b6d4}
+  body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--tx);overflow:hidden;height:100vh;width:100vw}
+  .deck{position:relative;width:100vw;height:100vh}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:32px 48px 68px;overflow-y:auto;scrollbar-width:thin}
+  .slide.active{display:flex}
+  .nav{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:6px;align-items:center;z-index:100;background:rgba(17,24,39,.92);backdrop-filter:blur(12px);padding:6px 14px;border-radius:20px;border:1px solid var(--bd)}
+  .nav button{background:none;border:none;color:var(--tm);font-size:16px;cursor:pointer;padding:3px 8px;border-radius:6px;transition:.2s}
+  .nav button:hover{background:var(--sf2);color:#fff}
+  .nav .pn{font-size:12px;color:var(--tm);font-weight:500;min-width:46px;text-align:center}
+  .dot{width:5px;height:5px;border-radius:50%;background:var(--sf2);transition:.3s;cursor:pointer}
+  .dot.active{background:var(--ac);width:14px;border-radius:3px}
+  .tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--ac);margin-bottom:6px}
+  h2{font-size:26px;font-weight:700;margin-bottom:12px;line-height:1.2}
+  h2 .hl{color:var(--ac)} h2 .hlg{color:var(--gn)}
+  .sub{font-size:14px;color:var(--tm);line-height:1.5;max-width:680px}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+  .cl{display:flex;gap:18px;flex:1} .cl .c{flex:1;display:flex;flex-direction:column;gap:10px}
+  .cd{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px 16px}
+  .cd:hover{border-color:var(--ac)}
+  .cd h3{font-size:13px;font-weight:700;margin-bottom:4px}
+  .cd p{font-size:11.5px;color:var(--tm);line-height:1.5}
+  .mr{display:flex;gap:12px;margin:8px 0}
+  .m{flex:1;background:var(--sf);border-left:3px solid var(--ac);padding:8px 12px;border-radius:0 6px 6px 0}
+  .m .v{font-size:20px;font-weight:800} .m .l{font-size:9px;color:var(--tm);font-weight:600;text-transform:uppercase}
+  .b{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700}
+  .bg{background:rgba(34,197,94,.15);color:var(--gn)} .bb{background:rgba(59,130,246,.15);color:var(--ac)}
+  .ba{background:rgba(245,158,11,.15);color:var(--am)} .bp{background:rgba(168,85,247,.15);color:var(--pp)}
+  .br{background:rgba(239,68,68,.15);color:var(--rd)}
+  .mt{width:100%;border-collapse:collapse;font-size:11px}
+  .mt th{text-align:left;padding:5px 8px;background:var(--sf2);font-weight:600;font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--tm);border-bottom:1px solid var(--bd)}
+  .mt td{padding:4px 8px;border-bottom:1px solid rgba(30,58,95,.4)}
+  .mt tr:hover td{background:rgba(59,130,246,.04)}
+  .ml{list-style:none;padding:0} .ml li{padding:4px 0;border-bottom:1px solid rgba(30,58,95,.3);font-size:12px;display:flex;align-items:center;gap:6px} .ml li:last-child{border:none}
+  .ck{color:var(--gn);font-weight:700}
+  .fl{display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap}
+  .fs{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;text-align:center;min-width:90px}
+  .fs .sl{font-size:10px;font-weight:600}
+  .fa{font-size:16px;color:var(--ac);padding:0 4px}
+  .ts{justify-content:center;align-items:center;text-align:center;background:radial-gradient(ellipse at center,rgba(59,130,246,.06) 0%,transparent 70%)}
+  .ts h1{font-size:48px;font-weight:800;line-height:1.1;margin-bottom:10px} .ts h1 .hl{color:var(--ac)}
+  .fn{font-size:10px;color:var(--tm);margin-top:auto;padding-top:6px;border-top:1px solid rgba(30,58,95,.3)}
+  .st{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px;text-align:center}
+  .st .sv{font-size:24px;font-weight:800;color:var(--ac)} .st .sl{font-size:9px;color:var(--tm);font-weight:600;text-transform:uppercase;margin-top:2px}
+  .tg{padding:3px 8px;background:var(--sf2);border-radius:5px;font-size:10px;font-weight:500;color:var(--tm);display:inline-block}
+  .wn{background:var(--sf);border:2px solid var(--bd);border-radius:10px;padding:12px 18px;text-align:center;min-width:90px}
+  .wn.pr{border-color:var(--ac);box-shadow:0 0 16px rgba(59,130,246,.12)}
+  .wn .wc{font-size:16px;font-weight:800} .wn .wl{font-size:9px;color:var(--tm);margin-top:1px}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- ═══ 1. TITLE ═══ -->
+<div class="slide ts active" data-slide="1">
+  <div style="font-size:13px;font-weight:600;color:var(--ac);letter-spacing:4px;text-transform:uppercase;margin-bottom:14px">SwiftStock</div>
+  <h1>WMS + OMS<br><span class="hl">Executive Summary</span></h1>
+  <p class="sub" style="font-size:17px;">Üretimden müşteriye — çok depolu depo yönetimi, çok kanallı sipariş yönetimi, barkod tabanlı tam entegre sistem</p>
+  <div class="mr" style="max-width:700px;margin-top:24px">
+    <div class="m"><div class="v">5</div><div class="l">Fiziksel Depo</div></div>
+    <div class="m" style="border-color:var(--gn)"><div class="v">129</div><div class="l">API Endpoint</div></div>
+    <div class="m" style="border-color:var(--pp)"><div class="v">12+</div><div class="l">Satış Kanalı</div></div>
+    <div class="m" style="border-color:var(--am)"><div class="v">~35K</div><div class="l">Satır Kod</div></div>
+  </div>
+  <p style="font-size:10px;color:var(--tm);margin-top:18px">25 Mart 2026 | v2.0 | 15 Backend Modül • 14 Frontend Sayfa • PWA + Capacitor</p>
+</div>
+
+<!-- ═══ 2. ARCHITECTURE ═══ -->
+<div class="slide" data-slide="2">
+  <div class="tag">Mimari</div>
+  <h2>Sistem <span class="hl">Mimarisi</span></h2>
+  <div style="margin:8px 0">
+    <div class="fl">
+      <div style="display:flex;flex-direction:column;gap:3px;font-size:10px;text-align:right;padding-right:6px">
+        <span class="b bb">Shopify (6)</span><span class="b bp">Amazon (3)</span><span class="b ba">Etsy (2)</span><span class="b bg">Walmart</span><span class="b bg">Wayfair</span><span class="b bg">bol.com</span>
+      </div>
+      <div class="fa">→</div>
+      <div class="fs" style="border-color:var(--gn);min-width:140px;padding:14px">
+        <div style="font-size:16px;font-weight:800;color:var(--gn)">OMS</div>
+        <div style="font-size:9px;color:var(--tm);margin-top:3px">Wisersell<br>Sipariş • Allocation<br>Stok Push • Kargo</div>
+      </div>
+      <div class="fa">↔</div>
+      <div class="fs" style="border-color:var(--ac);min-width:140px;padding:14px">
+        <div style="font-size:16px;font-weight:800;color:var(--ac)">WMS</div>
+        <div style="font-size:9px;color:var(--tm);margin-top:3px">SwiftStock<br>Stok • Picking<br>Sevkiyat • Sayım</div>
+      </div>
+      <div class="fa">→</div>
+      <div style="display:flex;flex-direction:column;gap:3px;font-size:10px;padding-left:6px">
+        <span class="b bg">Müşteri</span><span class="b bb">FBA Depo</span><span class="b bp">Wayfair CG</span>
+      </div>
+    </div>
+  </div>
+  <div class="g3" style="margin-top:10px;flex:0">
+    <div class="cd" style="padding:10px 14px"><h3>🖥️ Frontend</h3><p>React 19 + Vite + PWA + Capacitor<br>14 sayfa, Custom CSS, mobil uyumlu</p></div>
+    <div class="cd" style="padding:10px 14px"><h3>⚙️ Backend</h3><p>Express TS + PostgreSQL + PM2<br>15 modül, 129 endpoint, Zod v4</p></div>
+    <div class="cd" style="padding:10px 14px"><h3>🔐 Güvenlik</h3><p>Apps-SSO (Google OAuth) + RBAC<br>Helmet + Rate Limiting + Depo izolasyonu</p></div>
+  </div>
+  <div class="g3" style="margin-top:8px;flex:0">
+    <div class="cd" style="padding:10px 14px"><h3>🔗 Entegrasyonlar</h3><p>PriceLab (ürün) • DataBridge (FBA + Wayfair) • Apps-SSO (kimlik)</p></div>
+    <div class="cd" style="padding:10px 14px"><h3>🚀 Deploy</h3><p>GitHub Actions CI/CD → Hetzner VPS<br>Nginx + SSL + PM2</p></div>
+    <div class="cd" style="padding:10px 14px"><h3>📊 Veritabanı</h3><p>swiftstock_db (WMS) + pricelab_db (FBA, read-only) + Lazy pool</p></div>
+  </div>
+</div>
+
+<!-- ═══ 3. WAREHOUSE MAP ═══ -->
+<div class="slide" data-slide="3">
+  <div class="tag">Depo Ağı</div>
+  <h2>Çok Depolu <span class="hl">Stok Yönetimi</span></h2>
+  <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:6px 0">
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+      <div class="wn pr"><div class="wc">FACTORY</div><div class="wl">Fabrika (OSTİM)</div></div>
+      <span style="font-size:9px;color:var(--tm)">↓ Müşteri</span>
+    </div>
+    <div class="fa">→</div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+      <div class="wn pr"><div class="wc">TR</div><div class="wl">Ana Sevk (İvedik)</div></div>
+      <span style="font-size:9px;color:var(--gn)">Ana sevk noktası</span>
+    </div>
+    <div class="fa">→</div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div class="wn"><div class="wc">NJ</div><div class="wl">New Jersey</div></div>
+      <div class="wn"><div class="wc">NL</div><div class="wl">Hollanda</div></div>
+      <div class="wn"><div class="wc">UK</div><div class="wl">İngiltere</div></div>
+    </div>
+    <div class="fa">→</div>
+    <div style="display:flex;flex-direction:column;gap:4px;font-size:10px">
+      <span class="b bb">Amazon FBA (7 ülke)</span><span class="b bp">Wayfair CG</span><span class="b ba">Takealot ZA</span><span class="b bg">Direkt Müşteri</span>
+    </div>
+  </div>
+  <table class="mt" style="margin-top:6px">
+    <thead><tr><th>Kaynak</th><th>Hedef Seçenekleri</th></tr></thead>
+    <tbody>
+      <tr><td><strong>FACTORY</strong></td><td>TR (ana rota) | Direkt müşteri (özel sipariş)</td></tr>
+      <tr><td><strong>TR</strong></td><td>NJ / NL / UK (transfer) | Amazon FBA | Direkt müşteri</td></tr>
+      <tr><td><strong>NJ</strong></td><td>Amazon FBA (USA) | Wayfair CG | Direkt müşteri (USA)</td></tr>
+      <tr><td style="color:var(--tm)">NL / UK</td><td style="color:var(--tm)">Çıkış sevkiyatı yapılamaz (yalnızca depo içi)</td></tr>
+    </tbody>
+  </table>
+  <div class="g4" style="margin-top:8px">
+    <div class="st"><div class="sv">5</div><div class="sl">Fiziksel Depo</div></div>
+    <div class="st"><div class="sv">15+</div><div class="sl">Sanal Depo</div></div>
+    <div class="st"><div class="sv">7</div><div class="sl">Amazon Ülkesi</div></div>
+    <div class="st"><div class="sv">3</div><div class="sl">Sevk Noktası</div></div>
+  </div>
+</div>
+
+<!-- ═══ 4. CORE OPS ═══ -->
+<div class="slide" data-slide="4">
+  <div class="tag">WMS Operasyonlar</div>
+  <h2>Barkod Tabanlı <span class="hl">Depo Operasyonları</span></h2>
+  <div class="g2" style="margin-top:4px">
+    <div class="cd" style="border-left:3px solid var(--gn)"><h3>📥 IN — Ürün Giriş</h3><p>Ürün tarat → Lokasyon tarat → Stok oluşur<br>Seri numara otomatik • Kategori-zone öneri</p></div>
+    <div class="cd" style="border-left:3px solid var(--rd)"><h3>📤 OUT — Ürün Çıkış</h3><p>Ürün tarat → Stok düşer<br>Sevkiyat/koli ilişkilendirme • Seri bazlı takip</p></div>
+    <div class="cd" style="border-left:3px solid var(--ac)"><h3>🔄 TRANSFER — Depolar Arası</h3><p>Kaynak → Hedef depo<br>Sanal sevkiyat ile transit takip • Koli/palet gruplama</p></div>
+    <div class="cd" style="border-left:3px solid var(--pp)"><h3>🔢 COUNT — Sayım</h3><p>Cycle count (tam/kısmi/spot)<br>Beklenen vs sayılan • Otomatik düzeltme + rapor</p></div>
+  </div>
+  <div class="cd" style="margin-top:8px;text-align:center;padding:12px">
+    <p style="font-size:10px;color:var(--tm);margin-bottom:6px">Her ürün unique barkoda sahip — miktar girişi yok, her şey taratılarak işlenir</p>
+    <div class="fl">
+      <div class="fs"><div class="sl">📱 Mod Seç</div></div><div class="fa">→</div>
+      <div class="fs"><div class="sl">📷 Ürün Tarat</div></div><div class="fa">→</div>
+      <div class="fs"><div class="sl">📍 Lokasyon Tarat</div></div><div class="fa">→</div>
+      <div class="fs" style="border-color:var(--gn)"><div class="sl">✅ Onayla</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 5. STOCK IDENTITY ═══ -->
+<div class="slide" data-slide="5">
+  <div class="tag">Stok Takibi</div>
+  <h2>IWASKU + Seri Numara <span class="hl">Stok Kimliği</span></h2>
+  <div class="cl">
+    <div class="c">
+      <div class="cd" style="border-color:var(--ac)">
+        <h3>Ürün Kimliği</h3>
+        <p>Her ürün <strong>IWASKU</strong> + <strong>seri numarası</strong> çifti ile takip edilir. Her barkod unique.</p>
+        <div style="background:var(--sf2);padding:8px;border-radius:6px;font-family:monospace;font-size:14px;text-align:center;margin-top:6px">
+          <span style="color:var(--am)">IM05600RF2RD</span><span style="color:var(--tm)">-</span><span style="color:var(--gn)">000142</span>
+        </div>
+        <div style="display:flex;justify-content:center;gap:20px;margin-top:3px;font-size:10px;color:var(--tm)"><span>← IWASKU →</span><span>← Seri No →</span></div>
+        <p style="font-size:10px;margin-top:6px;color:var(--cy)">EAN bazlı ürünler de desteklenir — taramada EAN → IWASKU otomatik eşlenir.</p>
+      </div>
+      <div class="cd">
+        <h3>Lokasyon Sistemi</h3>
+        <ul class="ml">
+          <li><span class="ck">✓</span> Zone bazlı raf (RECEIVING, STORAGE, PICKING, SHIPPING)</li>
+          <li><span class="ck">✓</span> Aisle / Bay / Level hiyerarşisi + QR kod</li>
+          <li><span class="ck">✓</span> Kategori → Zone otomatik öneri</li>
+        </ul>
+      </div>
+    </div>
+    <div class="c">
+      <div class="cd">
+        <h3>Sorgu Modları</h3>
+        <ul class="ml">
+          <li><span class="b bb">SKU</span> IWASKU bazlı stok sorgula</li>
+          <li><span class="b bg">Lokasyon</span> Raf bazlı envanter</li>
+          <li><span class="b bp">Seri No</span> Tekil ürün geçmişi</li>
+          <li><span class="b ba">Container</span> Koli/palet içeriği</li>
+        </ul>
+      </div>
+      <div class="cd">
+        <h3>Koli & Palet Yönetimi</h3>
+        <ul class="ml">
+          <li><span class="ck">✓</span> BOX / PALLET tipleri • İç içe konteyner</li>
+          <li><span class="ck">✓</span> Sevkiyata bağlama • Display name</li>
+          <li><span class="ck">✓</span> Otomatik container kırma (dağıtma)</li>
+          <li><span class="ck">✓</span> Container açma → envantere kayıt</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 6. ORDER FLOW ═══ -->
+<div class="slide" data-slide="6">
+  <div class="tag">OMS Sipariş</div>
+  <h2>Sipariş <span class="hlg">Yaşam Döngüsü</span></h2>
+  <div style="margin:8px 0">
+    <div class="fl">
+      <div class="fs"><div class="sl">📥 Sipariş<br>Alındı</div></div><div class="fa">→</div>
+      <div class="fs"><div class="sl">✅ Doğrulama<br>+ Stok Kontrol</div></div><div class="fa">→</div>
+      <div class="fs" style="border-color:var(--gn)"><div class="sl">📦 Allocation<br>(Depo Seç)</div></div><div class="fa">→</div>
+      <div class="fs"><div class="sl">🔒 Stok<br>Rezerve</div></div><div class="fa">→</div>
+      <div class="fs"><div class="sl">🎯 Picking</div></div><div class="fa">→</div>
+      <div class="fs"><div class="sl">📦 Paket<br>+ Kargo</div></div><div class="fa">→</div>
+      <div class="fs" style="border-color:var(--gn)"><div class="sl">🚚 Sevkiyat</div></div>
+    </div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:4px;margin:8px 0;justify-content:center;font-size:11px">
+    <span class="b ba">PENDING</span><span style="color:var(--tm)">→</span>
+    <span class="b bb">ALLOCATED</span><span style="color:var(--tm)">→</span>
+    <span class="b bp">PICKING</span><span style="color:var(--tm)">→</span>
+    <span class="b bb">PACKED</span><span style="color:var(--tm)">→</span>
+    <span class="b bg">SHIPPED</span><span style="color:var(--tm)">→</span>
+    <span class="b bg">DELIVERED</span>
+    <span style="color:var(--tm);margin-left:6px">|</span>
+    <span class="b br">RETURNED</span>
+  </div>
+  <div class="g2" style="flex:0;margin-top:6px">
+    <div class="cd" style="padding:12px">
+      <h3>Sipariş İşlemleri</h3>
+      <ul class="ml">
+        <li><span class="ck">✓</span> İptal (SHIPPED öncesi) • Değişiklik (PICKING öncesi)</li>
+        <li><span class="ck">✓</span> Birleştirme (aynı depodan) • Kısmi karşılama</li>
+        <li><span class="ck">✓</span> Wave/batch picking (çoklu sipariş gruplama)</li>
+      </ul>
+    </div>
+    <div class="cd" style="padding:12px">
+      <h3>Önceliklendirme</h3>
+      <ul class="ml">
+        <li><span class="b br">URGENT</span> Express kargo, SLA yaklaşan</li>
+        <li><span class="b ba">HIGH</span> Wayfair 2-day, Prime</li>
+        <li><span class="b bb">NORMAL</span> Standart kargo</li>
+        <li><span class="b bg">LOW</span> Pre-order, stok bekleyen</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 7. ALLOCATION ═══ -->
+<div class="slide" data-slide="7">
+  <div class="tag">Allocation</div>
+  <h2>Çok Kriterli <span class="hlg">Allocation Motoru</span></h2>
+  <div class="cl">
+    <div class="c">
+      <div class="cd" style="border-color:var(--gn)">
+        <h3>Karar Kriterleri</h3>
+        <table class="mt">
+          <tbody>
+            <tr><td>Stok mevcudiyeti</td><td><span class="b br">Zorunlu</span></td></tr>
+            <tr><td>Kargo maliyeti kıyası</td><td><span class="b ba">Yüksek</span></td></tr>
+            <tr><td>FBA aging stok (LTSF riski)</td><td><span class="b ba">Yüksek</span></td></tr>
+            <tr><td>Teslimat süresi (SLA)</td><td><span class="b bb">Orta</span></td></tr>
+            <tr><td>Depo doluluk oranı</td><td><span class="b bg">Düşük</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cd">
+        <h3>📦 FBA Aging Optimizasyonu</h3>
+        <table class="mt" style="font-size:10px">
+          <tbody>
+            <tr><td>0-180 gün</td><td>Normal sıralama</td></tr>
+            <tr><td style="color:var(--am)">180-270 gün</td><td>FBA'dan karşılamayı öner</td></tr>
+            <tr><td style="color:var(--rd)">270-365 gün</td><td>FBA'dan karşılamayı zorla</td></tr>
+            <tr><td style="color:var(--rd)">365+ gün</td><td>Removal / tasfiye öner</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="c">
+      <div class="cd" style="border-color:var(--ac)">
+        <h3>🚚 Kargo Maliyet Kıyası (Örnek)</h3>
+        <p style="margin-bottom:4px">Shopify ABD siparişi, müşteri: New York</p>
+        <table class="mt" style="font-size:10px">
+          <thead><tr><th>Kaynak</th><th>Kargo</th><th>Süre</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>NJ Depo</td><td>$8.50</td><td>2-3 gün</td><td><span class="b bg">Önerilen</span></td></tr>
+            <tr><td style="color:var(--am)">FBA US (aging)</td><td>$0</td><td>1-2 gün</td><td><span class="b ba">⚡ 240 gün</span></td></tr>
+            <tr><td>TR Depo</td><td>$35</td><td>7-12 gün</td><td><span class="tg">Pahalı</span></td></tr>
+            <tr><td style="color:var(--tm)">FACTORY</td><td>$42</td><td>10-15 gün</td><td><span class="tg">Son çare</span></td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:9px;color:var(--tm);margin-top:4px">Fark > $15 → otomatik ucuz rota | Operatör onaylar veya değiştirir</p>
+      </div>
+      <div class="cd">
+        <h3>Kanal Stok Bölüşümü</h3>
+        <p>Yüzde <span class="tg">Amazon %20 / Wayfair %80</span> | Limit <span class="tg">Etsy: max 5</span> | Eşik <span class="tg">&lt;3 → kanal=0</span></p>
+      </div>
+    </div>
+  </div>
+  <div class="fn">FIFO çakışma yönetimi | Rezerve stok başka kanala verilmez | Alternatifler bedelleriyle gösterilir</div>
+</div>
+
+<!-- ═══ 8. CHANNELS ═══ -->
+<div class="slide" data-slide="8">
+  <div class="tag">Kanallar</div>
+  <h2>Kanal <span class="hlg">Entegrasyonları</span></h2>
+  <div class="cl">
+    <div class="c">
+      <div class="cd" style="border-color:var(--ac)"><h3>🛍️ Shopify (6 Mağaza)</h3><p>IWA Store | IWA TR | CW Global | CW TR | +2<br>Webhook sipariş • Stok push • Takip no • Fulfillment</p></div>
+      <div class="cd" style="border-color:var(--am)"><h3>📦 Amazon (3 Account)</h3><p><strong>Citi Global:</strong> US, CA • <strong>MDN LLC:</strong> US, UAE, AU • <strong>IWA Concept:</strong> UK, EU, CA<br>SP-API | FBA izleme | MFN → picking | FNSKU ↔ IWASKU</p></div>
+    </div>
+    <div class="c">
+      <div class="cd">
+        <h3>🌍 Diğer Kanallar</h3>
+        <table class="mt" style="font-size:10.5px">
+          <tbody>
+            <tr><td>Etsy (MapWooda + MaplyArt)</td><td><span class="b bg">Aktif</span></td></tr>
+            <tr><td>Walmart</td><td><span class="b bg">Aktif</span></td></tr>
+            <tr><td>Wayfair (Shukran + MDN)</td><td><span class="b bg">Aktif</span></td></tr>
+            <tr><td>bol.com</td><td><span class="b bg">Aktif</span></td></tr>
+            <tr><td>Takealot</td><td><span class="b bg">Aktif</span></td></tr>
+            <tr><td>Trendyol | Hepsiburada | TikTok</td><td><span class="b ba">Planlanan</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cd">
+        <h3>Her Kanal Standardı</h3>
+        <p>Sipariş çekme | Stok push | Durum güncelleme | İade bildirimi | SKU ↔ IWASKU eşleme</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 9. UNIFIED STOCK ═══ -->
+<div class="slide" data-slide="9">
+  <div class="tag">Birleşik Stok</div>
+  <h2>IWASKU Bazlı <span class="hl">Birleşik Stok Görünümü</span></h2>
+  <p class="sub">Fiziksel depolar + transit + FBA + Wayfair CG + diğer marketplace — tek ekranda.</p>
+  <table class="mt" style="margin-top:10px">
+    <thead><tr><th>Stok Tipi</th><th>Kaynak</th><th>Depolar</th><th>Güncelleme</th></tr></thead>
+    <tbody>
+      <tr><td><span class="b bg">Fiziksel</span></td><td>SwiftStock WMS</td><td>FACTORY, TR, NJ, NL, UK</td><td>Gerçek zamanlı</td></tr>
+      <tr><td><span class="b bb">Transit</span></td><td>Sanal sevkiyat</td><td>Yoldaki koliler</td><td>Sevkiyat durumunda</td></tr>
+      <tr><td><span class="b bp">Amazon FBA</span></td><td>DataBridge → pricelab_db</td><td>US, UK, EU, CA, AU, AE, SA</td><td>Her 8 saatte</td></tr>
+      <tr><td><span class="b ba">Wayfair CG</span></td><td>DataBridge → push API</td><td>US CastleGate</td><td>DataBridge sync sonrası</td></tr>
+      <tr><td><span class="b br">Rezerve</span></td><td>OMS (Wisersell)</td><td>Allocation yapılmış stok</td><td>Sipariş allocation'da</td></tr>
+      <tr><td style="font-weight:700">= Kullanılabilir</td><td colspan="3" style="color:var(--gn);font-weight:600">Fiziksel − Rezerve = Net kullanılabilir (kanallara dağıtılır)</td></tr>
+    </tbody>
+  </table>
+  <div style="margin-top:10px;text-align:center">
+    <div class="fl">
+      <div class="fs"><div class="sl">WMS Stok<br>Değişikliği</div></div><div class="fa">→</div>
+      <div class="fs"><div class="sl">OMS Güncel<br>Stok Hesapla</div></div><div class="fa">→</div>
+      <div class="fs"><div class="sl">Bölüşüm<br>Kuralları</div></div><div class="fa">→</div>
+      <div class="fs" style="border-color:var(--gn)"><div class="sl">Kanallara<br>Stok Push</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 10. WMS API ═══ -->
+<div class="slide" data-slide="10">
+  <div class="tag">Entegrasyon API</div>
+  <h2>OMS ↔ WMS <span class="hl">API</span> <span class="b bg" style="font-size:12px;vertical-align:middle">Hazır ✅</span></h2>
+  <div class="cl">
+    <div class="c">
+      <h3 style="color:var(--ac);margin-bottom:6px;font-size:13px">OMS → WMS (Talimat)</h3>
+      <div class="cd" style="padding:10px"><h3>GET /oms/stock</h3><p>IWASKU + depo bazında kullanılabilir stok. Fiziksel − rezerve = net.</p></div>
+      <div class="cd" style="padding:10px"><h3>POST /oms/reserve</h3><p>Sipariş için stok rezervasyonu. Otomatik expiry desteği.</p></div>
+      <div class="cd" style="padding:10px"><h3>DELETE /oms/reserve/:id</h3><p>Rezervasyon iptal (sipariş iptali).</p></div>
+      <div class="cd" style="padding:10px"><h3>POST /oms/pick-request</h3><p>Sipariş bazlı picking talimatı. Lokasyon sıralamalı pick listesi.</p></div>
+    </div>
+    <div class="c">
+      <h3 style="color:var(--gn);margin-bottom:6px;font-size:13px">WMS → OMS (Webhook)</h3>
+      <div class="cd" style="padding:10px"><h3>STOCK_CHANGE</h3><p>Her IN/OUT/TRANSFER/COUNT sonrası güncel stok bildirimi.</p></div>
+      <div class="cd" style="padding:10px"><h3>SHIPMENT_STATUS</h3><p>Sevkiyat durumu: CLOSED / SHIPPED.</p></div>
+      <div class="cd" style="padding:10px"><h3>ORDER_STATUS</h3><p>Picking tamamlandı, sipariş durumu değişti.</p></div>
+      <div class="cd" style="padding:10px;border-color:var(--gn)"><h3 style="color:var(--gn)">Altyapı</h3><p>Webhook kayıt/silme/test | 3 deneme exponential backoff | Audit log</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 11. RMA ═══ -->
+<div class="slide" data-slide="11">
+  <div class="tag">İade</div>
+  <h2>RMA — <span class="hlg">İade Yönetimi</span></h2>
+  <div style="margin:10px 0">
+    <div class="fl">
+      <div class="fs"><div class="sl">📥 İade Talebi</div></div><div class="fa">→</div>
+      <div class="fs"><div class="sl">✅ Onay</div></div><div class="fa">→</div>
+      <div class="fs"><div class="sl">📦 Fiziksel Kabul</div></div><div class="fa">→</div>
+      <div class="fs" style="border-color:var(--gn)"><div class="sl">✅ Tamamla</div></div>
+    </div>
+  </div>
+  <div class="g2" style="flex:0">
+    <div class="cd" style="padding:12px"><h3>Aksiyonlar</h3><ul class="ml"><li><span class="b bg">REFUND</span> Geri ödeme</li><li><span class="b bb">REPLACE</span> Yeniden gönder</li><li><span class="b ba">REPAIR</span> Tamir et</li><li><span class="b br">DISCARD</span> Hurda</li></ul></div>
+    <div class="cd" style="padding:12px"><h3>Durumlar</h3><ul class="ml"><li><span class="b bg">GOOD</span> Stoğa geri alınabilir</li><li><span class="b ba">DAMAGED</span> Hasarlı — inceleme</li><li><span class="b br">DEFECTIVE</span> Kusurlu — hurda/tamir</li></ul></div>
+  </div>
+  <div class="cd" style="margin-top:8px;padding:10px;border-color:var(--ac)"><p><strong>WMS Entegrasyonu:</strong> İade kabul → WMS stok geri alma (IN işlemi). Fiziksel kabul barkod taratarak yapılır.</p></div>
+</div>
+
+<!-- ═══ 12. ANALYTICS ═══ -->
+<div class="slide" data-slide="12">
+  <div class="tag">Analitik</div>
+  <h2>Veri Odaklı <span class="hl">Karar Desteği</span></h2>
+  <div class="g3" style="margin-top:6px">
+    <div class="cd"><h3>📊 Dashboard KPIs</h3><p>Günlük hareket (IN/OUT/TRF)<br>Bekleyen sipariş • Aktif sevkiyatlar<br>Düşük stoklu ürünler • 7 günlük trend</p></div>
+    <div class="cd"><h3>💀 Dead Stock</h3><p>Son X gün hareketsiz ürünler<br>Depo bazlı filtreleme<br>Gün sayısı ile sıralama</p></div>
+    <div class="cd"><h3>📈 Turnover / DOS</h3><p>Days of Supply hesaplama<br>Stok devir hızı (turnover ratio)<br>Günlük ortalama çıkış</p></div>
+    <div class="cd"><h3>⚡ Performans</h3><p>Hareket hacmi (tip bazlı)<br>Toplayıcı performansı<br>Sayım doğruluğu (%) • Trend</p></div>
+    <div class="cd"><h3>🎯 Slotting</h3><p>Yüksek hızlı ürünleri tespit<br>Prime lokasyona taşıma önerisi<br>Velocity bazlı hesaplama</p></div>
+    <div class="cd"><h3>🔄 Replenishment</h3><p>Min stok seviyesi kontrolü<br>OUT_OF_STOCK / BELOW_MIN<br>Yenileme miktarı hesaplama</p></div>
+  </div>
+  <div class="fn">Bildirim sistemi: düşük stok, bekleyen sipariş, RMA uyarıları otomatik üretilir → header badge</div>
+</div>
+
+<!-- ═══ 13. WISERSELL ═══ -->
+<div class="slide" data-slide="13">
+  <div class="tag">Wisersell OMS</div>
+  <h2>Wisersell — <span class="hlg">OMS Katmanı</span></h2>
+  <p class="sub">Wisersell sipariş yönetimini üstlenir. SwiftStock WMS ile API üzerinden entegre çalışır.</p>
+  <div class="cl" style="margin-top:10px">
+    <div class="c">
+      <div class="cd" style="border-color:var(--gn)">
+        <h3>Rol Dağılımı</h3>
+        <table class="mt"><tbody>
+          <tr><td><strong>Wisersell (OMS)</strong></td><td>Sipariş alma, allocation, kanal stok push, kargo, takip no</td></tr>
+          <tr><td><strong>SwiftStock (WMS)</strong></td><td>Fiziksel stok, depo operasyonları, picking, sevkiyat</td></tr>
+        </tbody></table>
+      </div>
+      <div class="cd">
+        <h3>Entegrasyon</h3>
+        <ul class="ml">
+          <li><span class="b bg">→ WMS</span> Stok kontrol, rezervasyon, picking talimatı</li>
+          <li><span class="b bb">← WMS</span> Stok değişikliği, sevkiyat durumu webhook</li>
+          <li><span class="b bp">Sync</span> WMS tek doğru kaynak (single source of truth)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="c">
+      <div class="cd">
+        <h3>Kanal Entegrasyon Planı</h3>
+        <table class="mt" style="font-size:10.5px"><thead><tr><th>Kanal</th><th>Wisersell Üzerinden</th></tr></thead><tbody>
+          <tr><td>Shopify (6)</td><td>Sipariş + stok push + fulfillment</td></tr>
+          <tr><td>Amazon (3)</td><td>SP-API sipariş (MFN) + FBA izleme</td></tr>
+          <tr><td>Etsy, Walmart, Wayfair</td><td>API sipariş + stok sync</td></tr>
+          <tr><td>bol.com, Takealot</td><td>API entegrasyonu</td></tr>
+        </tbody></table>
+      </div>
+      <div class="cd" style="border-color:var(--ac)">
+        <h3>Stok Senkronizasyonu</h3>
+        <p>WMS fiziksel stok kaynağı → Wisersell kullanılabilir stok alır → Kanallara dağıtır. Stok değişikliğinde webhook ile otomatik güncellenir.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 14. CAPABILITIES ═══ -->
+<div class="slide" data-slide="14">
+  <div class="tag">Kabiliyetler</div>
+  <h2>Tam <span class="hl">Kabiliyet Haritası</span></h2>
+  <div class="g2" style="font-size:11px;margin-top:2px">
+    <div>
+      <h3 style="color:var(--gn);margin-bottom:4px;font-size:13px">✅ Aktif (17 yetenek)</h3>
+      <table class="mt" style="font-size:10.5px"><tbody>
+        <tr><td style="padding:2px 6px">Çok depolu fiziksel stok yönetimi</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">Barkod/QR tabanlı operasyonlar</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">Seri numara takibi (IWASKU-SN)</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">Koli/palet + container kırma</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">Sanal sevkiyat + transit takip</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">Sipariş + picking + wave/batch</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">RMA / iade yönetimi</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">Cycle count (tam/kısmi/spot)</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">Dashboard KPIs + bildirimler</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">XLSX export (envanter, rapor, işlem)</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">Birleşik stok (FBA+CG+fiziksel)</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">Analitik (dead stock, DOS, turnover)</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">OMS API (reserve, pick, webhook)</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">Kitting / assembly desteği</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">Bildirim (düşük stok, stale order)</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">SSO + RBAC + depo izolasyonu</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+        <tr><td style="padding:2px 6px">QC inspeksiyon (PASS/FAIL/HOLD)</td><td style="padding:2px 6px"><span class="b bg">Tam</span></td></tr>
+      </tbody></table>
+    </div>
+    <div>
+      <h3 style="color:var(--am);margin-bottom:4px;font-size:13px">🔜 Sonraki Adımlar</h3>
+      <table class="mt" style="font-size:10.5px"><tbody>
+        <tr><td style="padding:2px 6px">Allocation motoru + kargo kıyası</td><td style="padding:2px 6px"><span class="b ba">Faz 2</span></td></tr>
+        <tr><td style="padding:2px 6px">Wisersell ↔ WMS entegrasyon kurulumu</td><td style="padding:2px 6px"><span class="b ba">Faz 2</span></td></tr>
+        <tr><td style="padding:2px 6px">Shopify (6 mağaza) entegrasyonu</td><td style="padding:2px 6px"><span class="b ba">Faz 2</span></td></tr>
+        <tr><td style="padding:2px 6px">Amazon SP-API sipariş (MFN)</td><td style="padding:2px 6px"><span class="b ba">Faz 2</span></td></tr>
+        <tr><td style="padding:2px 6px">Etsy, Walmart, Wayfair sipariş</td><td style="padding:2px 6px"><span class="b ba">Faz 2</span></td></tr>
+        <tr><td style="padding:2px 6px">FBA aging stok optimizasyonu</td><td style="padding:2px 6px"><span class="b ba">Faz 2</span></td></tr>
+      </tbody></table>
+      <h3 style="color:var(--pp);margin:8px 0 4px;font-size:13px">🔮 Faz 3</h3>
+      <table class="mt" style="font-size:10.5px"><tbody>
+        <tr><td style="padding:2px 6px">Kargo entegrasyonu (fiyat + etiket)</td><td style="padding:2px 6px"><span class="b bp">Faz 3</span></td></tr>
+        <tr><td style="padding:2px 6px">FBA Inbound Shipment yönetimi</td><td style="padding:2px 6px"><span class="b bp">Faz 3</span></td></tr>
+        <tr><td style="padding:2px 6px">Demand forecasting</td><td style="padding:2px 6px"><span class="b bp">Faz 3</span></td></tr>
+        <tr><td style="padding:2px 6px">Kanal kârlılığı analizi</td><td style="padding:2px 6px"><span class="b bp">Faz 3</span></td></tr>
+      </tbody></table>
+      <div class="cd" style="margin-top:10px;border-color:var(--ac);text-align:center;padding:12px">
+        <h3 style="font-size:15px">WMS: <span style="color:var(--gn)">Operasyonel</span></h3>
+        <p style="font-size:11px;margin-top:2px"><strong>end-to-end sipariş → depo → sevkiyat → müşteri</strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 15. NUMBERS ═══ -->
+<div class="slide" data-slide="15">
+  <div class="tag">Rakamlar</div>
+  <h2>Sistem <span class="hl">Özeti</span></h2>
+  <div class="g3" style="margin-top:10px">
+    <div class="st"><div class="sv">15</div><div class="sl">Backend Modül</div></div>
+    <div class="st"><div class="sv">129</div><div class="sl">API Endpoint</div></div>
+    <div class="st"><div class="sv">14</div><div class="sl">Frontend Sayfa</div></div>
+    <div class="st"><div class="sv">~35K</div><div class="sl">Satır Kod</div></div>
+    <div class="st"><div class="sv">5</div><div class="sl">Fiziksel Depo</div></div>
+    <div class="st"><div class="sv">15+</div><div class="sl">Sanal Depo</div></div>
+    <div class="st"><div class="sv">12+</div><div class="sl">Satış Kanalı</div></div>
+    <div class="st"><div class="sv">7</div><div class="sl">Amazon Ülkesi</div></div>
+    <div class="st"><div class="sv">6</div><div class="sl">Shopify Mağaza</div></div>
+  </div>
+  <div class="g2" style="margin-top:14px;flex:0">
+    <div class="cd" style="text-align:center;padding:16px;border-color:var(--ac)">
+      <h3 style="font-size:16px;color:var(--ac)">SwiftStock WMS</h3>
+      <p style="font-size:12px;margin-top:4px">Fiziksel stok yönetimi, barkod operasyonları, sevkiyat, picking, sayım, analitik</p>
+      <p style="font-size:14px;font-weight:700;color:var(--gn);margin-top:6px">✅ Operasyonel</p>
+    </div>
+    <div class="cd" style="text-align:center;padding:16px;border-color:var(--gn)">
+      <h3 style="font-size:16px;color:var(--gn)">Wisersell OMS</h3>
+      <p style="font-size:12px;margin-top:4px">Sipariş yönetimi, allocation, kanal entegrasyonları, kargo</p>
+      <p style="font-size:14px;font-weight:700;color:var(--am);margin-top:6px">🔜 Faz 2 — API Hazır</p>
+    </div>
+  </div>
+  <p style="font-size:10px;color:var(--tm);text-align:center;margin-top:12px">25 Mart 2026 | v2.0</p>
+</div>
+
+</div>
+
+<div class="nav">
+  <button onclick="go(-1)">‹</button>
+  <div id="dots" style="display:flex;gap:4px;align-items:center"></div>
+  <span class="pn" id="pn">1 / 15</span>
+  <button onclick="go(1)">›</button>
+</div>
+<script>
+const ss=document.querySelectorAll('.slide'),tt=ss.length;let cc=0;
+function sh(i){ss.forEach((s,j)=>s.classList.toggle('active',j===i));cc=i;document.getElementById('pn').textContent=`${i+1} / ${tt}`;document.querySelectorAll('.dot').forEach((d,j)=>d.classList.toggle('active',j===i))}
+function go(d){const n=cc+d;if(n>=0&&n<tt)sh(n)}
+const de=document.getElementById('dots');for(let i=0;i<tt;i++){const d=document.createElement('div');d.className='dot'+(i===0?' active':'');d.onclick=()=>sh(i);de.appendChild(d)}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(1)}if(e.key==='ArrowLeft'){e.preventDefault();go(-1)}if(e.key==='Home')sh(0);if(e.key==='End')sh(tt-1)});
+let tx=0;document.addEventListener('touchstart',e=>tx=e.touches[0].clientX);document.addEventListener('touchend',e=>{const d=tx-e.changedTouches[0].clientX;if(Math.abs(d)>50)go(d>0?1:-1)});
+</script>
+</body>
+</html>
