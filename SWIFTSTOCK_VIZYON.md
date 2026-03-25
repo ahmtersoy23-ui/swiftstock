@@ -1,7 +1,7 @@
 # SwiftStock WMS — Sistem Vizyonu
 
-> **Kapsam:** WMS (Depo Yönetimi) — OMS entegrasyonu ve sipariş akışı ayrı fazda ele alınacak.
-> **Versiyon:** 1.0 | **Tarih:** 2026-03
+> **Kapsam:** WMS (Depo Yönetimi) + OMS Entegrasyon API + Analitik
+> **Versiyon:** 2.0 | **Tarih:** 2026-03-25
 
 ---
 
@@ -246,47 +246,129 @@ SEVKİYAT (Sanal Depo)
 
 ---
 
-## 12. İlerde Gelecek Özellikler (Bu Fazın Dışı)
+## 12. OMS Entegrasyon API (Faz 2B — Tamamlandı)
 
-### OMS Entegrasyonu
-- Wisersell API ile sipariş verisi çekme
-- Sipariş gelince stoktan düşme
-- Hangi depodan karşılanacağı kararı
+SwiftStock, OMS sistemleriyle standart REST API üzerinden iletişim kurar.
 
-### Pazar Yeri Entegrasyonları
-- Shopify, Amazon, Etsy, Walmart, Wayfair, bol.com…
-- DataBridge üzerinden otomatik stok senkronizasyonu
+### 12.1 OMS → WMS (Talimat Yönü)
+
+| Endpoint | Açıklama |
+|----------|----------|
+| `GET /oms/stock` | IWASKU + depo bazında kullanılabilir stok sorgula (fiziksel − rezerve) |
+| `POST /oms/reserve` | Sipariş için stok rezerve et |
+| `DELETE /oms/reserve/:id` | Rezervasyon iptal |
+| `POST /oms/pick-request` | Sipariş bazlı picking talimatı oluştur |
+
+### 12.2 WMS → OMS (Bildirim Yönü — Webhook)
+
+| Event | Tetikleyici |
+|-------|-------------|
+| `STOCK_CHANGE` | Her IN/OUT/TRANSFER/COUNT sonrası |
+| `SHIPMENT_STATUS` | Sevkiyat durumu değişikliği |
+| `ORDER_STATUS` | Picking tamamlandı, sipariş durumu değişti |
+
+Webhook retry: 3 deneme, exponential backoff. `wms_webhook_logs` ile audit trail.
 
 ---
 
+## 13. Analitik & Zeka (Faz 3 — Tamamlandı)
+
+### 13.1 Birleşik Stok Görünümü
+- IWASKU bazlı tüm stok noktaları tek ekranda: fiziksel + transit + FBA + Wayfair CG + diğer marketplace
+- Amazon FBA: `pricelab_db.fba_inventory` üzerinden (DataBridge sync, 8 saatte bir)
+- Wayfair CG + diğer: `wms_marketplace_stock` push API (DataBridge → SwiftStock)
+- XLSX export
+
+### 13.2 Dead Stock Tespiti
+- Son X gün hareket görmeyen ürünler (depo bazlı filtreleme)
+
+### 13.3 Inventory Turnover / DOS
+- Days of Supply = mevcut stok / günlük ortalama çıkış
+- Stok devir hızı (turnover ratio)
+
+### 13.4 Performans Metrikleri
+- Hareket hacmi (IN/OUT/TRANSFER ayrı)
+- Toplayıcı performansı (sipariş sayısı, ortalama süre)
+- Sayım doğruluğu (%)
+- Günlük trend chart
+
+### 13.5 Slotting Optimizasyonu
+- Yüksek hızlı ürünleri prime lokasyona taşıma önerisi (velocity bazlı)
+
+### 13.6 Replenishment
+- Min stok seviyesi altındaki ürünler
+- OUT_OF_STOCK / BELOW_MIN uyarıları + yenileme miktarı
+
+---
+
+## 14. İleri Özellikler (Gelecek Fazlar)
+
+### OMS Sipariş Entegrasyonu
+- Wisersell / özel OMS ile kanal bazlı sipariş akışı
+- Shopify (6 mağaza), Amazon SP-API (3 account — MFN), Etsy, Walmart, Wayfair, bol.com
+- Stok allocation motoru (kanal bazlı bölüşüm kuralları)
+
 ### Kargo Entegrasyonu
-- Kargo fiyatı karşılaştırma
-- Siparişin hangi depodan çıkacağına karar
+- Kargo fiyatı karşılaştırma + etiket üretimi
+- FBA Inbound Shipment yönetimi
 
 ### İleri Analitik
 - Demand forecasting
-- Dead stock tespiti
-- Inventory turnover, DOS metrikleri
+- Kanal karlılığı analizi
+- Sezonsal planlama
 
 ---
 
-## 13. Mevcut Sistem Durumu (2026-03-09)
+## 15. Mevcut Sistem Durumu (2026-03-25)
 
-| Modül | Backend | Frontend | Notlar |
-|-------|---------|----------|--------|
-| Warehouse & Lokasyon | ✅ | ✅ | Dinamik depo listesi; FACTORY/TR/NJ/NL/UK aktif |
-| Ürün / SKU Kataloğu | ✅ | ✅ | PriceLab API'den salt okunur; SwiftStock'ta yazma yok |
-| Seri No Üretimi / Etiket Basımı | ✅ | ✅ | Etiket modal + print çalışıyor (Products sayfası) |
-| Seri No — FACTORY IN'de Zorunlu | ✅ | ✅ | Backend strict validation + Operations UI banner |
+### Backend: 15 route modülü, 129 endpoint
 
----
+| # | Modül | Endpoint | Durum |
+|---|-------|----------|-------|
+| 1 | Auth + Kullanıcı Yönetimi | 12 | ✅ SSO + Google OAuth + RBAC |
+| 2 | Ürün Kataloğu + Seri No + QC | 16 | ✅ PriceLab read-only, seri üretim, QC |
+| 3 | Depo + Lokasyon + Container | 16 | ✅ 5 depo, zone, QR, koli/palet, container kırma |
+| 4 | Sipariş + Picking | 10 | ✅ Sipariş, picker atama, wave/batch picking |
+| 5 | Envanter + İşlemler | 8 | ✅ IN/OUT/TRANSFER/ADJUST, düşük stok |
+| 6 | Sayım + Raporlar | 11 | ✅ Cycle count (tam/kısmi/spot), raporlar |
+| 7 | Sevkiyat (Sanal Depo) | 12 | ✅ TR/NJ rota, koli bazlı, transit stok |
+| 8 | RMA / İade | 6 | ✅ PENDING→APPROVED→IN_PROCESS→COMPLETED |
+| 9 | Operasyon Engine | 9 | ✅ Tarama oturumları, mod yönetimi |
+| 10 | Dashboard KPIs | 1 | ✅ Günlük metrikler, trend |
+| 11 | Bildirimler | 5 | ✅ Düşük stok, stale order/RMA uyarıları |
+| 12 | OMS Entegrasyon API | 16 | ✅ Stok, rezervasyon, picking, webhook |
+| 13 | Kitting / Assembly | 3 | ✅ Kit tanımı, bileşen yönetimi, kit oluşturma |
+| 14 | Analitik | 8 | ✅ Unified stock, dead stock, DOS, performance, slotting |
 
-| Modül | Backend | Frontend | Notlar |
-|-------|---------|----------|--------|
-| IN/OUT/TRANSFER Operasyonları | ✅ | ✅ | Tam çalışıyor |
-| Cycle Count / Sayım | ✅ | ✅ | Tam çalışıyor |
-| Sevkiyat (Sanal Depo) | ✅ | ✅ | TR/NJ rota kuralları; 500 hatası düzeltildi |
-| Container — display_name + Sevkiyat Bağı | ✅ | ⚠️ | Migration (016) + backend tam; UI Operations modalında kısmi |
-| Kategori → Zone Otomatik Eşleme | ✅ | ✅ | Migration (017) + endpoint + Operations zone suggestion banner |
-| RMA / İade | ✅ | ❌ | Backend tam, frontend yok |
-| Orders Sayfası | ✅ | ❌ | Backend tam, frontend yok; Picking akışı Operations'da mevcut |
+### Frontend: 14 sayfa (PWA + Capacitor)
+
+| Sayfa | Durum | Not |
+|-------|-------|-----|
+| Dashboard (Home) | ✅ | KPI kartları + navigasyon grid |
+| Operations | ✅ | Barcode workflow, zone suggestion, container naming |
+| Inventory | ✅ | 4 sorgu modu (SKU/Location/Serial/Container) + XLSX export |
+| Products | ✅ | Katalog + seri no üretim + etiket basım (çoklu şablon) |
+| Locations | ✅ | CRUD + zone filter + QR print |
+| Reports | ✅ | Sayım + envanter raporu + XLSX export |
+| Shipments | ✅ | Sanal depo + koli + rota kuralları |
+| Transactions | ✅ | Hareket geçmişi + filtreler + XLSX export |
+| Admin | ✅ | Kullanıcı CRUD + rol yönetimi |
+| Orders | ✅ | Sipariş listesi, detay, picking workflow, wave |
+| Returns | ✅ | RMA listesi, onay akışı, iade kabul |
+| Containers | ✅ | Koli/palet listesi, detay, sevkiyat bağlama, açma |
+| Stock Dashboard | ✅ | Birleşik stok (fiziksel + transit + FBA + marketplace) |
+| Analytics | ✅ | Dead stock, turnover/DOS, performans, slotting, replenishment |
+
+### Güvenlik
+- SSO entegrasyonu (Apps-SSO + Google OAuth)
+- Helmet.js güvenlik header'ları
+- Rate limiting (4 tier: login, reset, API, refresh)
+- RBAC (ADMIN/MANAGER/OPERATOR/VIEWER) + depo izolasyonu
+- Zod v4 input validation (tüm endpoint'ler)
+- Parameterized SQL (injection koruması)
+
+### CI/CD
+- GitHub Actions: type check → lint → test → build → deploy
+- Hetzner VPS, PM2, Nginx reverse proxy + SSL
+- Frontend: Vite build → SCP → `/var/www/swiftstock/frontend/`
+- Backend: tsc → SCP → `npm ci` → PM2 restart
