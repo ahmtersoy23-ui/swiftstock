@@ -188,36 +188,55 @@
   <!-- ═══ SLIDE 4: ALLOCATION ═══ -->
   <div class="slide" data-slide="4">
     <div class="slide-tag">Allocation</div>
-    <h2>Stok Allocation <span class="hl">Motoru</span></h2>
-    <p class="subtitle">Sipariş geldiğinde hangi depodan karşılanacağını otomatik belirler.</p>
-    <table class="mini-table" style="margin-top:14px;">
-      <thead><tr><th>Kanal / Koşul</th><th>Allocation Sırası</th><th>Not</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Wayfair</strong></td><td>NJ only</td><td>ABD'ye hizmet</td></tr>
-        <tr><td><strong>Walmart</strong></td><td>NJ only</td><td>ABD'ye hizmet</td></tr>
-        <tr><td><strong>Shopify (ABD)</strong></td><td>NJ → TR → FACTORY</td><td>Sıralı fallback</td></tr>
-        <tr><td><strong>Shopify (TR)</strong></td><td>TR → FACTORY</td><td>TR öncelikli</td></tr>
-        <tr><td><strong>Etsy (ABD)</strong></td><td>NJ → TR</td><td>—</td></tr>
-        <tr><td><strong>bol.com</strong></td><td>NL</td><td>Avrupa</td></tr>
-        <tr><td><strong>Amazon MFN</strong></td><td>Belirlenen depoya göre</td><td>Account bazlı</td></tr>
-        <tr><td style="color:var(--text-muted);">Amazon FBA</td><td style="color:var(--text-muted);">— (pazar yeri deposu)</td><td style="color:var(--text-muted);">WMS müdahalesi yok</td></tr>
-      </tbody>
-    </table>
-    <div class="grid-3" style="margin-top:12px; flex:0;">
-      <div class="card" style="padding:12px;">
-        <h3>Stok Yüzdesi</h3>
-        <p>Kanalın toplam stoktan payı<br><span class="tag">Amazon: %20, Wayfair: %80</span></p>
+    <h2>Çok Kriterli <span class="hl">Allocation Motoru</span></h2>
+    <div class="col-layout" style="margin-top:8px;">
+      <div class="col">
+        <div class="card" style="padding:12px; border-color:var(--accent);">
+          <h3>Karar Kriterleri</h3>
+          <table class="mini-table" style="font-size:11px;">
+            <tbody>
+              <tr><td>Stok mevcudiyeti</td><td><span class="badge badge-red">Zorunlu</span></td></tr>
+              <tr><td>Kargo maliyeti kıyası</td><td><span class="badge badge-amber">Yüksek</span></td></tr>
+              <tr><td>FBA aging stok (LTSF riski)</td><td><span class="badge badge-amber">Yüksek</span></td></tr>
+              <tr><td>Teslimat süresi (SLA)</td><td><span class="badge badge-blue">Orta</span></td></tr>
+              <tr><td>Depo doluluk oranı</td><td><span class="badge badge-green">Düşük</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card" style="padding:12px;">
+          <h3>📦 FBA Aging Optimizasyonu</h3>
+          <table class="mini-table" style="font-size:10.5px;">
+            <tbody>
+              <tr><td>0-180 gün</td><td>Normal sıralama</td></tr>
+              <tr><td style="color:var(--amber);">180-270 gün</td><td>FBA'dan karşılamayı öner</td></tr>
+              <tr><td style="color:var(--red);">270-365 gün</td><td>FBA'dan karşılamayı zorla</td></tr>
+              <tr><td style="color:var(--red);">365+ gün</td><td>Removal / tasfiye öner</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div class="card" style="padding:12px;">
-        <h3>Miktar Limiti</h3>
-        <p>Kanalda gösterilecek max adet<br><span class="tag">Etsy: max 5 adet</span></p>
-      </div>
-      <div class="card" style="padding:12px;">
-        <h3>Minimum Eşik</h3>
-        <p>Altında kanala stok = 0<br><span class="tag">Toplam &lt; 3 → Amazon = 0</span></p>
+      <div class="col">
+        <div class="card" style="padding:12px; border-color:var(--blue);">
+          <h3>🚚 Kargo Maliyet Kıyası (Örnek)</h3>
+          <p style="font-size:11px; margin-bottom:6px;">Shopify ABD siparişi, müşteri: New York</p>
+          <table class="mini-table" style="font-size:10.5px;">
+            <thead><tr><th>Kaynak</th><th>Kargo</th><th>Süre</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>NJ Depo</td><td>$8.50</td><td>2-3 gün</td><td><span class="badge badge-green">Önerilen</span></td></tr>
+              <tr><td style="color:var(--amber);">FBA US (aging)</td><td>$0</td><td>1-2 gün</td><td><span class="badge badge-amber">⚡ 240 gün</span></td></tr>
+              <tr><td>TR Depo</td><td>$35</td><td>7-12 gün</td><td><span class="tag">Pahalı</span></td></tr>
+              <tr><td style="color:var(--text-muted);">FACTORY</td><td>$42</td><td>10-15 gün</td><td><span class="tag">Son çare</span></td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:10px; color:var(--text-muted); margin-top:4px;">Fark > $15 → otomatik ucuz rota | Operatör onaylar veya değiştirir</p>
+        </div>
+        <div class="card" style="padding:12px;">
+          <h3>Kanal Stok Bölüşümü</h3>
+          <p style="font-size:11px;">Yüzde bazlı <span class="tag">Amazon %20 / Wayfair %80</span> | Miktar limiti <span class="tag">Etsy: max 5</span> | Minimum eşik <span class="tag">&lt;3 → kanal stok=0</span></p>
+        </div>
       </div>
     </div>
-    <div class="footer-note">Çakışma yönetimi: FIFO — ilk gelen alır. Rezerve stok başka kanala verilmez.</div>
+    <div class="footer-note">FIFO çakışma yönetimi | Rezerve stok başka kanala verilmez | Alternatifler bedelleriyle gösterilir</div>
   </div>
 
   <!-- ═══ SLIDE 5: CHANNELS ═══ -->
@@ -376,36 +395,45 @@
 
   <!-- ═══ SLIDE 9: WISERSELL ═══ -->
   <div class="slide" data-slide="9">
-    <div class="slide-tag">Geçiş Stratejisi</div>
-    <h2>Wisersell <span class="hl">Geçiş Planı</span></h2>
-    <table class="mini-table" style="margin-top:12px;">
-      <thead><tr><th>Durum</th><th>Wisersell</th><th>OMS (Yeni)</th><th>WMS (SwiftStock)</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Bugün</strong></td><td>Aktif — sipariş yönetimi</td><td>—</td><td>Aktif — depo operasyonları</td></tr>
-        <tr><td><strong>Faz 2 Başı</strong></td><td>Aktif</td><td>Paralel kurulum</td><td>Aktif + OMS API hazır ✅</td></tr>
-        <tr><td><strong>Geçiş</strong></td><td>Kanallar tek tek aktarılır</td><td>Kademeli devralma</td><td>Tam entegre</td></tr>
-        <tr><td><strong>Hedef</strong></td><td>Kapatılır veya OMS olarak kalır</td><td>Tam operasyonel</td><td>Tam entegre</td></tr>
-      </tbody>
-    </table>
+    <div class="slide-tag">Wisersell OMS</div>
+    <h2>Wisersell — <span class="hl">OMS Katmanı</span></h2>
+    <p class="subtitle">Wisersell sipariş yönetimini üstlenir. SwiftStock WMS ile API üzerinden entegre çalışır.</p>
     <div class="col-layout" style="margin-top:14px;">
       <div class="col">
+        <div class="card" style="padding:14px; border-color:var(--accent);">
+          <h3>Rol Dağılımı</h3>
+          <table class="mini-table" style="font-size:11px;">
+            <tbody>
+              <tr><td><strong>Wisersell (OMS)</strong></td><td>Sipariş alma, allocation kararı, kanal stok push, kargo, takip no</td></tr>
+              <tr><td><strong>SwiftStock (WMS)</strong></td><td>Fiziksel stok, depo ops, picking, sevkiyat</td></tr>
+            </tbody>
+          </table>
+        </div>
         <div class="card" style="padding:14px;">
-          <h3>Çakışma Yönetimi</h3>
+          <h3>Entegrasyon Akışı</h3>
           <ul class="mini-list">
-            <li><span class="check">✓</span> Aynı sipariş iki sistemde işlenmez</li>
-            <li><span class="check">✓</span> Kanal bazlı geçiş (önce Shopify, sonra Amazon)</li>
-            <li><span class="check">✓</span> Stok kaynağı: WMS tek doğru kaynak</li>
+            <li><span class="badge badge-green">→ WMS</span> Stok kontrol, rezervasyon, picking talimatı</li>
+            <li><span class="badge badge-blue">← WMS</span> Stok değişikliği, sevkiyat durumu webhook</li>
+            <li><span class="badge badge-purple">Sync</span> WMS tek doğru kaynak (single source of truth)</li>
           </ul>
         </div>
       </div>
       <div class="col">
         <div class="card" style="padding:14px;">
-          <h3>Uzun Vadeli Karar</h3>
-          <ul class="mini-list">
-            <li><span class="badge badge-blue">A</span> Wisersell OMS olarak devam</li>
-            <li><span class="badge badge-green">B</span> Kendi OMS modülüne geçiş</li>
-            <li><span style="font-size:11px; color:var(--text-muted);">Kriter: API yeterliliği, maliyet, özelleştirme</span></li>
-          </ul>
+          <h3>Kanal Entegrasyon Planı</h3>
+          <table class="mini-table" style="font-size:11px;">
+            <thead><tr><th>Kanal</th><th>Wisersell Üzerinden</th></tr></thead>
+            <tbody>
+              <tr><td>Shopify (6 mağaza)</td><td>Sipariş alma + stok push + fulfillment</td></tr>
+              <tr><td>Amazon (3 account)</td><td>SP-API sipariş (MFN) + FBA izleme</td></tr>
+              <tr><td>Etsy, Walmart, Wayfair</td><td>API sipariş + stok sync</td></tr>
+              <tr><td>bol.com, Takealot</td><td>API entegrasyonu</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card" style="padding:14px; border-color:var(--blue);">
+          <h3>Stok Senkronizasyonu</h3>
+          <p style="font-size:12px;">WMS fiziksel stok kaynağı → Wisersell kullanılabilir stok alır → Kanallara dağıtır.<br>Stok değişikliğinde webhook ile Wisersell otomatik güncellenir.</p>
         </div>
       </div>
     </div>

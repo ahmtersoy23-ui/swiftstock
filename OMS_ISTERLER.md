@@ -183,28 +183,63 @@ PENDING → ALLOCATED → PICKING → PACKED → SHIPPED → DELIVERED
 
 ## 4. Stok Allocation Motoru
 
-### 4.1 Depo Bazlı Allocation Kuralları
+### 4.1 Allocation Karar Kriterleri
 
-Sipariş geldiğinde OMS hangi depodan karşılanacağını otomatik belirler:
+Sipariş geldiğinde OMS hangi kaynaktan karşılanacağını **çok kriterli** olarak belirler:
 
-| Kanal / Koşul | Allocation Sırası | Not |
-|----------------|-------------------|-----|
-| **Wayfair** | NJ only | ABD'ye hizmet |
-| **Walmart** | NJ only | ABD'ye hizmet |
-| **Shopify (ABD)** | NJ → TR → FACTORY | Sıralı fallback |
+| # | Kriter | Açıklama | Ağırlık |
+|---|--------|----------|---------|
+| 1 | **Stok mevcudiyeti** | Ürün o depoda var mı? Kullanılabilir miktar yeterli mi? | Zorunlu |
+| 2 | **Kargo maliyeti** | Kaynak depodan müşteriye tahmini kargo ücreti | Yüksek |
+| 3 | **FBA aging stok** | FBA deposunda uzun süredir bekleyen stok varsa öncelik | Yüksek |
+| 4 | **Teslimat süresi** | Müşteriye en hızlı ulaşan rota (SLA uyumu) | Orta |
+| 5 | **Depo doluluk** | Yüksek doluluklu depolardan çıkışı teşvik | Düşük |
+
+### 4.2 Kargo Maliyeti Kıyası
+
+Her allocation kararında alternatif rotalar ve tahmini kargo bedelleri gösterilir:
+
+```
+Sipariş: Shopify ABD, müşteri New York, ürün: IM05600RF2RD
+
+Alternatif 1: NJ Depo        →  $8.50 kargo  | 2-3 gün  | ✅ ÖNERİLEN
+Alternatif 2: FBA US (aging)  →  $0 kargo     | 1-2 gün  | ⚡ FBA AGING (180+ gün)
+Alternatif 3: TR Depo         →  $35.00 kargo | 7-12 gün | ⚠️ Pahalı
+Alternatif 4: FACTORY         →  $42.00 kargo | 10-15 gün| ❌ Son çare
+```
+
+**Kural:** Kargo maliyeti farkı belirli bir eşiğin üstündeyse (örn. >$15) daha ucuz rotayı otomatik seç. Aksi halde en hızlı rotayı tercih et.
+
+### 4.3 FBA Aging Stok Optimizasyonu
+
+Amazon FBA depolarında uzun süre kalan ürünler **long-term storage fee** (LTSF) riski taşır:
+
+| FBA Yaş | Durum | Allocation Etkisi |
+|---------|-------|-------------------|
+| 0-180 gün | Normal | Standart sıralama |
+| 180-270 gün | Uyarı | FBA'dan karşılamayı öner (LTSF riski) |
+| 270-365 gün | Kritik | FBA'dan karşılamayı **zorla** (NJ/TR yerine) |
+| 365+ gün | Acil | FBA removal veya tasfiye öner |
+
+**Örnek:** Müşteri ABD'den sipariş verdi. NJ'de 5 adet, FBA US'te 3 adet (240 gün yaşında) var.
+→ Sistem FBA'dan karşılamayı önerir çünkü: kargo $0 + LTSF riski azalır + teslimat daha hızlı.
+
+### 4.4 Depo Bazlı Varsayılan Rotalar
+
+| Kanal / Koşul | Varsayılan Sıra | Not |
+|----------------|-----------------|-----|
+| **Wayfair** | FBA aging → NJ | ABD'ye hizmet |
+| **Walmart** | FBA aging → NJ | ABD'ye hizmet |
+| **Shopify (ABD)** | FBA aging → NJ → TR → FACTORY | Maliyet + hız sıralamalı |
 | **Shopify (TR)** | TR → FACTORY | TR öncelikli |
-| **Etsy (ABD)** | NJ → TR | — |
+| **Etsy (ABD)** | FBA aging → NJ → TR | — |
 | **bol.com** | NL | Avrupa |
-| **Amazon MFN** | Belirlenen depoya göre | Account bazlı |
-| **Amazon FBA** | — (pazar yeri deposu) | WMS müdahalesi yok |
+| **Amazon MFN** | Account deposuna göre | FBA aging kontrolü dahil |
+| **Amazon FBA** | FBA (zaten depoda) | OMS sadece izler |
 
-> **WMS rota uyumu:** Sevkiyat çıkışı yalnızca TR ve NJ'den yapılabilir. FACTORY, UK, NL'den doğrudan müşteriye çıkış yoktur.
+> **Not:** Her alternatif rota tahmini kargo maliyeti ve teslimat süresiyle birlikte gösterilir. Operatör önerilen rotayı onaylar veya değiştirir.
 
----
-
-### 4.2 Kanal Bazlı Stok Bölüşümü
-
-Her kanal için ayrılabilir stok yüzdesi veya miktar limiti tanımlanır:
+### 4.5 Kanal Bazlı Stok Bölüşümü
 
 | Parametre | Açıklama | Örnek |
 |-----------|----------|-------|
@@ -212,11 +247,12 @@ Her kanal için ayrılabilir stok yüzdesi veya miktar limiti tanımlanır:
 | **Miktar limiti** | Kanalda gösterilecek maksimum adet | Etsy: max 5 adet |
 | **Minimum eşik** | Bu seviyenin altında kanala stok sıfırlanır | Toplam < 3 → Amazon stok = 0 |
 
-### 4.3 Allocation Çakışma Yönetimi
+### 4.6 Allocation Çakışma Yönetimi
 
 - Aynı anda birden fazla kanal aynı ürünü talep ederse: **ilk gelen alır** (FIFO)
 - Rezerve stok başka kanala verilmez
 - Allocation başarısız olursa sipariş `PENDING` kalır, uyarı üretilir
+- Kargo maliyeti hesaplanamıyorsa varsayılan depo sırasına düşer
 
 ---
 
@@ -418,30 +454,29 @@ Her Kanala Stok Push (Shopify, Amazon, Etsy, Walmart...)
 ---
 
 <!-- _class: medium -->
-## 11. Wisersell Geçiş Stratejisi
+## 11. Wisersell — OMS Katmanı
 
-### 11.1 Geçiş Dönemi
+Wisersell, OMS katmanı olarak sipariş yönetimini üstlenir. SwiftStock WMS ile API üzerinden entegre çalışır.
 
-Wisersell aktif kullanımdayken OMS paralel çalışır:
+### 11.1 Rol Dağılımı
 
-| Durum | Wisersell | OMS (Yeni) | WMS (SwiftStock) |
-|-------|-----------|------------|-------------------|
-| **Bugün** | Aktif — sipariş yönetimi | Yok | Aktif — depo ops |
-| **Faz 2 başı** | Aktif | Paralel kurulum | Aktif |
-| **Geçiş** | Kanallar tek tek aktarılır | Kademeli devralma | Entegrasyon tamamlanır |
-| **Hedef** | Kapatılır veya OMS olarak kalır | Tam operasyonel | Tam entegre |
+| Katman | Sorumluluk | Platform |
+|--------|------------|----------|
+| **OMS** | Sipariş alma, allocation kararı, kanal stok push, kargo, takip no | Wisersell |
+| **WMS** | Fiziksel stok, depo operasyonları, picking, sevkiyat | SwiftStock |
 
-### 11.2 Çakışma Yönetimi
+### 11.2 Entegrasyon Noktaları
 
-- Aynı sipariş iki sistemde işlenmez — kanal bazlı geçiş (önce Shopify, sonra Amazon vb.)
-- Wisersell'den kapanan siparişler → WMS'e stok düşme bildirimi
-- Stok senkronizasyonu tek kaynaktan: WMS ana kaynak, OMS dağıtıcı
+| Yön | Akış | API |
+|-----|------|-----|
+| **Wisersell → SwiftStock** | Stok kontrol, rezervasyon, picking talimatı | `/oms/stock`, `/oms/reserve`, `/oms/pick-request` |
+| **SwiftStock → Wisersell** | Stok değişikliği, sevkiyat durumu, sipariş durumu | Webhook (STOCK_CHANGE, SHIPMENT_STATUS, ORDER_STATUS) |
 
-### 11.3 Uzun Vadeli Karar
+### 11.3 Stok Senkronizasyonu
 
-- **Seçenek A:** Wisersell OMS katmanı olarak devam eder
-- **Seçenek B:** Kendi OMS modülüne tamamen geçilir
-- Karar kriterleri: API yeterliliği, maliyet, özelleştirme ihtiyacı
+- WMS fiziksel stok kaynağıdır (single source of truth)
+- Wisersell, WMS'den kullanılabilir stok alır → kanallara dağıtır
+- Stok değişikliğinde webhook ile Wisersell otomatik güncellenir
 
 ---
 
