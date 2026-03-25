@@ -63,7 +63,7 @@ style: |
 
 > **Belge Tipi:** Fonksiyonel Gereksinim Belgesi
 > **Kapsam:** Sipariş yönetimi, kanal entegrasyonları, stok allocation — müşteri yönü
-> **Versiyon:** 1.0 | **Tarih:** 2026-03
+> **Versiyon:** 2.0 | **Tarih:** 2026-03-25
 > **İlişkili Belge:** `SWIFTSTOCK_VIZYON.md` (WMS — Depo Yönetim Sistemi)
 
 ---
@@ -446,45 +446,54 @@ Wisersell aktif kullanımdayken OMS paralel çalışır:
 ---
 
 <!-- _class: dense -->
-## 12. Önceliklendirme & Fazlama
+## 12. Mevcut Durum & Fazlama (2026-03-25)
 
-### WMS Faz 1 — Tamamlanan / Devam Eden (SwiftStock)
+### WMS Faz 1 — Tamamlandı ✅
 
-> Referans: `SWIFTSTOCK_VIZYON.md` Sec 13
-
-- [x] Çok depolu fiziksel stok yönetimi
-- [x] Barkod/QR operasyonları
-- [x] Koli/palet yönetimi
-- [x] Lokasyon/raf sistemi
+- [x] Çok depolu fiziksel stok yönetimi (5 depo)
+- [x] Barkod/QR operasyonları (unique barkod, tarama bazlı)
+- [x] Koli/palet yönetimi + container kırma otomasyonu
+- [x] Lokasyon/raf sistemi (zone, aisle, bay, level)
 - [x] Sanal depo — transit stok takibi
-- [x] Cycle count
-- [x] Seri no zorunluluğu
-- [x] Kategori → Zone eşleme
-- [ ] RMA frontend
-- [ ] Container kırma otomasyonu
-- [ ] Container management UI (tam)
+- [x] Cycle count (tam/kısmi/spot)
+- [x] Seri no zorunluluğu (IWASKU-SERIALNO)
+- [x] Kategori → Zone otomatik eşleme
+- [x] RMA / iade yönetimi (frontend + backend)
+- [x] Container management UI (tam)
+- [x] Sipariş + picking workflow + wave/batch picking
+- [x] Dashboard KPIs + bildirim sistemi
+- [x] XLSX export + etiket şablonları
 
-### OMS Faz 2 — Sipariş & Kanal Entegrasyonu
+### OMS ↔ WMS Entegrasyon API — Tamamlandı ✅
 
-- [ ] OMS → WMS entegrasyon API'leri (stok kontrol, reservation, picking)
-- [ ] WMS → OMS bildirim altyapısı (stok değişikliği, sevkiyat durumu)
-- [ ] Sipariş yönetimi (alma, durum takibi, iptal/değişiklik)
-- [ ] Stok allocation motoru + kural yapılandırma
-- [ ] Kanal bazlı stok bölüşüm kuralları
-- [ ] Shopify entegrasyonu (6 mağaza)
+- [x] `GET /oms/stock` — Stok kontrol (fiziksel − rezerve = kullanılabilir)
+- [x] `POST /oms/reserve` — Stok rezervasyon (expiry desteği)
+- [x] `DELETE /oms/reserve/:id` — Rezervasyon iptal
+- [x] `POST /oms/pick-request` — Picking talimatı (lokasyon sıralamalı)
+- [x] Webhook altyapısı (STOCK_CHANGE, SHIPMENT_STATUS, ORDER_STATUS)
+- [x] Webhook retry (3 deneme, exponential backoff) + audit log
+
+### Analitik — Tamamlandı ✅
+
+- [x] Birleşik stok görünümü (fiziksel + transit + FBA + Wayfair CG + marketplace)
+- [x] Dead stock tespiti / DOS / Inventory turnover
+- [x] Performans metrikleri + slotting + replenishment
+
+### OMS Faz 2 — Sipariş & Kanal Entegrasyonu (Sırada)
+
+- [ ] Stok allocation motoru + kanal bazlı bölüşüm kuralları
+- [ ] Shopify entegrasyonu (6 mağaza — webhook sipariş alma + stok push)
 - [ ] Amazon SP-API entegrasyonu (3 account — MFN sipariş)
-- [ ] Etsy, Walmart, Wayfair entegrasyonları
-- [ ] Picking workflow (OMS sipariş → WMS picking)
+- [ ] Etsy, Walmart, Wayfair sipariş entegrasyonları
 - [ ] Wisersell geçiş planı ve paralel çalışma
 
 ---
 
 <!-- _class: medium -->
-### Faz 3 — Lojistik + Analitik
+### Faz 3 — Lojistik + İleri Analitik
 
-- [ ] Kargo entegrasyonu (fiyat karşılaştırma, etiket, takip)
+- [ ] Kargo entegrasyonu (fiyat karşılaştırma, etiket, takip no)
 - [ ] FBA Inbound Shipment yönetimi
-- [ ] Dead stock / DOS / Inventory turnover raporları
 - [ ] Demand forecasting
 - [ ] Kanal karlılığı analizi
 - [ ] bol.com, Takealot, Trendyol, Hepsiburada, TikTok Shop entegrasyonları
