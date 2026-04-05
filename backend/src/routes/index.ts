@@ -51,25 +51,23 @@ router.use('/', analyticsRoutes);  // Analytics & Intelligence
 
 // ── Health Check ───────────────────────────────────────────────────────────
 router.get('/health', async (_req, res) => {
+  let dbStatus = 'unknown';
   try {
     const pool = (await import('../config/database')).default;
     await pool.query('SELECT 1');
-    res.json({
-      status: 'ok',
-      app: 'swiftstock',
-      database: 'connected',
-      uptime: process.uptime(),
-      memory: Math.round(process.memoryUsage().rss / 1024 / 1024),
-      timestamp: new Date().toISOString(),
-    });
+    dbStatus = 'connected';
   } catch {
-    res.status(500).json({
-      status: 'error',
-      app: 'swiftstock',
-      database: 'disconnected',
-      timestamp: new Date().toISOString(),
-    });
+    dbStatus = 'disconnected';
   }
+  res.json({
+    success: true,
+    message: 'WMS API is running',
+    app: 'swiftstock',
+    database: dbStatus,
+    uptime: process.uptime(),
+    memory: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 export default router;
