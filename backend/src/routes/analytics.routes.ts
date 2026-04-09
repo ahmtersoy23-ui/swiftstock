@@ -164,13 +164,13 @@ router.get('/analytics/unified-stock', authenticateToken, async (req: AuthReques
 
     // 3. Get transit stock (in virtual shipments)
     const transitResult = await pool.query(
-      `SELECT sbc.sku_code AS product_sku, SUM(sbc.quantity) AS quantity
+      `SELECT sbc.product_sku, SUM(sbc.quantity) AS quantity
        FROM shipment_box_contents sbc
        JOIN shipment_boxes sb ON sbc.box_id = sb.box_id
        JOIN virtual_shipments vs ON sb.shipment_id = vs.shipment_id
        WHERE vs.status IN ('OPEN', 'CLOSED')
-         AND sbc.sku_code = ANY($1)
-       GROUP BY sbc.sku_code`,
+         AND sbc.product_sku = ANY($1)
+       GROUP BY sbc.product_sku`,
       [skus],
     );
 
@@ -319,11 +319,12 @@ router.get('/analytics/dead-stock', authenticateToken, async (req: AuthRequest, 
        JOIN products p ON i.product_sku = p.product_sku
        JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
        LEFT JOIN (
-         SELECT DISTINCT ON (ti.product_sku, t2.warehouse_code)
-           ti.product_sku, t2.warehouse_code, t2.created_at
+         SELECT DISTINCT ON (ti.product_sku, w2.code)
+           ti.product_sku, w2.code AS warehouse_code, t2.created_at
          FROM wms_transaction_items ti
          JOIN wms_transactions t2 ON ti.transaction_id = t2.transaction_id
-         ORDER BY ti.product_sku, t2.warehouse_code, t2.created_at DESC
+         JOIN wms_warehouses w2 ON t2.warehouse_id = w2.warehouse_id
+         ORDER BY ti.product_sku, w2.code, t2.created_at DESC
        ) t ON i.product_sku = t.product_sku AND w.code = t.warehouse_code
        WHERE i.quantity > 0
          AND (t.created_at IS NULL OR t.created_at < CURRENT_TIMESTAMP - ($1 || ' days')::INTERVAL)
@@ -357,7 +358,7 @@ router.get('/analytics/turnover', authenticateToken, async (req: AuthRequest, re
     const params: (string | number)[] = [days, limit];
     if (warehouseCode) {
       whFilter = 'AND w.code = $3';
-      whFilterTx = 'AND t.warehouse_code = $3';
+      whFilterTx = 'AND t.warehouse_id = (SELECT warehouse_id FROM wms_warehouses WHERE code = $3)';
       params.push(warehouseCode);
     }
 
@@ -427,7 +428,7 @@ router.get('/analytics/performance', authenticateToken, async (req: AuthRequest,
     const days = parseInt(req.query.days as string) || 30;
     const warehouseCode = req.query.warehouse_code as string | undefined;
 
-    const whFilter = warehouseCode ? 'AND t.warehouse_code = $2' : '';
+    const whFilter = warehouseCode ? 'AND t.warehouse_id = (SELECT warehouse_id FROM wms_warehouses WHERE code = $2)' : '';
     const params: (string | number)[] = [days];
     if (warehouseCode) params.push(warehouseCode);
 
@@ -449,20 +450,23 @@ router.get('/analytics/performance', authenticateToken, async (req: AuthRequest,
       params,
     );
 
-    // Picker performance (if orders exist)
-    const pickerResult = await pool.query(
-      `SELECT
-         u.username, u.full_name,
-         COUNT(DISTINCT so.order_id) AS orders_picked,
-         AVG(EXTRACT(EPOCH FROM (so.picking_completed_at - so.picking_started_at)) / 60)::DECIMAL(10,1) AS avg_pick_minutes
-       FROM shipment_orders so
-       JOIN wms_users u ON so.assigned_picker_id = u.user_id
-       WHERE so.status IN ('PICKED', 'SHIPPED')
-         AND so.picking_completed_at >= CURRENT_TIMESTAMP - ($1 || ' days')::INTERVAL
-       GROUP BY u.username, u.full_name
-       ORDER BY orders_picked DESC`,
-      [days],
-    );
+    // Picker performance (shipment_orders may not exist yet)
+    let pickerResult = { rows: [] as Record<string, unknown>[] };
+    try {
+      pickerResult = await pool.query(
+        `SELECT
+           u.username, u.full_name,
+           COUNT(DISTINCT so.order_id) AS orders_picked,
+           AVG(EXTRACT(EPOCH FROM (so.picking_completed_at - so.picking_started_at)) / 60)::DECIMAL(10,1) AS avg_pick_minutes
+         FROM shipment_orders so
+         JOIN wms_users u ON so.assigned_picker_id = u.user_id
+         WHERE so.status IN ('PICKED', 'SHIPPED')
+           AND so.picking_completed_at >= CURRENT_TIMESTAMP - ($1 || ' days')::INTERVAL
+         GROUP BY u.username, u.full_name
+         ORDER BY orders_picked DESC`,
+        [days],
+      );
+    } catch { /* table may not exist */ }
 
     // Cycle count accuracy
     const accuracyResult = await pool.query(
@@ -552,7 +556,7 @@ router.get('/analytics/slotting', authenticateToken, async (req: AuthRequest, re
            COUNT(*) AS movement_count
          FROM wms_transaction_items ti
          JOIN wms_transactions t ON ti.transaction_id = t.transaction_id
-         WHERE t.warehouse_code = $1
+         WHERE t.warehouse_id = (SELECT warehouse_id FROM wms_warehouses WHERE code = $1)
            AND t.created_at >= CURRENT_TIMESTAMP - ($2 || ' days')::INTERVAL
          GROUP BY ti.product_sku
        ),
@@ -613,19 +617,19 @@ router.get('/analytics/replenishment', authenticateToken, async (req: AuthReques
          p.name AS product_name,
          p.category,
          SUM(i.quantity) AS current_stock,
-         $2 AS min_threshold,
+         $2::integer AS min_threshold,
          CASE
            WHEN SUM(i.quantity) <= 0 THEN 'OUT_OF_STOCK'
-           WHEN SUM(i.quantity) <= $2 THEN 'BELOW_MIN'
+           WHEN SUM(i.quantity) <= $2::integer THEN 'BELOW_MIN'
            ELSE 'OK'
          END AS status,
-         $2 - SUM(i.quantity) AS replenish_quantity
+         $2::integer - SUM(i.quantity) AS replenish_quantity
        FROM wms_inventory i
        JOIN products p ON i.product_sku = p.product_sku
        JOIN wms_warehouses w ON i.warehouse_id = w.warehouse_id
        WHERE w.code = $1
        GROUP BY i.product_sku, p.name, p.category
-       HAVING SUM(i.quantity) <= $2
+       HAVING SUM(i.quantity) <= $2::integer
        ORDER BY SUM(i.quantity) ASC
        LIMIT 200`,
       [warehouseCode, minThreshold],

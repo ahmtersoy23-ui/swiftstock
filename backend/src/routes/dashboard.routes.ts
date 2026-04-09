@@ -19,7 +19,7 @@ router.get('/dashboard/stats', authenticateToken, async (req: AuthRequest, res: 
     const params: (string | number)[] = [];
     if (warehouseCode) {
       whFilter = `AND w.code = $1`;
-      whFilterTx = `AND t.warehouse_code = $1`;
+      whFilterTx = `AND t.warehouse_id = (SELECT warehouse_id FROM wms_warehouses WHERE code = $1)`;
       params.push(warehouseCode);
     }
 
@@ -37,12 +37,15 @@ router.get('/dashboard/stats', authenticateToken, async (req: AuthRequest, res: 
       params,
     );
 
-    // 2. Pending orders
-    const pendingOrdersResult = await pool.query(
-      `SELECT COUNT(*) AS pending_orders
-       FROM shipment_orders
-       WHERE status IN ('PENDING', 'READY_TO_PICK', 'PICKING')`,
-    );
+    // 2. Pending orders (shipment_orders may not exist yet)
+    let pendingOrdersResult = { rows: [{ pending_orders: '0' }] };
+    try {
+      pendingOrdersResult = await pool.query(
+        `SELECT COUNT(*) AS pending_orders
+         FROM shipment_orders
+         WHERE status IN ('PENDING', 'READY_TO_PICK', 'PICKING')`,
+      );
+    } catch { /* table may not exist */ }
 
     // 3. Active shipments
     const activeShipmentsResult = await pool.query(
