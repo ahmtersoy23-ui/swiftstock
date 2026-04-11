@@ -7,6 +7,7 @@ import { useStore } from '../../stores/appStore';
 import { translations } from '../../i18n/translations';
 import type { ScanResponse, OperationMode, Product, Location, Container, Inventory } from '../../types';
 import { useSSOStore } from '../../stores/ssoStore';
+import { Modal, ModalHeader, ModalBody } from '../../shared/components/Modal';
 
 // Local imports
 import { playScanSound } from './utils/audio';
@@ -977,50 +978,48 @@ function Operations() {
         )}
 
         {/* Container Name Modal */}
-        {containerNameModal.show && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
-            <div className="bg-white rounded-xl p-6 w-80 max-w-[90vw]">
-              <h3 className="m-0 mb-4 text-base">
-                {containerNameModal.type === 'BOX' ? '📦' : '📋'}{' '}
-                {language === 'tr'
-                  ? `${containerNameModal.type === 'BOX' ? 'Koli' : 'Palet'} İsmi`
-                  : `${containerNameModal.type === 'BOX' ? 'Box' : 'Pallet'} Name`}
-              </h3>
-              <input
-                type="text"
-                autoFocus
-                value={containerNameModal.displayName}
-                onChange={(e) => setContainerNameModal((prev) => ({ ...prev, displayName: e.target.value }))}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && containerNameModal.displayName.trim() && containerNameModal.type) {
+        <Modal isOpen={containerNameModal.show} onClose={() => setContainerNameModal({ show: false, type: null, displayName: '' })} size="sm">
+          <ModalHeader onClose={() => setContainerNameModal({ show: false, type: null, displayName: '' })}>
+            {containerNameModal.type === 'BOX' ? '📦' : '📋'}{' '}
+            {language === 'tr'
+              ? `${containerNameModal.type === 'BOX' ? 'Koli' : 'Palet'} İsmi`
+              : `${containerNameModal.type === 'BOX' ? 'Box' : 'Pallet'} Name`}
+          </ModalHeader>
+          <ModalBody>
+            <input
+              type="text"
+              autoFocus
+              value={containerNameModal.displayName}
+              onChange={(e) => setContainerNameModal((prev) => ({ ...prev, displayName: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && containerNameModal.displayName.trim() && containerNameModal.type) {
+                  createContainer(containerNameModal.type, containerNameModal.displayName.trim());
+                }
+              }}
+              placeholder={language === 'tr' ? 'ör. FBA-BOX-01, TR-AMBALAJ-MART' : 'e.g. FBA-BOX-01, TR-MARCH'}
+              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm box-border mb-4"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  if (containerNameModal.displayName.trim() && containerNameModal.type) {
                     createContainer(containerNameModal.type, containerNameModal.displayName.trim());
                   }
                 }}
-                placeholder={language === 'tr' ? 'ör. FBA-BOX-01, TR-AMBALAJ-MART' : 'e.g. FBA-BOX-01, TR-MARCH'}
-                className="w-full p-2.5 border border-slate-300 rounded-lg text-sm box-border mb-4"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    if (containerNameModal.displayName.trim() && containerNameModal.type) {
-                      createContainer(containerNameModal.type, containerNameModal.displayName.trim());
-                    }
-                  }}
-                  disabled={!containerNameModal.displayName.trim() || loading}
-                  className="flex-1 p-2.5 bg-primary-600 text-white border-none rounded-lg font-semibold cursor-pointer disabled:opacity-50"
-                >
-                  {language === 'tr' ? 'Oluştur' : 'Create'}
-                </button>
-                <button
-                  onClick={() => setContainerNameModal({ show: false, type: null, displayName: '' })}
-                  className="flex-1 p-2.5 bg-slate-100 text-slate-700 border-none rounded-lg font-semibold cursor-pointer"
-                >
-                  {t.cancel}
-                </button>
-              </div>
+                disabled={!containerNameModal.displayName.trim() || loading}
+                className="flex-1 p-2.5 bg-primary-600 text-white border-none rounded-lg font-semibold cursor-pointer disabled:opacity-50"
+              >
+                {language === 'tr' ? 'Oluştur' : 'Create'}
+              </button>
+              <button
+                onClick={() => setContainerNameModal({ show: false, type: null, displayName: '' })}
+                className="flex-1 p-2.5 bg-slate-100 text-slate-700 border-none rounded-lg font-semibold cursor-pointer"
+              >
+                {t.cancel}
+              </button>
             </div>
-          </div>
-        )}
+          </ModalBody>
+        </Modal>
 
         {/* Camera View */}
         <CameraView isNative={isNative} cameraActive={cameraActive} />

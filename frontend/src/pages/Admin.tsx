@@ -4,6 +4,7 @@ import { apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
 import { useSSOStore } from '../stores/ssoStore';
 import { translations } from '../i18n/translations';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../shared/components/Modal';
 
 interface User {
   user_id: number;
@@ -320,201 +321,94 @@ function Admin() {
           )}
 
           {/* Add/Edit Modal */}
-          {showModal && (
-            <div
-              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-4"
-              onClick={() => setShowModal(false)}
-            >
-              <div
-                className="bg-white rounded-xl p-5 w-full max-w-[400px] max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <h3 className="m-0 mb-5 text-slate-800 text-lg">
-                  {editingUser ? t.adminEditUser : t.adminAddUser}
-                </h3>
-
-                <div className="mb-3.5">
-                  <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminUsername} *</label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500"
-                    value={form.username}
-                    onChange={(e) => setForm({ ...form, username: e.target.value })}
-                    placeholder={t.adminUsernamePlaceholder}
-                  />
-                </div>
-
-                <div className="mb-3.5">
-                  <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminEmail} *</label>
-                  <input
-                    type="email"
-                    className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder={t.adminEmailPlaceholder}
-                  />
-                </div>
-
-                {!editingUser && (
-                  <div className="mb-3.5">
-                    <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminPassword} *</label>
-                    <input
-                      type="password"
-                      className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500"
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      placeholder={t.adminPasswordPlaceholder}
-                    />
-                  </div>
-                )}
-
-                <div className="mb-3.5">
-                  <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminFullName}</label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500"
-                    value={form.full_name}
-                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                    placeholder={t.adminFullNamePlaceholder}
-                  />
-                </div>
-
-                <div className="mb-3.5">
-                  <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminRole} *</label>
-                  <select
-                    className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500"
-                    value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value as UserForm['role'] })}
-                  >
-                    <option value="ADMIN">{t.roleAdmin}</option>
-                    <option value="MANAGER">{t.roleManager}</option>
-                    <option value="OPERATOR">{t.roleOperator}</option>
-                    <option value="VIEWER">{t.roleViewer}</option>
-                  </select>
-                </div>
-
-                <div className="mb-3.5">
-                  <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminWarehouse}</label>
-                  <select
-                    className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500"
-                    value={form.warehouse_code}
-                    onChange={(e) => setForm({ ...form, warehouse_code: e.target.value })}
-                  >
-                    <option value="">{t.adminAllWarehouses}</option>
-                    <option value="USA">USA</option>
-                    <option value="TUR">TUR</option>
-                    <option value="FAB">FAB</option>
-                  </select>
-                </div>
-
-                {editingUser && (
-                  <div className="mb-3.5">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="w-[18px] h-[18px] cursor-pointer"
-                        checked={form.is_active}
-                        onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                      />
-                      {t.active}
-                    </label>
-                  </div>
-                )}
-
-                <div className="flex gap-3 mt-5 justify-end">
-                  <button
-                    className="px-4 py-2.5 bg-slate-100 text-slate-500 border-none rounded-lg font-medium cursor-pointer transition-all duration-200 hover:bg-slate-200"
-                    onClick={() => setShowModal(false)}
-                  >
-                    {t.cancel}
-                  </button>
-                  <button
-                    className="px-4 py-2.5 bg-linear-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-lg font-medium cursor-pointer transition-all duration-200 hover:enabled:from-emerald-600 hover:enabled:to-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                    onClick={handleSave}
-                    disabled={saving}
-                  >
-                    {saving ? t.loading : t.adminSave}
-                  </button>
-                </div>
+          <Modal isOpen={showModal} onClose={() => setShowModal(false)} size="md">
+            <ModalHeader onClose={() => setShowModal(false)}>
+              {editingUser ? t.adminEditUser : t.adminAddUser}
+            </ModalHeader>
+            <ModalBody>
+              <div className="mb-3.5">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminUsername} *</label>
+                <input type="text" className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder={t.adminUsernamePlaceholder} />
               </div>
-            </div>
-          )}
+              <div className="mb-3.5">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminEmail} *</label>
+                <input type="email" className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t.adminEmailPlaceholder} />
+              </div>
+              {!editingUser && (
+                <div className="mb-3.5">
+                  <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminPassword} *</label>
+                  <input type="password" className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder={t.adminPasswordPlaceholder} />
+                </div>
+              )}
+              <div className="mb-3.5">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminFullName}</label>
+                <input type="text" className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder={t.adminFullNamePlaceholder} />
+              </div>
+              <div className="mb-3.5">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminRole} *</label>
+                <select className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as UserForm['role'] })}>
+                  <option value="ADMIN">{t.roleAdmin}</option>
+                  <option value="MANAGER">{t.roleManager}</option>
+                  <option value="OPERATOR">{t.roleOperator}</option>
+                  <option value="VIEWER">{t.roleViewer}</option>
+                </select>
+              </div>
+              <div className="mb-3.5">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminWarehouse}</label>
+                <select className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500" value={form.warehouse_code} onChange={(e) => setForm({ ...form, warehouse_code: e.target.value })}>
+                  <option value="">{t.adminAllWarehouses}</option>
+                  <option value="USA">USA</option>
+                  <option value="TUR">TUR</option>
+                  <option value="FAB">FAB</option>
+                </select>
+              </div>
+              {editingUser && (
+                <div className="mb-3.5">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="w-[18px] h-[18px] cursor-pointer" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
+                    {t.active}
+                  </label>
+                </div>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <button className="px-4 py-2.5 bg-slate-100 text-slate-500 border-none rounded-lg font-medium cursor-pointer transition-all duration-200 hover:bg-slate-200" onClick={() => setShowModal(false)}>{t.cancel}</button>
+              <button className="px-4 py-2.5 bg-linear-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-lg font-medium cursor-pointer transition-all duration-200 hover:enabled:from-emerald-600 hover:enabled:to-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed" onClick={handleSave} disabled={saving}>{saving ? t.loading : t.adminSave}</button>
+            </ModalFooter>
+          </Modal>
 
           {/* Reset Password Modal */}
-          {resetPasswordUserId && (
-            <div
-              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-4"
-              onClick={() => setResetPasswordUserId(null)}
-            >
-              <div
-                className="bg-white rounded-xl p-5 w-full max-w-[320px] max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <h3 className="m-0 mb-5 text-slate-800 text-lg">{t.adminResetPassword}</h3>
-
-                <div className="mb-3.5">
-                  <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminNewPassword}</label>
-                  <input
-                    type="password"
-                    className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder={t.adminNewPasswordPlaceholder}
-                  />
-                </div>
-
-                <div className="flex gap-3 mt-5 justify-end">
-                  <button
-                    className="px-4 py-2.5 bg-slate-100 text-slate-500 border-none rounded-lg font-medium cursor-pointer transition-all duration-200 hover:bg-slate-200"
-                    onClick={() => setResetPasswordUserId(null)}
-                  >
-                    {t.cancel}
-                  </button>
-                  <button
-                    className="px-4 py-2.5 bg-linear-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-lg font-medium cursor-pointer transition-all duration-200 hover:enabled:from-emerald-600 hover:enabled:to-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                    onClick={handleResetPassword}
-                    disabled={!newPassword}
-                  >
-                    {t.adminResetPassword}
-                  </button>
-                </div>
+          <Modal isOpen={!!resetPasswordUserId} onClose={() => setResetPasswordUserId(null)} size="sm">
+            <ModalHeader onClose={() => setResetPasswordUserId(null)}>{t.adminResetPassword}</ModalHeader>
+            <ModalBody>
+              <div className="mb-3.5">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t.adminNewPassword}</label>
+                <input type="password" className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-lg text-[0.9375rem] transition-colors duration-200 box-border focus:outline-none focus:border-blue-500" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t.adminNewPasswordPlaceholder} />
               </div>
-            </div>
-          )}
+            </ModalBody>
+            <ModalFooter>
+              <button className="px-4 py-2.5 bg-slate-100 text-slate-500 border-none rounded-lg font-medium cursor-pointer transition-all duration-200 hover:bg-slate-200" onClick={() => setResetPasswordUserId(null)}>{t.cancel}</button>
+              <button className="px-4 py-2.5 bg-linear-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-lg font-medium cursor-pointer transition-all duration-200 hover:enabled:from-emerald-600 hover:enabled:to-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed" onClick={handleResetPassword} disabled={!newPassword}>{t.adminResetPassword}</button>
+            </ModalFooter>
+          </Modal>
 
           {/* Created Password Modal */}
-          {createdPassword && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-4">
-              <div className="bg-white rounded-xl p-5 w-full max-w-[320px]">
-                <h3 className="m-0 mb-5 text-slate-800 text-lg">
-                  {t.adminUserCreated || 'Kullanici Olusturuldu'}
-                </h3>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
-                  <p className="my-2 text-slate-700"><strong>{t.adminUsername}:</strong> {createdUsername}</p>
-                  <p className="my-2 text-slate-700">
-                    <strong>{t.adminPassword}:</strong>{' '}
-                    <code className="bg-slate-800 text-emerald-400 px-2 py-0.5 rounded font-mono text-base font-semibold">
-                      {createdPassword}
-                    </code>
-                  </p>
-                </div>
-
-                <p className="text-sm text-slate-500 m-0">
-                  {t.adminPasswordNote || 'Bu sifreyi kaydedin. Kullanici ilk girisinde sifre degistirecek.'}
+          <Modal isOpen={!!createdPassword} onClose={() => { setCreatedPassword(null); setCreatedUsername(null); }} size="sm" closeOnOverlay={false}>
+            <ModalHeader>{t.adminUserCreated || 'Kullanici Olusturuldu'}</ModalHeader>
+            <ModalBody>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
+                <p className="my-2 text-slate-700"><strong>{t.adminUsername}:</strong> {createdUsername}</p>
+                <p className="my-2 text-slate-700">
+                  <strong>{t.adminPassword}:</strong>{' '}
+                  <code className="bg-slate-800 text-emerald-400 px-2 py-0.5 rounded font-mono text-base font-semibold">{createdPassword}</code>
                 </p>
-
-                <div className="flex gap-3 mt-5 justify-end">
-                  <button
-                    className="px-4 py-2.5 bg-linear-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-lg font-medium cursor-pointer transition-all duration-200 hover:from-emerald-600 hover:to-emerald-700"
-                    onClick={() => { setCreatedPassword(null); setCreatedUsername(null); }}
-                  >
-                    {t.adminOk || 'Tamam'}
-                  </button>
-                </div>
               </div>
-            </div>
-          )}
+              <p className="text-sm text-slate-500 m-0">{t.adminPasswordNote || 'Bu sifreyi kaydedin. Kullanici ilk girisinde sifre degistirecek.'}</p>
+            </ModalBody>
+            <ModalFooter>
+              <button className="px-4 py-2.5 bg-linear-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-lg font-medium cursor-pointer transition-all duration-200 hover:from-emerald-600 hover:to-emerald-700" onClick={() => { setCreatedPassword(null); setCreatedUsername(null); }}>{t.adminOk || 'Tamam'}</button>
+            </ModalFooter>
+          </Modal>
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { shipmentApi, apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
 import { useSSOStore } from '../stores/ssoStore';
+import { Modal, ModalHeader, ModalBody } from '../shared/components/Modal';
 import type { VirtualShipment, ShipmentBox, Warehouse } from '../types';
 
 // Shipment Rules:
@@ -480,10 +481,9 @@ function Shipments() {
       </div>
 
       {/* Create Shipment Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-4" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-[400px] max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h3 className="m-0 mb-5 text-slate-800 text-lg">{language === 'tr' ? 'Yeni Sevkiyat' : 'New Shipment'}</h3>
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} size="md">
+        <ModalHeader onClose={() => setShowCreateModal(false)}>{language === 'tr' ? 'Yeni Sevkiyat' : 'New Shipment'}</ModalHeader>
+        <ModalBody>
 
             {outboundWarehouses.length === 0 ? (
               <div className="bg-blue-50 border border-blue-200 rounded-lg py-2.5 px-3.5 text-[0.8rem] text-blue-700 mb-4 leading-relaxed">
@@ -548,9 +548,8 @@ function Shipments() {
                 </div>
               </form>
             )}
-          </div>
-        </div>
-      )}
+        </ModalBody>
+      </Modal>
     </div>
   );
 }

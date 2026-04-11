@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../stores/appStore';
 import api, { serialApi } from '../lib/api';
 import type { Product } from '../types';
+import { Modal, ModalHeader, ModalBody } from '../shared/components/Modal';
 import { translations } from '../i18n/translations';
 
 function Products() {
@@ -506,63 +507,23 @@ function Products() {
       </div>
 
       {/* Label Print Modal */}
-      {labelModal.product && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
-          onClick={() => !labelModal.loading && setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' })}
-        >
-          <div
-            className="bg-white rounded-xl p-7 w-[340px] shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="mb-1.5 text-gray-900">Etiket Bas</h3>
-            <p className="text-gray-500 mb-1 text-[13px]">{labelModal.product.sku_code}</p>
-            <p className="text-gray-700 mb-4 text-sm font-medium">{labelModal.product.product_name}</p>
-            <label className="block mb-1.5 font-semibold text-sm">
-              {language === 'tr' ? 'Sablon' : 'Template'}
-            </label>
-            <select
-              value={labelModal.template}
-              onChange={(e) => setLabelModal((prev) => ({ ...prev, template: e.target.value }))}
-              className="w-full py-2 px-3 text-sm border-2 border-gray-200 rounded-md mb-3"
-            >
-              {LABEL_TEMPLATES.map(tpl => (
-                <option key={tpl.id} value={tpl.id}>{tpl.name}</option>
-              ))}
-            </select>
-            <label className="block mb-1.5 font-semibold text-sm">
-              {language === 'tr' ? 'Adet' : 'Quantity'}
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={500}
-              value={labelModal.quantity}
-              onChange={(e) => setLabelModal((prev) => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
-              onKeyDown={(e) => e.key === 'Enter' && !labelModal.loading && handleGenerateLabels()}
-              autoFocus
-              className="w-full py-2.5 px-3 text-lg text-center border-2 border-gray-200 rounded-md mb-4"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleGenerateLabels}
-                disabled={labelModal.loading}
-                className="flex-1 py-3 border-none rounded-md font-semibold text-sm text-white"
-                style={{ background: labelModal.loading ? '#9ca3af' : '#10b981', cursor: labelModal.loading ? 'not-allowed' : 'pointer' }}
-              >
-                {labelModal.loading ? 'Uretiliyor...' : 'Seri No Uret ve Hazirla'}
-              </button>
-              <button
-                onClick={() => setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' })}
-                disabled={labelModal.loading}
-                className="py-3 px-4 bg-gray-500 text-white border-none rounded-md cursor-pointer text-sm"
-              >
-                Iptal
-              </button>
-            </div>
+      <Modal isOpen={!!labelModal.product} onClose={() => !labelModal.loading && setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' })} size="sm">
+        <ModalHeader onClose={() => !labelModal.loading && setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' })}>Etiket Bas</ModalHeader>
+        <ModalBody>
+          <p className="text-gray-500 mb-1 text-[13px]">{labelModal.product?.sku_code}</p>
+          <p className="text-gray-700 mb-4 text-sm font-medium">{labelModal.product?.product_name}</p>
+          <label className="block mb-1.5 font-semibold text-sm">{language === 'tr' ? 'Sablon' : 'Template'}</label>
+          <select value={labelModal.template} onChange={(e) => setLabelModal((prev) => ({ ...prev, template: e.target.value }))} className="w-full py-2 px-3 text-sm border-2 border-gray-200 rounded-md mb-3">
+            {LABEL_TEMPLATES.map(tpl => (<option key={tpl.id} value={tpl.id}>{tpl.name}</option>))}
+          </select>
+          <label className="block mb-1.5 font-semibold text-sm">{language === 'tr' ? 'Adet' : 'Quantity'}</label>
+          <input type="number" min={1} max={500} value={labelModal.quantity} onChange={(e) => setLabelModal((prev) => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))} onKeyDown={(e) => e.key === 'Enter' && !labelModal.loading && handleGenerateLabels()} autoFocus className="w-full py-2.5 px-3 text-lg text-center border-2 border-gray-200 rounded-md mb-4" />
+          <div className="flex gap-2">
+            <button onClick={handleGenerateLabels} disabled={labelModal.loading} className="flex-1 py-3 border-none rounded-md font-semibold text-sm text-white" style={{ background: labelModal.loading ? '#9ca3af' : '#10b981', cursor: labelModal.loading ? 'not-allowed' : 'pointer' }}>{labelModal.loading ? 'Uretiliyor...' : 'Seri No Uret ve Hazirla'}</button>
+            <button onClick={() => setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' })} disabled={labelModal.loading} className="py-3 px-4 bg-gray-500 text-white border-none rounded-md cursor-pointer text-sm">Iptal</button>
           </div>
-        </div>
-      )}
+        </ModalBody>
+      </Modal>
     </div>
   );
 }

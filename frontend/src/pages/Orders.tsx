@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { orderApi } from '../lib/api/orders';
 import { userApi } from '../lib/api';
 import { useStore } from '../stores/appStore';
+import { Modal, ModalHeader, ModalBody } from '../shared/components/Modal';
 import type { ShipmentOrder, ShipmentOrderItem } from '../types';
 
 const STATUS_LABELS: Record<string, Record<string, string>> = {
@@ -527,11 +528,10 @@ function Orders() {
       </div>
 
       {/* Create Order Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-4" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-[480px] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="m-0 mb-5 text-slate-800 text-lg">{t === 'tr' ? 'Yeni Siparis' : 'New Order'}</h3>
-            <form onSubmit={handleCreateOrder}>
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} size="xl">
+        <ModalHeader onClose={() => setShowCreateModal(false)}>{t === 'tr' ? 'Yeni Siparis' : 'New Order'}</ModalHeader>
+        <ModalBody>
+          <form onSubmit={handleCreateOrder}>
               <div className="mb-4">
                 <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Siparis No' : 'Order Number'} *</label>
                 <input
@@ -630,9 +630,8 @@ function Orders() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+        </ModalBody>
+      </Modal>
     </div>
   );
 }

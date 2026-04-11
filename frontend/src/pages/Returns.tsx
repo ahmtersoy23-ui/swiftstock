@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { rmaApi } from '../lib/api/rma';
 import { apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
+import { Modal, ModalHeader, ModalBody } from '../shared/components/Modal';
 import type { RMARequest, RMAItem, RMAHistory, Warehouse } from '../types';
 
 const STATUS_LABELS: Record<string, Record<string, string>> = {
@@ -443,10 +444,9 @@ function Returns() {
       </div>
 
       {/* Create RMA Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-4" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-[480px] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="m-0 mb-5 text-slate-800 text-lg">{t === 'tr' ? 'Yeni Iade (RMA)' : 'New Return (RMA)'}</h3>
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} size="xl">
+        <ModalHeader onClose={() => setShowCreateModal(false)}>{t === 'tr' ? 'Yeni Iade (RMA)' : 'New Return (RMA)'}</ModalHeader>
+        <ModalBody>
             <form onSubmit={handleCreateRma}>
               <div className="mb-4">
                 <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Depo' : 'Warehouse'} *</label>
@@ -546,9 +546,8 @@ function Returns() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+        </ModalBody>
+      </Modal>
     </div>
   );
 }
