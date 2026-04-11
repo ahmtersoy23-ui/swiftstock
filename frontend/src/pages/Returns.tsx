@@ -4,21 +4,34 @@ import { rmaApi } from '../lib/api/rma';
 import { apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
 import type { RMARequest, RMAItem, RMAHistory, Warehouse } from '../types';
-import './Returns.css';
 
 const STATUS_LABELS: Record<string, Record<string, string>> = {
-  tr: { PENDING: 'Bekliyor', APPROVED: 'Onaylandı', IN_PROCESS: 'İşlemde', COMPLETED: 'Tamamlandı' },
+  tr: { PENDING: 'Bekliyor', APPROVED: 'Onaylandi', IN_PROCESS: 'Islemde', COMPLETED: 'Tamamlandi' },
   en: { PENDING: 'Pending', APPROVED: 'Approved', IN_PROCESS: 'In Process', COMPLETED: 'Completed' },
 };
 
 const ACTION_LABELS: Record<string, Record<string, string>> = {
-  tr: { REFUND: 'İade', REPLACE: 'Değişim', REPAIR: 'Tamir', DISCARD: 'İmha' },
+  tr: { REFUND: 'Iade', REPLACE: 'Degisim', REPAIR: 'Tamir', DISCARD: 'Imha' },
   en: { REFUND: 'Refund', REPLACE: 'Replace', REPAIR: 'Repair', DISCARD: 'Discard' },
 };
 
 const CONDITION_LABELS: Record<string, Record<string, string>> = {
-  tr: { NEW: 'Yeni', GOOD: 'İyi', DAMAGED: 'Hasarlı', DEFECTIVE: 'Kusurlu' },
+  tr: { NEW: 'Yeni', GOOD: 'Iyi', DAMAGED: 'Hasarli', DEFECTIVE: 'Kusurlu' },
   en: { NEW: 'New', GOOD: 'Good', DAMAGED: 'Damaged', DEFECTIVE: 'Defective' },
+};
+
+const STATUS_BADGE_CLASSES: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-700',
+  approved: 'bg-blue-100 text-blue-700',
+  in_process: 'bg-indigo-100 text-indigo-700',
+  completed: 'bg-green-100 text-green-600',
+};
+
+const ACTION_BADGE_CLASSES: Record<string, string> = {
+  refund: 'bg-green-100 text-green-600',
+  replace: 'bg-blue-100 text-blue-700',
+  repair: 'bg-amber-100 text-amber-700',
+  discard: 'bg-red-100 text-red-600',
 };
 
 interface RMADetail {
@@ -122,7 +135,7 @@ function Returns() {
     try {
       const res = await rmaApi.approve(selectedDetail.rma.rma_id, notes || undefined);
       if (res.success) {
-        showMsg(t === 'tr' ? 'RMA onaylandı' : 'RMA approved');
+        showMsg(t === 'tr' ? 'RMA onaylandi' : 'RMA approved');
         handleSelectRma(selectedDetail.rma);
         loadData();
       }
@@ -138,7 +151,7 @@ function Returns() {
         condition: receiveCondition,
       });
       if (res.success) {
-        showMsg(t === 'tr' ? 'İade kabul edildi' : 'Return received');
+        showMsg(t === 'tr' ? 'Iade kabul edildi' : 'Return received');
         setReceiveItemId(null);
         setReceiveQty(1);
         setReceiveCondition('GOOD');
@@ -152,12 +165,12 @@ function Returns() {
 
   const handleComplete = async () => {
     if (!selectedDetail) return;
-    if (!confirm(t === 'tr' ? 'RMA\'yı tamamlamak istediğinize emin misiniz?' : 'Complete this RMA?')) return;
+    if (!confirm(t === 'tr' ? 'RMA\'yi tamamlamak istediginize emin misiniz?' : 'Complete this RMA?')) return;
 
     try {
       const res = await rmaApi.complete(selectedDetail.rma.rma_id);
       if (res.success) {
-        showMsg(t === 'tr' ? 'RMA tamamlandı' : 'RMA completed');
+        showMsg(t === 'tr' ? 'RMA tamamlandi' : 'RMA completed');
         handleSelectRma(selectedDetail.rma);
         loadData();
       }
@@ -177,7 +190,7 @@ function Returns() {
   const handleCreateRma = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRma.reason || newItems.length === 0) {
-      setError(t === 'tr' ? 'İade nedeni ve en az 1 ürün gerekli' : 'Reason and at least 1 item required');
+      setError(t === 'tr' ? 'Iade nedeni ve en az 1 urun gerekli' : 'Reason and at least 1 item required');
       return;
     }
 
@@ -193,7 +206,7 @@ function Returns() {
       });
 
       if (res.success) {
-        showMsg(t === 'tr' ? 'RMA oluşturuldu' : 'RMA created');
+        showMsg(t === 'tr' ? 'RMA olusturuldu' : 'RMA created');
         setShowCreateModal(false);
         setNewRma({ warehouse_id: warehouses[0]?.warehouse_id || 0, customer_name: '', order_number: '', reason: '', priority: 'NORMAL', notes: '' });
         setNewItems([]);
@@ -205,13 +218,13 @@ function Returns() {
   };
 
   const getStatusBadge = (status: string) => (
-    <span className={`rma-status s-${status.toLowerCase()}`}>
+    <span className={`inline-block px-2 py-0.5 rounded-full text-[0.65rem] font-semibold uppercase ${STATUS_BADGE_CLASSES[status.toLowerCase()] || ''}`}>
       {STATUS_LABELS[t][status] || status}
     </span>
   );
 
   const getActionBadge = (action: string) => (
-    <span className={`action-badge a-${action.toLowerCase()}`}>
+    <span className={`inline-block px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase ${ACTION_BADGE_CLASSES[action.toLowerCase()] || ''}`}>
       {ACTION_LABELS[t][action] || action}
     </span>
   );
@@ -226,23 +239,27 @@ function Returns() {
   const rma = selectedDetail?.rma;
 
   return (
-    <div className="returns-page">
-      <div className="returns-card">
-        <div className="returns-header">
-          <button className="back-btn" onClick={() => navigate('/')}>←</button>
-          <h2>{t === 'tr' ? 'İade Yönetimi (RMA)' : 'Returns (RMA)'}</h2>
-          <button className="add-btn" onClick={() => setShowCreateModal(true)}>
+    <div className="min-h-[calc(100vh-120px)] bg-slate-100 p-4">
+      <div className="max-w-[900px] mx-auto bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] overflow-hidden">
+        <div className="bg-gradient-to-br from-amber-500 to-amber-600 text-white p-5 flex items-center gap-3">
+          <button className="bg-white/20 border-none text-white w-9 h-9 rounded-lg text-lg cursor-pointer flex items-center justify-center hover:bg-white/30" onClick={() => navigate('/')}>←</button>
+          <h2 className="m-0 text-white text-xl font-bold flex-1 leading-9 h-9 flex items-center">{t === 'tr' ? 'Iade Yonetimi (RMA)' : 'Returns (RMA)'}</h2>
+          <button className="py-2 px-4 bg-white/20 text-white border-2 border-white/30 rounded-lg font-semibold cursor-pointer text-sm hover:bg-white/30" onClick={() => setShowCreateModal(true)}>
             + {t === 'tr' ? 'Yeni' : 'New'}
           </button>
         </div>
 
-        <div className="returns-content">
-          {success && <div className="success-message">{success}</div>}
-          {error && <div className="error-message" onClick={() => setError(null)}>{error}</div>}
+        <div className="p-4">
+          {success && <div className="py-3 px-4 bg-green-100 text-green-600 rounded-lg mb-4 font-medium">{success}</div>}
+          {error && <div className="py-3 px-4 bg-red-100 text-red-600 rounded-lg mb-4 font-medium cursor-pointer" onClick={() => setError(null)}>{error}</div>}
 
-          <div className="returns-filters">
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-              <option value="">{t === 'tr' ? 'Tüm Durumlar' : 'All Statuses'}</option>
+          <div className="flex gap-2 mb-4 flex-wrap">
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="py-2 px-3 border-2 border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500"
+            >
+              <option value="">{t === 'tr' ? 'Tum Durumlar' : 'All Statuses'}</option>
               {Object.keys(STATUS_LABELS[t]).map(s => (
                 <option key={s} value={s}>{STATUS_LABELS[t][s]}</option>
               ))}
@@ -250,32 +267,32 @@ function Returns() {
           </div>
 
           {loading ? (
-            <div className="loading">{t === 'tr' ? 'Yükleniyor...' : 'Loading...'}</div>
+            <div className="text-center p-8 text-slate-500">{t === 'tr' ? 'Yukleniyor...' : 'Loading...'}</div>
           ) : (
-            <div className="returns-layout">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_1.3fr] gap-4">
               {/* RMA List */}
-              <div className="rma-list">
-                <h3>RMA ({rmas.length})</h3>
+              <div>
+                <h3 className="m-0 mb-3 text-base text-slate-800">RMA ({rmas.length})</h3>
                 {rmas.length === 0 ? (
-                  <div className="empty-state">
-                    {t === 'tr' ? 'İade kaydı bulunamadı' : 'No RMA records found'}
+                  <div className="text-center p-8 text-slate-400 text-sm">
+                    {t === 'tr' ? 'Iade kaydi bulunamadi' : 'No RMA records found'}
                   </div>
                 ) : (
-                  <div className="rma-cards">
+                  <div className="flex flex-col gap-2 max-h-[calc(100vh-340px)] overflow-y-auto">
                     {rmas.map(r => (
                       <div
                         key={r.rma_id}
-                        className={`rma-card ${rma?.rma_id === r.rma_id ? 'selected' : ''}`}
+                        className={`p-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl cursor-pointer duration-200 hover:border-amber-500 hover:bg-amber-50 ${rma?.rma_id === r.rma_id ? 'border-amber-500 bg-yellow-50 shadow-[0_0_0_3px_rgba(245,158,11,0.1)]' : ''}`}
                         onClick={() => handleSelectRma(r)}
                       >
-                        <div className="rma-card-top">
-                          <span className="rma-number">{r.rma_number}</span>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className="text-[0.9rem] font-bold text-slate-800 font-mono">{r.rma_number}</span>
                           {getStatusBadge(r.status)}
                         </div>
-                        <div className="rma-card-meta">
+                        <div className="text-[0.8rem] text-slate-500 mb-1">
                           {r.customer_name || r.order_number || r.reason}
                         </div>
-                        <div className="rma-card-bottom">
+                        <div className="flex justify-between items-center text-xs text-slate-400 mt-1.5">
                           <span>{formatDate(r.created_at)}</span>
                           <span>{r.total_items || 0} {t === 'tr' ? 'kalem' : 'items'} — {r.total_quantity || 0} {t === 'tr' ? 'adet' : 'qty'}</span>
                         </div>
@@ -287,49 +304,49 @@ function Returns() {
 
               {/* Detail Panel */}
               {selectedDetail && rma && (
-                <div className="rma-detail-panel">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                   {detailLoading ? (
-                    <div className="loading">{t === 'tr' ? 'Yükleniyor...' : 'Loading...'}</div>
+                    <div className="text-center p-8 text-slate-500">{t === 'tr' ? 'Yukleniyor...' : 'Loading...'}</div>
                   ) : (
                     <>
-                      <div className="rma-detail-header">
-                        <h3>{rma.rma_number}</h3>
-                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                      <div>
+                        <h3 className="m-0 text-lg text-slate-800">{rma.rma_number}</h3>
+                        <div className="flex gap-2 mt-1">
                           {getStatusBadge(rma.status)}
                         </div>
                       </div>
 
-                      <div className="rma-detail-info">
-                        <div className="detail-field">
-                          <span className="label">{t === 'tr' ? 'Müşteri' : 'Customer'}</span>
-                          <span className="value">{rma.customer_name || '-'}</span>
+                      <div className="grid grid-cols-2 max-sm:grid-cols-1 gap-2 my-3 text-[0.8rem]">
+                        <div className="flex flex-col">
+                          <span className="text-slate-400 text-[0.7rem] uppercase font-semibold">{t === 'tr' ? 'Musteri' : 'Customer'}</span>
+                          <span className="text-slate-800 font-medium">{rma.customer_name || '-'}</span>
                         </div>
-                        <div className="detail-field">
-                          <span className="label">{t === 'tr' ? 'Sipariş No' : 'Order #'}</span>
-                          <span className="value">{rma.order_number || '-'}</span>
+                        <div className="flex flex-col">
+                          <span className="text-slate-400 text-[0.7rem] uppercase font-semibold">{t === 'tr' ? 'Siparis No' : 'Order #'}</span>
+                          <span className="text-slate-800 font-medium">{rma.order_number || '-'}</span>
                         </div>
-                        <div className="detail-field">
-                          <span className="label">{t === 'tr' ? 'Depo' : 'Warehouse'}</span>
-                          <span className="value">{rma.warehouse_name || rma.warehouse_code}</span>
+                        <div className="flex flex-col">
+                          <span className="text-slate-400 text-[0.7rem] uppercase font-semibold">{t === 'tr' ? 'Depo' : 'Warehouse'}</span>
+                          <span className="text-slate-800 font-medium">{rma.warehouse_name || rma.warehouse_code}</span>
                         </div>
-                        <div className="detail-field">
-                          <span className="label">{t === 'tr' ? 'Tarih' : 'Date'}</span>
-                          <span className="value">{formatDate(rma.created_at)}</span>
+                        <div className="flex flex-col">
+                          <span className="text-slate-400 text-[0.7rem] uppercase font-semibold">{t === 'tr' ? 'Tarih' : 'Date'}</span>
+                          <span className="text-slate-800 font-medium">{formatDate(rma.created_at)}</span>
                         </div>
-                        <div className="detail-field" style={{ gridColumn: '1 / -1' }}>
-                          <span className="label">{t === 'tr' ? 'Neden' : 'Reason'}</span>
-                          <span className="value">{rma.reason}</span>
+                        <div className="flex flex-col col-span-full">
+                          <span className="text-slate-400 text-[0.7rem] uppercase font-semibold">{t === 'tr' ? 'Neden' : 'Reason'}</span>
+                          <span className="text-slate-800 font-medium">{rma.reason}</span>
                         </div>
                       </div>
 
                       {/* Items */}
-                      <div className="rma-items-section">
-                        <h4>{t === 'tr' ? 'Ürünler' : 'Items'} ({selectedDetail.items.length})</h4>
-                        <div className="rma-items-list">
+                      <div>
+                        <h4 className="m-0 mb-2 text-[0.9rem] text-slate-600">{t === 'tr' ? 'Urunler' : 'Items'} ({selectedDetail.items.length})</h4>
+                        <div className="flex flex-col gap-1.5">
                           {selectedDetail.items.map(item => (
                             <div key={item.item_id}>
                               <div
-                                className="rma-item-row"
+                                className="flex items-center gap-2 py-2 px-2.5 bg-white rounded-lg border border-slate-200 text-[0.8rem]"
                                 onClick={() => {
                                   if (rma.status === 'APPROVED' || rma.status === 'IN_PROCESS') {
                                     setReceiveItemId(receiveItemId === item.item_id ? null : item.item_id);
@@ -338,40 +355,44 @@ function Returns() {
                                 }}
                                 style={{ cursor: ['APPROVED', 'IN_PROCESS'].includes(rma.status) ? 'pointer' : 'default' }}
                               >
-                                <div className="item-info">
-                                  <div className="item-sku">{item.product_sku}</div>
-                                  <div className="item-name">{item.product_name}</div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-mono text-[0.7rem] text-amber-600 font-semibold">{item.product_sku}</div>
+                                  <div className="text-xs text-slate-500 whitespace-nowrap overflow-hidden text-ellipsis">{item.product_name}</div>
                                 </div>
                                 {getActionBadge(item.action)}
-                                <div className="item-qty">
-                                  <span className="received">{item.quantity_received}</span>
-                                  <span className="requested">/{item.quantity_requested}</span>
+                                <div className="text-right shrink-0">
+                                  <span className="text-green-600 font-bold">{item.quantity_received}</span>
+                                  <span className="text-slate-400">/{item.quantity_requested}</span>
                                 </div>
                               </div>
 
                               {/* Receive Inline Form */}
                               {receiveItemId === item.item_id && (
-                                <div className="receive-form">
-                                  <div className="mini-field">
-                                    <label>{t === 'tr' ? 'Adet' : 'Qty'}</label>
+                                <div className="mt-2 p-2 bg-amber-50 rounded-md border border-amber-200 flex gap-1.5 items-end flex-wrap max-sm:flex-col">
+                                  <div className="flex flex-col gap-0.5">
+                                    <label className="text-[0.65rem] text-amber-800 font-semibold">{t === 'tr' ? 'Adet' : 'Qty'}</label>
                                     <input
                                       type="number"
                                       value={receiveQty}
                                       onChange={e => setReceiveQty(Math.max(1, Number(e.target.value)))}
                                       min={1}
                                       max={item.quantity_requested - item.quantity_received}
-                                      style={{ width: '60px' }}
+                                      className="py-1.5 px-2 border border-slate-200 rounded text-xs w-[60px] focus:outline-none focus:border-amber-500"
                                     />
                                   </div>
-                                  <div className="mini-field">
-                                    <label>{t === 'tr' ? 'Durum' : 'Condition'}</label>
-                                    <select value={receiveCondition} onChange={e => setReceiveCondition(e.target.value)}>
+                                  <div className="flex flex-col gap-0.5">
+                                    <label className="text-[0.65rem] text-amber-800 font-semibold">{t === 'tr' ? 'Durum' : 'Condition'}</label>
+                                    <select
+                                      value={receiveCondition}
+                                      onChange={e => setReceiveCondition(e.target.value)}
+                                      className="py-1.5 px-2 border border-slate-200 rounded text-xs focus:outline-none focus:border-amber-500"
+                                    >
                                       {Object.keys(CONDITION_LABELS[t]).map(c => (
                                         <option key={c} value={c}>{CONDITION_LABELS[t][c]}</option>
                                       ))}
                                     </select>
                                   </div>
-                                  <button className="btn-receive" onClick={() => handleReceive(item)}>
+                                  <button className="py-1.5 px-2.5 bg-amber-500 text-white border-none rounded text-xs font-semibold cursor-pointer whitespace-nowrap hover:bg-amber-600" onClick={() => handleReceive(item)}>
                                     {t === 'tr' ? 'Kabul Et' : 'Receive'}
                                   </button>
                                 </div>
@@ -383,12 +404,12 @@ function Returns() {
 
                       {/* History */}
                       {selectedDetail.history.length > 0 && (
-                        <div className="rma-history-section">
-                          <h4>{t === 'tr' ? 'Geçmiş' : 'History'}</h4>
+                        <div className="mt-4">
+                          <h4 className="m-0 mb-2 text-[0.85rem] text-slate-600">{t === 'tr' ? 'Gecmis' : 'History'}</h4>
                           {selectedDetail.history.map(h => (
-                            <div key={h.history_id} className="history-item">
-                              <span className="history-action">{h.action}</span>
-                              <span className="history-meta">
+                            <div key={h.history_id} className="flex gap-2 py-1.5 border-b border-slate-100 text-xs">
+                              <span className="font-semibold text-slate-800 min-w-[80px]">{h.action}</span>
+                              <span className="text-slate-400 flex-1">
                                 {h.performed_by} — {formatDate(h.created_at)}
                                 {h.notes && ` — ${h.notes}`}
                               </span>
@@ -399,14 +420,14 @@ function Returns() {
 
                       {/* Actions */}
                       {rma.status !== 'COMPLETED' && (
-                        <div className="rma-actions">
+                        <div className="flex gap-2 mt-4 flex-wrap max-sm:flex-col">
                           {rma.status === 'PENDING' && (
-                            <button className="btn-approve" onClick={handleApprove}>
+                            <button className="flex-1 min-w-[100px] py-2 px-3 border-none rounded-lg text-[0.8rem] font-semibold cursor-pointer duration-200 bg-gradient-to-br from-blue-500 to-blue-700 text-white hover:opacity-90" onClick={handleApprove}>
                               {t === 'tr' ? 'Onayla' : 'Approve'}
                             </button>
                           )}
                           {(rma.status === 'APPROVED' || rma.status === 'IN_PROCESS') && (
-                            <button className="btn-complete-rma" onClick={handleComplete}>
+                            <button className="flex-1 min-w-[100px] py-2 px-3 border-none rounded-lg text-[0.8rem] font-semibold cursor-pointer duration-200 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white hover:opacity-90" onClick={handleComplete}>
                               {t === 'tr' ? 'Tamamla' : 'Complete'}
                             </button>
                           )}
@@ -423,95 +444,105 @@ function Returns() {
 
       {/* Create RMA Modal */}
       {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3>{t === 'tr' ? 'Yeni İade (RMA)' : 'New Return (RMA)'}</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-4" onClick={() => setShowCreateModal(false)}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-[480px] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="m-0 mb-5 text-slate-800 text-lg">{t === 'tr' ? 'Yeni Iade (RMA)' : 'New Return (RMA)'}</h3>
             <form onSubmit={handleCreateRma}>
-              <div className="form-group">
-                <label>{t === 'tr' ? 'Depo' : 'Warehouse'} *</label>
+              <div className="mb-4">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Depo' : 'Warehouse'} *</label>
                 <select
                   value={newRma.warehouse_id}
                   onChange={e => setNewRma(p => ({ ...p, warehouse_id: Number(e.target.value) }))}
                   required
+                  className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] box-border focus:outline-none focus:border-amber-500"
                 >
                   {warehouses.filter(w => w.is_active).map(w => (
                     <option key={w.warehouse_id} value={w.warehouse_id}>{w.name} ({w.code})</option>
                   ))}
                 </select>
               </div>
-              <div className="form-group">
-                <label>{t === 'tr' ? 'Müşteri Adı' : 'Customer Name'}</label>
+              <div className="mb-4">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Musteri Adi' : 'Customer Name'}</label>
                 <input
                   type="text"
                   value={newRma.customer_name}
                   onChange={e => setNewRma(p => ({ ...p, customer_name: e.target.value }))}
+                  className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] box-border focus:outline-none focus:border-amber-500"
                 />
               </div>
-              <div className="form-group">
-                <label>{t === 'tr' ? 'Sipariş No' : 'Order Number'}</label>
+              <div className="mb-4">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Siparis No' : 'Order Number'}</label>
                 <input
                   type="text"
                   value={newRma.order_number}
                   onChange={e => setNewRma(p => ({ ...p, order_number: e.target.value }))}
+                  className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] box-border focus:outline-none focus:border-amber-500"
                 />
               </div>
-              <div className="form-group">
-                <label>{t === 'tr' ? 'İade Nedeni' : 'Reason'} *</label>
+              <div className="mb-4">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Iade Nedeni' : 'Reason'} *</label>
                 <textarea
                   value={newRma.reason}
                   onChange={e => setNewRma(p => ({ ...p, reason: e.target.value }))}
                   rows={2}
                   required
+                  className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] box-border focus:outline-none focus:border-amber-500"
                 />
               </div>
 
               {/* Item Adder */}
-              <div className="form-group">
-                <label>{t === 'tr' ? 'Ürünler' : 'Items'} *</label>
-                <div className="item-adder">
-                  <div className="form-group">
+              <div className="mb-4">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Urunler' : 'Items'} *</label>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-[2]">
                     <input
                       type="text"
                       value={itemSku}
                       onChange={e => setItemSku(e.target.value)}
                       placeholder="IWASKU"
+                      className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] box-border focus:outline-none focus:border-amber-500"
                     />
                   </div>
-                  <div className="form-group">
+                  <div className="flex-1">
                     <input
                       type="number"
                       value={itemQty}
                       onChange={e => setItemQty(Math.max(1, Number(e.target.value)))}
                       min={1}
+                      className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] box-border focus:outline-none focus:border-amber-500"
                     />
                   </div>
-                  <div className="form-group">
-                    <select value={itemAction} onChange={e => setItemAction(e.target.value)}>
+                  <div className="flex-1">
+                    <select
+                      value={itemAction}
+                      onChange={e => setItemAction(e.target.value)}
+                      className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] box-border focus:outline-none focus:border-amber-500"
+                    >
                       {Object.keys(ACTION_LABELS[t]).map(a => (
                         <option key={a} value={a}>{ACTION_LABELS[t][a]}</option>
                       ))}
                     </select>
                   </div>
-                  <button type="button" className="btn-add-item" onClick={handleAddItem}>+</button>
+                  <button type="button" className="py-2.5 px-3 bg-amber-500 text-white border-none rounded-lg text-base cursor-pointer h-[42px] hover:bg-amber-600" onClick={handleAddItem}>+</button>
                 </div>
                 {newItems.length > 0 && (
-                  <div className="modal-items-list">
+                  <div className="mt-3 flex flex-col gap-1">
                     {newItems.map((item, i) => (
-                      <div key={i} className="modal-item">
+                      <div key={i} className="flex justify-between items-center py-1.5 px-2 bg-slate-50 rounded-md text-[0.8rem]">
                         <span>{item.product_sku} x{item.quantity_requested} ({ACTION_LABELS[t][item.action]})</span>
-                        <button type="button" className="remove-item" onClick={() => setNewItems(prev => prev.filter((_, idx) => idx !== i))}>×</button>
+                        <button type="button" className="bg-transparent border-none text-red-600 cursor-pointer text-base px-1" onClick={() => setNewItems(prev => prev.filter((_, idx) => idx !== i))}>x</button>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={() => setShowCreateModal(false)}>
-                  {t === 'tr' ? 'Vazgeç' : 'Cancel'}
+              <div className="flex gap-3 mt-6 justify-end">
+                <button type="button" className="py-2.5 px-4 bg-slate-100 text-slate-500 border-none rounded-lg font-medium cursor-pointer hover:bg-slate-200" onClick={() => setShowCreateModal(false)}>
+                  {t === 'tr' ? 'Vazgec' : 'Cancel'}
                 </button>
-                <button type="submit" className="btn-save" disabled={newItems.length === 0}>
-                  {t === 'tr' ? 'Oluştur' : 'Create'}
+                <button type="submit" className="py-2.5 px-4 bg-gradient-to-br from-amber-500 to-amber-600 text-white border-none rounded-lg font-medium cursor-pointer hover:opacity-90" disabled={newItems.length === 0}>
+                  {t === 'tr' ? 'Olustur' : 'Create'}
                 </button>
               </div>
             </form>

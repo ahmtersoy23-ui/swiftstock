@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyticsApi } from '../lib/api/analytics';
 import { useStore } from '../stores/appStore';
-import './StockDashboard.css';
 
 interface WarehouseStock { [code: string]: number }
 interface MarketplaceDepot { source: string; depot: string; fulfillable: number; reserved: number; unfulfillable: number; inbound: number }
@@ -62,7 +61,7 @@ function StockDashboard() {
     }
   };
 
-  const numClass = (n: number) => n > 0 ? 'positive' : 'zero';
+  const numClass = (n: number) => n > 0 ? 'text-green-600' : 'text-slate-300';
 
   const exportData = () => {
     if (data.length === 0) return;
@@ -92,97 +91,199 @@ function StockDashboard() {
 
   const WH_CODES = ['FACTORY', 'TR', 'NJ', 'NL', 'UK'];
 
+  const whColorMap: Record<string, string> = {
+    factory: 'bg-amber-100 text-amber-700',
+    tr: 'bg-blue-100 text-blue-700',
+    nj: 'bg-green-100 text-green-700',
+    nl: 'bg-violet-100 text-violet-700',
+    uk: 'bg-pink-100 text-pink-700',
+  };
+
   return (
-    <div className="stock-dashboard-page">
-      <div className="stock-dashboard-card">
-        <div className="stock-dashboard-header">
-          <button className="back-btn" onClick={() => navigate('/')}>←</button>
-          <h2>{t === 'tr' ? 'Birleşik Stok Görünümü' : 'Unified Stock View'}</h2>
-          <button className="add-btn" onClick={exportData} disabled={data.length === 0}>
+    <div className="min-h-[calc(100vh-120px)] bg-slate-100 p-4">
+      <div className="max-w-[1000px] mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+        {/* Header */}
+        <div className="bg-linear-to-br from-slate-900 to-slate-800 text-white px-5 py-5 flex items-center gap-3">
+          <button
+            className="bg-white/20 border-none text-white w-9 h-9 rounded-lg text-lg cursor-pointer flex items-center justify-center hover:bg-white/30"
+            onClick={() => navigate('/')}
+          >
+            ←
+          </button>
+          <h2 className="m-0 text-white text-xl font-bold flex-1">
+            {t === 'tr' ? 'Birleşik Stok Görünümü' : 'Unified Stock View'}
+          </h2>
+          <button
+            className="px-4 py-2 bg-white/20 text-white border-2 border-white/30 rounded-lg font-semibold cursor-pointer text-[0.8rem] hover:bg-white/30"
+            onClick={exportData}
+            disabled={data.length === 0}
+          >
             ↓ XLSX
           </button>
         </div>
 
-        <div className="stock-dashboard-content">
-          {error && <div className="error-message" onClick={() => setError(null)}>{error}</div>}
+        {/* Content */}
+        <div className="p-4">
+          {error && (
+            <div
+              className="p-3 bg-red-100 text-red-600 rounded-lg mb-4 cursor-pointer"
+              onClick={() => setError(null)}
+            >
+              {error}
+            </div>
+          )}
 
-          <div className="sd-filters">
+          {/* Filters */}
+          <div className="flex gap-2 mb-4 flex-wrap">
             <input
               type="text"
+              className="flex-1 min-w-[150px] px-3 py-2 border-2 border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500"
               placeholder={t === 'tr' ? 'SKU veya ürün adı ara...' : 'Search SKU or product name...'}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-            <span style={{ fontSize: '0.8rem', color: '#64748b', alignSelf: 'center' }}>
+            <span className="text-[0.8rem] text-slate-500 self-center">
               {total.toLocaleString()} {t === 'tr' ? 'ürün' : 'products'}
             </span>
           </div>
 
           {loading ? (
-            <div className="loading">{t === 'tr' ? 'Yükleniyor...' : 'Loading...'}</div>
+            <div className="text-center p-8 text-slate-500">
+              {t === 'tr' ? 'Yükleniyor...' : 'Loading...'}
+            </div>
           ) : data.length === 0 ? (
-            <div className="empty-state">{t === 'tr' ? 'Ürün bulunamadı' : 'No products found'}</div>
+            <div className="text-center p-8 text-slate-400">
+              {t === 'tr' ? 'Ürün bulunamadı' : 'No products found'}
+            </div>
           ) : (
             <>
-              <div style={{ overflowX: 'auto' }}>
-                <table className="sd-table">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-[0.8rem] md:text-[0.8rem] max-md:text-[0.7rem]">
                   <thead>
                     <tr>
-                      <th>{t === 'tr' ? 'Ürün' : 'Product'}</th>
-                      <th style={{ textAlign: 'right' }}>{t === 'tr' ? 'Fiziksel' : 'Physical'}</th>
-                      <th style={{ textAlign: 'right' }}>{t === 'tr' ? 'Transit' : 'Transit'}</th>
-                      <th style={{ textAlign: 'right' }}>{t === 'tr' ? 'Rezerve' : 'Reserved'}</th>
-                      <th style={{ textAlign: 'right' }}>{t === 'tr' ? 'Kullanılabilir' : 'Available'}</th>
-                      <th style={{ textAlign: 'right' }}>Marketplace</th>
-                      <th style={{ textAlign: 'right' }}>{t === 'tr' ? 'Toplam' : 'Total'}</th>
+                      <th className="bg-slate-50 px-2.5 py-2 text-left text-[0.7rem] font-bold text-slate-500 uppercase border-b-2 border-slate-200 whitespace-nowrap">
+                        {t === 'tr' ? 'Ürün' : 'Product'}
+                      </th>
+                      <th className="bg-slate-50 px-2.5 py-2 text-right text-[0.7rem] font-bold text-slate-500 uppercase border-b-2 border-slate-200 whitespace-nowrap">
+                        {t === 'tr' ? 'Fiziksel' : 'Physical'}
+                      </th>
+                      <th className="bg-slate-50 px-2.5 py-2 text-right text-[0.7rem] font-bold text-slate-500 uppercase border-b-2 border-slate-200 whitespace-nowrap">
+                        {t === 'tr' ? 'Transit' : 'Transit'}
+                      </th>
+                      <th className="bg-slate-50 px-2.5 py-2 text-right text-[0.7rem] font-bold text-slate-500 uppercase border-b-2 border-slate-200 whitespace-nowrap">
+                        {t === 'tr' ? 'Rezerve' : 'Reserved'}
+                      </th>
+                      <th className="bg-slate-50 px-2.5 py-2 text-right text-[0.7rem] font-bold text-slate-500 uppercase border-b-2 border-slate-200 whitespace-nowrap">
+                        {t === 'tr' ? 'Kullanılabilir' : 'Available'}
+                      </th>
+                      <th className="bg-slate-50 px-2.5 py-2 text-right text-[0.7rem] font-bold text-slate-500 uppercase border-b-2 border-slate-200 whitespace-nowrap">
+                        Marketplace
+                      </th>
+                      <th className="bg-slate-50 px-2.5 py-2 text-right text-[0.7rem] font-bold text-slate-500 uppercase border-b-2 border-slate-200 whitespace-nowrap">
+                        {t === 'tr' ? 'Toplam' : 'Total'}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.map(p => (
-                      <tr key={p.product_sku}>
-                        <td>
-                          <div className="sd-sku">{p.product_sku}</div>
-                          <div className="sd-name" title={p.product_name}>{p.product_name}</div>
-                          {p.category && <span className="sd-category">{p.category}</span>}
+                      <tr key={p.product_sku} className="hover:bg-slate-50">
+                        <td className="px-2.5 py-2 border-b border-slate-100 align-top max-md:px-1.5">
+                          <div className="font-mono font-bold text-slate-800 text-xs">{p.product_sku}</div>
+                          <div className="text-[0.7rem] text-slate-500 max-w-[200px] max-md:max-w-[120px] whitespace-nowrap overflow-hidden text-ellipsis" title={p.product_name}>
+                            {p.product_name}
+                          </div>
+                          {p.category && (
+                            <span className="text-[0.6rem] text-slate-400 bg-slate-100 px-1 py-0.5 rounded-sm">
+                              {p.category}
+                            </span>
+                          )}
                         </td>
-                        <td>
-                          <div className={`sd-num ${numClass(p.physical.total)}`}>{p.physical.total}</div>
-                          <div className="sd-wh-list">
+                        <td className="px-2.5 py-2 border-b border-slate-100 align-top max-md:px-1.5">
+                          <div className={`font-bold font-mono text-right ${numClass(p.physical.total)}`}>
+                            {p.physical.total}
+                          </div>
+                          <div className="flex flex-wrap gap-0.5 justify-end">
                             {WH_CODES.map(wh => {
                               const qty = p.physical.warehouses[wh];
                               if (!qty) return null;
-                              return <span key={wh} className={`sd-wh-badge wh-${wh.toLowerCase()}`}>{wh} {qty}</span>;
+                              return (
+                                <span
+                                  key={wh}
+                                  className={`text-[0.55rem] px-1 py-0.5 rounded-sm font-bold ${whColorMap[wh.toLowerCase()] || 'bg-slate-100 text-slate-600'}`}
+                                >
+                                  {wh} {qty}
+                                </span>
+                              );
                             })}
                           </div>
                         </td>
-                        <td><div className={`sd-num ${numClass(p.transit)}`}>{p.transit}</div></td>
-                        <td><div className={`sd-num ${p.reserved > 0 ? 'warning' : 'zero'}`}>{p.reserved}</div></td>
-                        <td><div className={`sd-num ${numClass(p.available)}`}>{p.available}</div></td>
-                        <td>
-                          <div className={`sd-num ${numClass(p.marketplace.total_fulfillable)}`}>
+                        <td className="px-2.5 py-2 border-b border-slate-100 align-top max-md:px-1.5">
+                          <div className={`font-bold font-mono text-right ${numClass(p.transit)}`}>{p.transit}</div>
+                        </td>
+                        <td className="px-2.5 py-2 border-b border-slate-100 align-top max-md:px-1.5">
+                          <div className={`font-bold font-mono text-right ${p.reserved > 0 ? 'text-amber-600' : 'text-slate-300'}`}>
+                            {p.reserved}
+                          </div>
+                        </td>
+                        <td className="px-2.5 py-2 border-b border-slate-100 align-top max-md:px-1.5">
+                          <div className={`font-bold font-mono text-right ${numClass(p.available)}`}>{p.available}</div>
+                        </td>
+                        <td className="px-2.5 py-2 border-b border-slate-100 align-top max-md:px-1.5">
+                          <div className={`font-bold font-mono text-right ${numClass(p.marketplace.total_fulfillable)}`}>
                             {p.marketplace.total_fulfillable}
                           </div>
                           {p.marketplace.depots.length > 0 && (
-                            <div className="sd-mp-list">
+                            <div className="flex flex-wrap gap-0.5 justify-end">
                               {p.marketplace.depots.map((d, i) => (
-                                <span key={i} className={`sd-mp-badge mp-${d.source.toLowerCase()}`}>{d.depot} {d.fulfillable}</span>
+                                <span key={i} className="text-[0.55rem] px-1 py-0.5 rounded-sm font-semibold bg-amber-100 text-amber-800">
+                                  {d.depot} {d.fulfillable}
+                                </span>
                               ))}
                             </div>
                           )}
                         </td>
-                        <td><div className={`sd-num grand ${numClass(p.grand_total)}`}>{p.grand_total}</div></td>
+                        <td className="px-2.5 py-2 border-b border-slate-100 align-top max-md:px-1.5">
+                          <div className={`font-bold font-mono text-right text-[0.9rem] ${p.grand_total > 0 ? 'text-slate-800' : 'text-slate-300'}`}>
+                            {p.grand_total}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
 
-              <div className="sd-pagination">
-                <button onClick={() => setPage(1)} disabled={page === 1}>⏮</button>
-                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>←</button>
-                <span>{page} / {totalPages}</span>
-                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>→</button>
-                <button onClick={() => setPage(totalPages)} disabled={page === totalPages}>⏭</button>
+              {/* Pagination */}
+              <div className="flex justify-center items-center gap-2 mt-4 p-2">
+                <button
+                  className="px-3 py-1.5 border border-slate-200 rounded-md bg-white cursor-pointer text-[0.8rem] disabled:opacity-40 disabled:cursor-default hover:enabled:bg-slate-100"
+                  onClick={() => setPage(1)}
+                  disabled={page === 1}
+                >
+                  ⏮
+                </button>
+                <button
+                  className="px-3 py-1.5 border border-slate-200 rounded-md bg-white cursor-pointer text-[0.8rem] disabled:opacity-40 disabled:cursor-default hover:enabled:bg-slate-100"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  ←
+                </button>
+                <span className="text-[0.8rem] text-slate-500">{page} / {totalPages}</span>
+                <button
+                  className="px-3 py-1.5 border border-slate-200 rounded-md bg-white cursor-pointer text-[0.8rem] disabled:opacity-40 disabled:cursor-default hover:enabled:bg-slate-100"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  →
+                </button>
+                <button
+                  className="px-3 py-1.5 border border-slate-200 rounded-md bg-white cursor-pointer text-[0.8rem] disabled:opacity-40 disabled:cursor-default hover:enabled:bg-slate-100"
+                  onClick={() => setPage(totalPages)}
+                  disabled={page === totalPages}
+                >
+                  ⏭
+                </button>
               </div>
             </>
           )}

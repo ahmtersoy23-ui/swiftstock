@@ -19,7 +19,7 @@ import type { WorkflowState, CountItem } from './types';
 // Components
 import { StatusBar, ModeSelector, ItemsList, CountModeView, CountSummaryModal, HelpPanel, CameraView } from './components';
 
-import '../Operations.css';
+// Tailwind utility classes used inline — no CSS import needed
 
 function Operations() {
   const navigate = useNavigate();
@@ -809,23 +809,23 @@ function Operations() {
   // ============ RENDER ============
 
   return (
-    <div className="operations-page">
-      <div className="operations-card">
+    <div className="min-h-[calc(100vh-120px)] bg-slate-50 p-4">
+      <div className="max-w-[800px] mx-auto bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
         {/* Header */}
-        <div className="operations-header">
-          <button className="back-btn" onClick={() => navigate('/')}>
+        <div className="flex items-center gap-3 p-5 bg-gradient-to-br from-[#3b82f6] to-[#1d4ed8] text-white">
+          <button className="bg-white/20 border-none text-white w-9 h-9 rounded-lg text-lg cursor-pointer flex items-center justify-center duration-200 hover:bg-white/30" onClick={() => navigate('/')}>
             ←
           </button>
-          <h2>{t.operations}</h2>
-          <div className="header-right">
+          <h2 className="m-0 text-xl font-bold text-white flex-1">{t.operations}</h2>
+          <div className="flex items-center gap-3">
             <span
-              className={`backend-status ${backendStatus}`}
+              className={`cursor-pointer text-sm duration-150 hover:scale-[1.2] ${backendStatus === 'checking' ? 'animate-pulse' : ''}`}
               onClick={checkBackendHealth}
               title={backendStatus === 'connected' ? t.backendConnected : backendStatus === 'failed' ? t.backendFailed : t.loading}
             >
               {backendStatus === 'checking' ? '⏳' : backendStatus === 'connected' ? '🟢' : '🔴'}
             </span>
-            <div className="warehouse-badge">{currentWarehouse}</div>
+            <div className="py-2 px-3 bg-white/20 text-white rounded-lg font-semibold text-sm">{currentWarehouse}</div>
           </div>
         </div>
 
@@ -833,10 +833,10 @@ function Operations() {
         <StatusBar workflow={workflow} language={language} translations={{ items: t.items }} />
 
         {/* Instruction */}
-        <div className="scan-instruction">{getInstruction()}</div>
+        <div className="text-center px-4 pt-6 pb-3 text-base text-slate-600 font-medium">{getInstruction()}</div>
 
         {/* Last Action */}
-        {lastAction && <div className="last-action">{lastAction}</div>}
+        {lastAction && <div className="text-center px-4 pb-4 text-lg text-slate-800 font-semibold">{lastAction}</div>}
 
         {/* Mode Selection Buttons (IDLE state) */}
         {workflow.step === 'IDLE' && (
@@ -855,29 +855,29 @@ function Operations() {
 
         {/* Manual Location Input (MODE_SELECTED state) */}
         {workflow.step === 'MODE_SELECTED' && !workflow.location && (
-          <div className="manual-input-section">
-            <div className="manual-input-group">
-              <label>📍 {t.locationCode}</label>
-              <div className="input-with-button">
+          <div className="p-4 bg-slate-100 border-b border-slate-200">
+            <div className="mb-3">
+              <label className="block text-[0.8125rem] font-semibold text-slate-600 mb-2">📍 {t.locationCode}</label>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={manualLocationInput}
                   onChange={(e) => setManualLocationInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleManualLocationSubmit()}
                   placeholder={t.enterLocationCode || 'Lokasyon kodu girin...'}
-                  className="manual-input"
+                  className="flex-1 px-4 py-3 border-2 border-slate-300 rounded-lg text-[0.9375rem] duration-150 focus:outline-none focus:border-primary-400 focus:ring-[3px] focus:ring-primary-100 placeholder:text-slate-400"
                   disabled={loading}
                 />
                 <button
                   onClick={handleManualLocationSubmit}
-                  className="submit-btn"
+                  className="px-4 py-3 bg-success-500 text-white border-none rounded-lg text-[0.9375rem] font-semibold cursor-pointer duration-150 whitespace-nowrap hover:not-disabled:bg-success-600 hover:not-disabled:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={loading || !manualLocationInput.trim()}
                 >
                   {t.confirm || 'Tamam'}
                 </button>
               </div>
             </div>
-            <button onClick={resetWorkflow} className="cancel-step-btn" disabled={loading}>
+            <button onClick={resetWorkflow} className="w-full py-3 bg-slate-100 text-slate-600 border border-slate-300 rounded-lg text-sm font-semibold cursor-pointer duration-150 mt-2 hover:not-disabled:bg-error-50 hover:not-disabled:text-error-600 hover:not-disabled:border-error-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled={loading}>
               ✕ {t.cancel}
             </button>
           </div>
@@ -885,20 +885,20 @@ function Operations() {
 
         {/* Manual SKU Input (LOCATION_SET or SCANNING state) */}
         {(workflow.step === 'LOCATION_SET' || workflow.step === 'SCANNING') && (workflow.location || containerMode) && (
-          <div className="manual-input-section">
-            <div className="manual-input-group">
-              <label>📦 {t.skuOrBarcode || 'SKU / Barkod'}</label>
-              <div className="input-with-button">
+          <div className="p-4 bg-slate-100 border-b border-slate-200">
+            <div className="mb-3">
+              <label className="block text-[0.8125rem] font-semibold text-slate-600 mb-2">📦 {t.skuOrBarcode || 'SKU / Barkod'}</label>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={manualSkuInput}
                   onChange={(e) => setManualSkuInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleManualSkuSubmit()}
                   placeholder={t.enterSkuCode || 'SKU veya barkod girin...'}
-                  className="manual-input"
+                  className="flex-1 px-4 py-3 border-2 border-slate-300 rounded-lg text-[0.9375rem] duration-150 focus:outline-none focus:border-primary-400 focus:ring-[3px] focus:ring-primary-100 placeholder:text-slate-400"
                   disabled={loading}
                 />
-                <button onClick={handleManualSkuSubmit} className="submit-btn" disabled={loading || !manualSkuInput.trim()}>
+                <button onClick={handleManualSkuSubmit} className="px-4 py-3 bg-success-500 text-white border-none rounded-lg text-[0.9375rem] font-semibold cursor-pointer duration-150 whitespace-nowrap hover:not-disabled:bg-success-600 hover:not-disabled:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed" disabled={loading || !manualSkuInput.trim()}>
                   + {t.add || 'Ekle'}
                 </button>
               </div>
@@ -908,7 +908,7 @@ function Operations() {
 
         {/* HID Input */}
         {!cameraActive && !showModeSelector && !showHelp && (
-          <div className="hid-input-section">
+          <div className="px-4 pb-4 pt-2">
             <input
               ref={inputRef}
               type="text"
@@ -916,7 +916,7 @@ function Operations() {
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder="Barkod tarayın..."
-              className="hid-input"
+              className="w-full px-4 py-3 text-base border-2 border-slate-300 rounded-xl text-center font-mono bg-slate-100 duration-150 box-border focus:outline-none focus:border-primary-400 focus:bg-white focus:ring-[4px] focus:ring-primary-100"
               disabled={loading}
               autoFocus
               autoComplete="off"
@@ -925,33 +925,33 @@ function Operations() {
         )}
 
         {/* Action Buttons */}
-        <div className="action-buttons">
-          <button onClick={toggleCamera} className={`action-btn camera ${cameraActive ? 'active' : ''}`} disabled={loading}>
+        <div className="flex gap-2 px-4 pb-4 flex-wrap">
+          <button onClick={toggleCamera} className={`flex-1 min-w-[80px] py-3 px-3 border-none rounded-lg font-medium text-[0.9375rem] cursor-pointer duration-150 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed ${cameraActive ? 'bg-error-500 text-white hover:bg-error-600' : 'bg-primary-500 text-white hover:bg-primary-600'}`} disabled={loading}>
             {cameraActive ? `📷 ${t.closeCamera}` : `📷 ${t.camera}`}
           </button>
 
           {workflow.items.length > 0 && (
             <>
-              <button onClick={completeTransaction} className="action-btn complete" disabled={loading}>
+              <button onClick={completeTransaction} className="flex-1 min-w-[80px] py-3 px-3 border-none rounded-lg font-medium text-[0.9375rem] cursor-pointer duration-150 flex items-center justify-center gap-1 bg-success-500 text-white hover:bg-success-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled={loading}>
                 ✓ {t.complete}
               </button>
-              <button onClick={resetWorkflow} className="action-btn cancel" disabled={loading}>
+              <button onClick={resetWorkflow} className="flex-[0.5] min-w-[80px] py-3 px-3 border-none rounded-lg font-medium text-[0.9375rem] cursor-pointer duration-150 flex items-center justify-center gap-1 bg-slate-500 text-white hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled={loading}>
                 ✕ {t.cancel}
               </button>
             </>
           )}
 
-          <button onClick={() => setShowHelp(!showHelp)} className="action-btn help">
+          <button onClick={() => setShowHelp(!showHelp)} className="flex-none min-w-0 p-3 border-none rounded-lg font-medium text-[0.9375rem] cursor-pointer duration-150 flex items-center justify-center gap-1 bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-600">
             ❓
           </button>
         </div>
 
         {/* Box/Pallet Creation Buttons */}
         {workflow.items.length > 0 && containerMode && (
-          <div className="container-actions">
+          <div className="flex gap-3 px-4 pb-4">
             <button
               onClick={() => setContainerNameModal({ show: true, type: containerMode, displayName: '' })}
-              className={`container-btn ${containerMode.toLowerCase()}`}
+              className={`flex-1 py-3 px-4 border-2 border-dashed rounded-xl font-semibold text-[0.9375rem] cursor-pointer duration-150 flex items-center justify-center gap-2 bg-white disabled:opacity-50 disabled:cursor-not-allowed ${containerMode === 'BOX' ? 'border-warning-500 text-warning-700 hover:bg-warning-50 hover:border-solid' : 'border-info-500 text-info-700 hover:bg-info-50 hover:border-solid'}`}
               disabled={loading}
             >
               {containerMode === 'BOX' ? '📦' : '📋'} {containerMode === 'BOX' ? t.newBox : t.newPallet} Oluştur
@@ -961,26 +961,26 @@ function Operations() {
 
         {/* Zone Suggestion Banner (FACTORY + IN-RECEIVING) */}
         {zoneSuggestion && zoneSuggestion.zone && (
-          <div style={{ margin: '8px 0', padding: '10px 14px', background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+          <div className="my-2 mx-4 py-2.5 px-3.5 bg-warning-100 border border-warning-500 rounded-lg flex items-center gap-2 text-sm">
             <span>🗂️</span>
             <span>
               <strong>{language === 'tr' ? 'Önerilen Zone:' : 'Suggested Zone:'}</strong> {zoneSuggestion.zone}
               {zoneSuggestion.category && zoneSuggestion.category !== zoneSuggestion.zone && (
-                <span style={{ color: '#6b7280', marginLeft: '6px' }}>({zoneSuggestion.category})</span>
+                <span className="text-slate-500 ml-1.5">({zoneSuggestion.category})</span>
               )}
             </span>
             <button
               onClick={() => setZoneSuggestion(null)}
-              style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}
+              className="ml-auto bg-transparent border-none cursor-pointer text-base leading-none"
             >×</button>
           </div>
         )}
 
         {/* Container Name Modal */}
         {containerNameModal.show && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-            <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '320px', maxWidth: '90vw' }}>
-              <h3 style={{ margin: '0 0 16px', fontSize: '16px' }}>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
+            <div className="bg-white rounded-xl p-6 w-80 max-w-[90vw]">
+              <h3 className="m-0 mb-4 text-base">
                 {containerNameModal.type === 'BOX' ? '📦' : '📋'}{' '}
                 {language === 'tr'
                   ? `${containerNameModal.type === 'BOX' ? 'Koli' : 'Palet'} İsmi`
@@ -997,9 +997,9 @@ function Operations() {
                   }
                 }}
                 placeholder={language === 'tr' ? 'ör. FBA-BOX-01, TR-AMBALAJ-MART' : 'e.g. FBA-BOX-01, TR-MARCH'}
-                style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', marginBottom: '16px' }}
+                className="w-full p-2.5 border border-slate-300 rounded-lg text-sm box-border mb-4"
               />
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="flex gap-2">
                 <button
                   onClick={() => {
                     if (containerNameModal.displayName.trim() && containerNameModal.type) {
@@ -1007,13 +1007,13 @@ function Operations() {
                     }
                   }}
                   disabled={!containerNameModal.displayName.trim() || loading}
-                  style={{ flex: 1, padding: '10px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', opacity: !containerNameModal.displayName.trim() ? 0.5 : 1 }}
+                  className="flex-1 p-2.5 bg-primary-600 text-white border-none rounded-lg font-semibold cursor-pointer disabled:opacity-50"
                 >
                   {language === 'tr' ? 'Oluştur' : 'Create'}
                 </button>
                 <button
                   onClick={() => setContainerNameModal({ show: false, type: null, displayName: '' })}
-                  style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                  className="flex-1 p-2.5 bg-slate-100 text-slate-700 border-none rounded-lg font-semibold cursor-pointer"
                 >
                   {t.cancel}
                 </button>
@@ -1026,11 +1026,11 @@ function Operations() {
         <CameraView isNative={isNative} cameraActive={cameraActive} />
 
         {/* Loading */}
-        {loading && <div className="scan-loading">⏳</div>}
+        {loading && <div className="text-center p-4 text-2xl animate-pulse">⏳</div>}
 
         {/* Messages */}
-        {error && <div className="scan-error">{error}</div>}
-        {success && <div className="scan-success">{success}</div>}
+        {error && <div className="mx-4 mb-4 p-3 bg-error-50 text-error-600 rounded-lg text-center font-medium border border-error-200">{error}</div>}
+        {success && <div className="mx-4 mb-4 p-3 bg-success-50 text-success-600 rounded-lg text-center font-medium border border-success-200">{success}</div>}
 
         {/* Count Mode View */}
         <CountModeView

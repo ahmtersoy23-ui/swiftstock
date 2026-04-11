@@ -4,7 +4,21 @@ import { apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
 import { translations } from '../i18n/translations';
 import type { Location, OperationMode, Warehouse } from '../types';
-import './Locations.css';
+
+const ZONE_BADGE_CLASSES: Record<string, string> = {
+  receiving: 'bg-emerald-100 text-emerald-800',
+  storage: 'bg-blue-100 text-blue-800',
+  picking: 'bg-amber-100 text-amber-800',
+  shipping: 'bg-orange-100 text-orange-800',
+  category: 'bg-violet-100 text-violet-700',
+};
+
+const MODE_TYPE_BADGE_CLASSES: Record<string, string> = {
+  receiving: 'bg-emerald-100 text-emerald-800',
+  picking: 'bg-amber-100 text-amber-800',
+  transfer: 'bg-blue-100 text-blue-800',
+  count: 'bg-violet-100 text-violet-700',
+};
 
 function Locations() {
   const navigate = useNavigate();
@@ -87,7 +101,6 @@ function Locations() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load locations
       const locationsResponse = await apiClient.getAllLocations(
         warehouseFilter || undefined,
         zoneFilter || undefined
@@ -97,13 +110,11 @@ function Locations() {
         setLocations(locationsResponse.data || []);
       }
 
-      // Load operation modes
       const modesResponse = await apiClient.getAllOperationModes();
       if (modesResponse.success) {
         setOperationModes(modesResponse.data || []);
       }
 
-      // Load warehouses
       const warehousesResponse = await apiClient.getAllWarehouses();
       if (warehousesResponse.success) {
         setWarehouses(warehousesResponse.data || []);
@@ -151,7 +162,6 @@ function Locations() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    // Static HTML — dynamic values injected via textContent after load (XSS-safe)
     printWindow.document.write(`<!DOCTYPE html>
 <html>
   <head>
@@ -193,7 +203,6 @@ function Locations() {
 </html>`);
     printWindow.document.close();
 
-    // Inject dynamic values safely via textContent (XSS-safe)
     const locCodeEl = printWindow.document.getElementById('loc-code');
     const zoneBadgeEl = printWindow.document.getElementById('zone-badge');
     if (locCodeEl) locCodeEl.textContent = location.location_code;
@@ -220,22 +229,18 @@ function Locations() {
     if (!printWindow) return;
 
     const allColors: Record<string, string> = {
-      // Operation Modes (database values)
-      'MODE-IN-RECEIVING': '#10b981',    // Yeşil - Mal Kabul
-      'MODE-OUT-PICKING': '#f59e0b',     // Turuncu - Toplama
-      'MODE-MOVE-TRANSFER': '#3b82f6',   // Mavi - Transfer
-      'MODE-COUNT-CYCLE': '#8b5cf6',     // Mor - Sayım
-      // Action Barcodes
-      'ACTION-CREATE-BOX': '#ec4899',    // Pembe
-      'ACTION-CREATE-PALLET': '#14b8a6', // Teal
-      'ACTION-COMPLETE': '#6366f1',      // İndigo
-      'ACTION-CANCEL': '#dc2626',        // Kırmızı
+      'MODE-IN-RECEIVING': '#10b981',
+      'MODE-OUT-PICKING': '#f59e0b',
+      'MODE-MOVE-TRANSFER': '#3b82f6',
+      'MODE-COUNT-CYCLE': '#8b5cf6',
+      'ACTION-CREATE-BOX': '#ec4899',
+      'ACTION-CREATE-PALLET': '#14b8a6',
+      'ACTION-COMPLETE': '#6366f1',
+      'ACTION-CANCEL': '#dc2626',
     };
 
-    // Determine color based on mode_code
     const color = allColors[mode.mode_code] || '#6b7280';
 
-    // Get translated name and description
     const translatedName = mode.mode_code.startsWith('ACTION-')
       ? getTranslatedActionName(mode.mode_code)
       : getTranslatedModeName(mode.mode_type);
@@ -245,8 +250,6 @@ function Locations() {
       : getTranslatedModeDescription(mode.mode_type);
     void _translatedDesc;
 
-    // color comes from a hardcoded whitelist — safe to embed in CSS.
-    // translatedName and mode.mode_code are injected via textContent (XSS-safe).
     printWindow.document.write(`<!DOCTYPE html>
 <html>
   <head>
@@ -288,7 +291,6 @@ function Locations() {
 </html>`);
     printWindow.document.close();
 
-    // Inject dynamic values safely via textContent (XSS-safe)
     const modeHeaderEl = printWindow.document.getElementById('mode-header');
     const modeCodeEl = printWindow.document.getElementById('mode-code');
     const modeBadgeEl = printWindow.document.getElementById('mode-badge');
@@ -315,20 +317,20 @@ function Locations() {
   };
 
   return (
-    <div className="locations-page">
-      <div className="locations-card">
-        <div className="locations-header">
-          <button className="back-btn" onClick={() => navigate('/')}>
+    <div className="min-h-[calc(100vh-120px)] bg-slate-100 p-4">
+      <div className="max-w-[800px] mx-auto bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] overflow-hidden">
+        <div className="flex items-center gap-3 bg-gradient-to-br from-blue-500 to-blue-700 text-white p-5">
+          <button className="bg-white/20 border-none text-white w-9 h-9 rounded-lg text-lg cursor-pointer flex items-center justify-center duration-200 hover:bg-white/30" onClick={() => navigate('/')}>
             ←
           </button>
-          <h2>{t.locations}</h2>
+          <h2 className="m-0 text-white text-xl font-bold flex-1 leading-none">{t.locations}</h2>
         </div>
-        <div className="locations-content">
-        <div className="header-actions">
+        <div className="p-4">
+        <div className="flex gap-3 items-center flex-wrap md:flex-col md:items-stretch">
           <select
             value={warehouseFilter}
             onChange={(e) => setWarehouseFilter(e.target.value)}
-            className="filter-select"
+            className="py-3 px-3 border-2 border-gray-200 rounded-md text-base bg-white cursor-pointer duration-200 min-w-[200px] focus:outline-none focus:border-blue-600 hover:border-gray-400 md:w-full md:min-w-0"
           >
             <option value="">All Warehouses</option>
             {warehouses.map((w) => (
@@ -340,7 +342,7 @@ function Locations() {
           <select
             value={zoneFilter}
             onChange={(e) => setZoneFilter(e.target.value)}
-            className="filter-select"
+            className="py-3 px-3 border-2 border-gray-200 rounded-md text-base bg-white cursor-pointer duration-200 min-w-[200px] focus:outline-none focus:border-blue-600 hover:border-gray-400 md:w-full md:min-w-0"
           >
             <option value="">All Zones</option>
             <option value="RECEIVING">Receiving</option>
@@ -349,26 +351,27 @@ function Locations() {
             <option value="SHIPPING">Shipping</option>
             <option value="CATEGORY">Category (Factory)</option>
           </select>
-          <button onClick={() => setShowAddForm(!showAddForm)} className="btn-primary">
-            ➕ Add Location
+          <button onClick={() => setShowAddForm(!showAddForm)} className="py-3 px-5 bg-blue-600 text-white border-none rounded-md font-semibold cursor-pointer duration-200 whitespace-nowrap hover:bg-blue-700 md:w-full md:min-w-0">
+            + Add Location
           </button>
         </div>
 
-      {success && <div className="success">✅ {success}</div>}
-      {error && <div className="error">❌ {error}</div>}
+      {success && <div className="bg-emerald-100 text-emerald-800 p-4 rounded-md mb-4 font-medium mt-4">{success}</div>}
+      {error && <div className="bg-red-100 text-red-800 p-4 rounded-md mb-4 mt-4">{error}</div>}
 
       {/* Add Location Form */}
       {showAddForm && (
-        <div className="add-form-container">
-          <h3>Add New Location</h3>
+        <div className="bg-white p-6 rounded-lg shadow-[0_2px_4px_rgba(0,0,0,0.1)] mb-6 mt-4 md:p-4 md:mb-4">
+          <h3 className="m-0 mb-6 text-gray-800">Add New Location</h3>
           <form onSubmit={handleAddLocation}>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Warehouse *</label>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 mb-4 md:grid-cols-1">
+              <div className="flex flex-col">
+                <label className="mb-2 font-semibold text-gray-700 text-[0.9rem]">Warehouse *</label>
                 <select
                   value={newLocation.warehouse_code}
                   onChange={(e) => setNewLocation({ ...newLocation, warehouse_code: e.target.value })}
                   required
+                  className="py-3 px-3 border-2 border-gray-200 rounded-md text-base duration-200 focus:outline-none focus:border-blue-600"
                 >
                   {warehouses.map((w) => (
                     <option key={w.warehouse_id} value={w.code}>
@@ -377,33 +380,36 @@ function Locations() {
                   ))}
                 </select>
               </div>
-              <div className="form-group">
-                <label>Location Code *</label>
+              <div className="flex flex-col">
+                <label className="mb-2 font-semibold text-gray-700 text-[0.9rem]">Location Code *</label>
                 <input
                   type="text"
                   value={newLocation.location_code}
                   onChange={(e) => setNewLocation({ ...newLocation, location_code: e.target.value })}
                   placeholder="LOC-A01-01-01"
                   required
+                  className="py-3 px-3 border-2 border-gray-200 rounded-md text-base duration-200 focus:outline-none focus:border-blue-600"
                 />
               </div>
-              <div className="form-group">
-                <label>QR Code *</label>
+              <div className="flex flex-col">
+                <label className="mb-2 font-semibold text-gray-700 text-[0.9rem]">QR Code *</label>
                 <input
                   type="text"
                   value={newLocation.qr_code}
                   onChange={(e) => setNewLocation({ ...newLocation, qr_code: e.target.value })}
                   placeholder="LOC-A01-01-01"
                   required
+                  className="py-3 px-3 border-2 border-gray-200 rounded-md text-base duration-200 focus:outline-none focus:border-blue-600"
                 />
               </div>
             </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Zone</label>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 mb-4 md:grid-cols-1">
+              <div className="flex flex-col">
+                <label className="mb-2 font-semibold text-gray-700 text-[0.9rem]">Zone</label>
                 <select
                   value={newLocation.zone}
                   onChange={(e) => setNewLocation({ ...newLocation, zone: e.target.value })}
+                  className="py-3 px-3 border-2 border-gray-200 rounded-md text-base duration-200 focus:outline-none focus:border-blue-600"
                 >
                   <option value="">Select Zone</option>
                   <option value="RECEIVING">Receiving</option>
@@ -413,40 +419,44 @@ function Locations() {
                   <option value="CATEGORY">Category (Factory)</option>
                 </select>
               </div>
-              <div className="form-group">
-                <label>Aisle</label>
+              <div className="flex flex-col">
+                <label className="mb-2 font-semibold text-gray-700 text-[0.9rem]">Aisle</label>
                 <input
                   type="text"
                   value={newLocation.aisle}
                   onChange={(e) => setNewLocation({ ...newLocation, aisle: e.target.value })}
                   placeholder="A01"
+                  className="py-3 px-3 border-2 border-gray-200 rounded-md text-base duration-200 focus:outline-none focus:border-blue-600"
                 />
               </div>
-              <div className="form-group">
-                <label>Bay</label>
+              <div className="flex flex-col">
+                <label className="mb-2 font-semibold text-gray-700 text-[0.9rem]">Bay</label>
                 <input
                   type="text"
                   value={newLocation.bay}
                   onChange={(e) => setNewLocation({ ...newLocation, bay: e.target.value })}
                   placeholder="01"
+                  className="py-3 px-3 border-2 border-gray-200 rounded-md text-base duration-200 focus:outline-none focus:border-blue-600"
                 />
               </div>
-              <div className="form-group">
-                <label>Level</label>
+              <div className="flex flex-col">
+                <label className="mb-2 font-semibold text-gray-700 text-[0.9rem]">Level</label>
                 <input
                   type="text"
                   value={newLocation.level}
                   onChange={(e) => setNewLocation({ ...newLocation, level: e.target.value })}
                   placeholder="01"
+                  className="py-3 px-3 border-2 border-gray-200 rounded-md text-base duration-200 focus:outline-none focus:border-blue-600"
                 />
               </div>
             </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Location Type</label>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 mb-4 md:grid-cols-1">
+              <div className="flex flex-col">
+                <label className="mb-2 font-semibold text-gray-700 text-[0.9rem]">Location Type</label>
                 <select
                   value={newLocation.location_type}
                   onChange={(e) => setNewLocation({ ...newLocation, location_type: e.target.value })}
+                  className="py-3 px-3 border-2 border-gray-200 rounded-md text-base duration-200 focus:outline-none focus:border-blue-600"
                 >
                   <option value="FLOOR">Floor</option>
                   <option value="RACK">Rack</option>
@@ -454,19 +464,20 @@ function Locations() {
                   <option value="BULK">Bulk</option>
                 </select>
               </div>
-              <div className="form-group full-width">
-                <label>Description</label>
+              <div className="flex flex-col col-span-full">
+                <label className="mb-2 font-semibold text-gray-700 text-[0.9rem]">Description</label>
                 <input
                   type="text"
                   value={newLocation.description}
                   onChange={(e) => setNewLocation({ ...newLocation, description: e.target.value })}
                   placeholder="Aisle A, Rack 1, Level 1"
+                  className="py-3 px-3 border-2 border-gray-200 rounded-md text-base duration-200 focus:outline-none focus:border-blue-600"
                 />
               </div>
             </div>
-            <div className="form-actions">
-              <button type="submit" className="btn-primary">Create Location</button>
-              <button type="button" onClick={() => setShowAddForm(false)} className="btn-cancel">
+            <div className="flex gap-3 mt-6">
+              <button type="submit" className="py-3 px-5 bg-blue-600 text-white border-none rounded-md font-semibold cursor-pointer duration-200 whitespace-nowrap hover:bg-blue-700">Create Location</button>
+              <button type="button" onClick={() => setShowAddForm(false)} className="py-3 px-5 bg-gray-500 text-white border-none rounded-md font-semibold cursor-pointer duration-200 hover:bg-gray-600">
                 Cancel
               </button>
             </div>
@@ -474,31 +485,31 @@ function Locations() {
         </div>
       )}
 
-      {loading && <div className="loading">Loading locations...</div>}
+      {loading && <div className="text-center p-12 text-gray-500 text-lg">Loading locations...</div>}
 
       {!loading && (
         <div>
           {/* Action Barcodes Section */}
-          <div className="section">
-            <h3>⚡ {t.actionBarcodes}</h3>
-            <p className="section-description">
+          <div className="py-4 mb-4 border-b border-gray-200">
+            <h3 className="m-0 mb-4 text-gray-800">{t.actionBarcodes}</h3>
+            <p className="m-0 mb-6 text-gray-500 text-[0.95rem]">
               {t.actionBarcodesHint}
             </p>
-            <div className="modes-grid">
+            <div className="grid grid-cols-2 gap-4 md:gap-3 sm:grid-cols-1">
               {operationModes
                 .filter((mode) => mode.mode_code.startsWith('ACTION-'))
                 .map((mode) => (
-                  <div key={mode.mode_id} className="mode-card">
-                    <div className="mode-info">
-                      <div className="mode-name">{getTranslatedActionName(mode.mode_code)}</div>
-                      <div className="mode-code">{mode.mode_code}</div>
-                      <div className="mode-description">{getTranslatedActionDescription(mode.mode_code)}</div>
+                  <div key={mode.mode_id} className="bg-gradient-to-br from-white to-slate-50 border-2 border-gray-200 rounded-xl p-5 flex flex-col gap-3 duration-200 shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:border-blue-600 hover:shadow-[0_4px_12px_rgba(37,99,235,0.15)] hover:-translate-y-0.5 md:p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                    <div className="flex-1 flex flex-col gap-2 md:gap-1.5 sm:min-w-0">
+                      <div className="text-lg font-bold text-gray-800 leading-snug md:text-[0.95rem]">{getTranslatedActionName(mode.mode_code)}</div>
+                      <div className="font-mono text-[0.8rem] text-slate-500 bg-slate-100 py-1.5 px-2.5 rounded-md inline-block w-fit md:text-[0.7rem] md:py-1 md:px-2 sm:max-w-full sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap">{mode.mode_code}</div>
+                      <div className="text-[0.85rem] text-gray-500 leading-snug md:text-[0.8rem] md:line-clamp-2 md:overflow-hidden">{getTranslatedActionDescription(mode.mode_code)}</div>
                     </div>
                     <button
                       onClick={() => handlePrintOperationModeBarcode(mode)}
-                      className="btn-print-small"
+                      className="py-2 px-4 bg-blue-600 text-white border-none rounded-md font-semibold cursor-pointer duration-200 whitespace-nowrap text-[0.9rem] hover:bg-blue-700 md:py-1.5 md:px-3 md:text-[0.8rem] md:w-full md:justify-center sm:w-auto sm:shrink-0"
                     >
-                      🖨️ {t.print}
+                      {t.print}
                     </button>
                   </div>
                 ))}
@@ -506,29 +517,29 @@ function Locations() {
           </div>
 
           {/* Operation Modes Section */}
-          <div className="section">
-            <h3>🔄 {t.operationModes}</h3>
-            <p className="section-description">
+          <div className="py-4 mb-4 border-b border-gray-200">
+            <h3 className="m-0 mb-4 text-gray-800">{t.operationModes}</h3>
+            <p className="m-0 mb-6 text-gray-500 text-[0.95rem]">
               {t.operationModesHint}
             </p>
-            <div className="modes-grid">
+            <div className="grid grid-cols-2 gap-4 md:gap-3 sm:grid-cols-1">
               {operationModes
                 .filter((mode) => !mode.mode_code.startsWith('ACTION-'))
                 .map((mode) => (
-                <div key={mode.mode_id} className="mode-card">
-                  <div className="mode-info">
-                    <div className="mode-name">{getTranslatedModeName(mode.mode_type)}</div>
-                    <div className="mode-code">{mode.mode_code}</div>
-                    <div className={`mode-type-badge ${mode.mode_type.toLowerCase()}`}>
+                <div key={mode.mode_id} className="bg-gradient-to-br from-white to-slate-50 border-2 border-gray-200 rounded-xl p-5 flex flex-col gap-3 duration-200 shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:border-blue-600 hover:shadow-[0_4px_12px_rgba(37,99,235,0.15)] hover:-translate-y-0.5 md:p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <div className="flex-1 flex flex-col gap-2 md:gap-1.5 sm:min-w-0">
+                    <div className="text-lg font-bold text-gray-800 leading-snug md:text-[0.95rem]">{getTranslatedModeName(mode.mode_type)}</div>
+                    <div className="font-mono text-[0.8rem] text-slate-500 bg-slate-100 py-1.5 px-2.5 rounded-md inline-block w-fit md:text-[0.7rem] md:py-1 md:px-2 sm:max-w-full sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap">{mode.mode_code}</div>
+                    <span className={`inline-block py-1 px-3 rounded-full text-xs font-semibold uppercase w-fit md:text-[0.65rem] md:py-0.5 md:px-2 ${MODE_TYPE_BADGE_CLASSES[mode.mode_type.toLowerCase()] || ''}`}>
                       {getTranslatedModeName(mode.mode_type)}
-                    </div>
-                    <div className="mode-description">{getTranslatedModeDescription(mode.mode_type)}</div>
+                    </span>
+                    <div className="text-[0.85rem] text-gray-500 leading-snug md:text-[0.8rem] md:line-clamp-2 md:overflow-hidden">{getTranslatedModeDescription(mode.mode_type)}</div>
                   </div>
                   <button
                     onClick={() => handlePrintOperationModeBarcode(mode)}
-                    className="btn-print-small"
+                    className="py-2 px-4 bg-blue-600 text-white border-none rounded-md font-semibold cursor-pointer duration-200 whitespace-nowrap text-[0.9rem] hover:bg-blue-700 md:py-1.5 md:px-3 md:text-[0.8rem] md:w-full md:justify-center sm:w-auto sm:shrink-0"
                   >
-                    🖨️ {t.print}
+                    {t.print}
                   </button>
                 </div>
               ))}
@@ -536,60 +547,60 @@ function Locations() {
           </div>
 
           {/* Locations Grid */}
-          <div className="section">
-            <h3>📦 {t.allLocations} ({locations.length})</h3>
+          <div className="py-4 mb-4 last:border-b-0 last:mb-0">
+            <h3 className="m-0 mb-4 text-gray-800">{t.allLocations} ({locations.length})</h3>
             {locations.length === 0 ? (
-              <div className="empty-state">{t.noData}</div>
+              <div className="text-center p-12 text-gray-500 text-lg">{t.noData}</div>
             ) : (
-              <div className="locations-grid">
+              <div className="grid grid-cols-2 gap-4 md:gap-3 sm:grid-cols-1">
                 {locations.map((location) => (
-                  <div key={location.location_id} className="location-card">
-                    <div className="location-card-header">
-                      <span className="location-code">{location.location_code}</span>
-                      <span className={`status-badge ${location.is_active ? 'active' : 'inactive'}`}>
+                  <div key={location.location_id} className="bg-gradient-to-br from-white to-slate-50 border-2 border-gray-200 rounded-xl overflow-hidden duration-200 shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:border-blue-600 hover:shadow-[0_4px_12px_rgba(37,99,235,0.15)] hover:-translate-y-0.5">
+                    <div className="flex justify-between items-center py-3 px-4 bg-slate-600 md:py-2 md:px-3">
+                      <span className="font-mono font-bold text-white text-base md:text-[0.85rem]">{location.location_code}</span>
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase ${location.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'} md:text-[0.65rem] md:py-0.5 md:px-2`}>
                         {location.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </div>
-                    <div className="location-card-body">
-                      <div className="location-detail">
-                        <span className="detail-label">{t.warehouse}:</span>
-                        <span className="detail-value">{getWarehouseName(location.warehouse_id)}</span>
+                    <div className="py-3 px-4 flex flex-col gap-2 md:py-2 md:px-3 md:gap-1.5">
+                      <div className="flex justify-between items-center gap-2 sm:flex-wrap">
+                        <span className="text-xs text-slate-500 font-medium uppercase md:text-[0.65rem]">{t.warehouse}:</span>
+                        <span className="text-[0.85rem] text-slate-800 font-semibold md:text-xs">{getWarehouseName(location.warehouse_id)}</span>
                       </div>
                       {location.zone && (
-                        <div className="location-detail">
-                          <span className="detail-label">{t.zone}:</span>
-                          <span className={`zone-badge ${location.zone.toLowerCase()}`}>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-xs text-slate-500 font-medium uppercase md:text-[0.65rem]">{t.zone}:</span>
+                          <span className={`inline-block py-1 px-3 rounded-full text-xs font-semibold uppercase ${ZONE_BADGE_CLASSES[location.zone.toLowerCase()] || ''}`}>
                             {location.zone}
                           </span>
                         </div>
                       )}
                       {location.location_type && (
-                        <div className="location-detail">
-                          <span className="detail-label">{t.locationType}:</span>
-                          <span className="detail-value">{location.location_type}</span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-xs text-slate-500 font-medium uppercase md:text-[0.65rem]">{t.locationType}:</span>
+                          <span className="text-[0.85rem] text-slate-800 font-semibold md:text-xs">{location.location_type}</span>
                         </div>
                       )}
                       {(location.aisle || location.bay || location.level) && (
-                        <div className="location-detail">
-                          <span className="detail-label">Aisle/Bay/Level:</span>
-                          <span className="detail-value">
+                        <div className="flex justify-between items-center gap-2 sm:flex-wrap">
+                          <span className="text-xs text-slate-500 font-medium uppercase md:text-[0.65rem]">Aisle/Bay/Level:</span>
+                          <span className="text-[0.85rem] text-slate-800 font-semibold md:text-xs">
                             {`${location.aisle || '-'}/${location.bay || '-'}/${location.level || '-'}`}
                           </span>
                         </div>
                       )}
                       {location.description && (
-                        <div className="location-detail">
-                          <span className="detail-label">{t.description}:</span>
-                          <span className="detail-value">{location.description}</span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-xs text-slate-500 font-medium uppercase md:text-[0.65rem]">{t.description}:</span>
+                          <span className="text-[0.85rem] text-slate-800 font-semibold md:text-xs">{location.description}</span>
                         </div>
                       )}
                     </div>
-                    <div className="location-card-footer">
+                    <div className="py-3 px-4 bg-slate-50 border-t border-gray-200 md:py-2 md:px-3">
                       <button
                         onClick={() => handlePrintLocationBarcode(location)}
-                        className="btn-print-small"
+                        className="w-full py-2 px-4 bg-blue-600 text-white border-none rounded-md font-semibold cursor-pointer duration-200 whitespace-nowrap text-[0.9rem] hover:bg-blue-700 md:py-1.5 md:px-3 md:text-[0.8rem]"
                       >
-                        🖨️ {t.print}
+                        {t.print}
                       </button>
                     </div>
                   </div>

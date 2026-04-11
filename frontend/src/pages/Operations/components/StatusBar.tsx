@@ -17,19 +17,19 @@ export function StatusBar({ workflow, language, translations }: StatusBarProps) 
 
   return (
     <div
-      className="workflow-status"
+      className="px-4 py-3 text-white flex justify-between items-center"
       style={{ backgroundColor: getModeColor(workflow.mode.mode_code) }}
     >
-      <div className="status-row">
-        <span className="status-mode">
+      <div className="flex items-center gap-3">
+        <span className="font-semibold text-base">
           {getModeDisplayName(workflow.mode.mode_code, language)}
         </span>
         {workflow.location && (
-          <span className="status-location">📍 {workflow.location.location_code}</span>
+          <span className="text-sm opacity-95 bg-white/20 px-3 py-1 rounded-lg">📍 {workflow.location.location_code}</span>
         )}
       </div>
       {workflow.items.length > 0 && (
-        <div className="status-count">
+        <div className="font-bold text-lg bg-white/25 py-2 px-4 rounded-lg">
           {totalItems} {translations.items}
         </div>
       )}

@@ -6,7 +6,6 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { useStore } from '../stores/appStore';
 import { apiClient } from '../lib/api';
 import { translations } from '../i18n/translations';
-import './Inventory.css';
 
 const isNative = Capacitor.isNativePlatform();
 
@@ -82,6 +81,26 @@ interface ContainerData {
   };
   contents: ContainerContent[];
 }
+
+const zoneTagClasses: Record<string, string> = {
+  picking: 'bg-primary-100 text-primary-700',
+  storage: 'bg-success-100 text-success-700',
+  receiving: 'bg-warning-100 text-warning-700',
+  shipping: 'bg-info-100 text-info-700',
+};
+
+const serialStatusClasses: Record<string, string> = {
+  AVAILABLE: 'bg-primary-100 text-primary-700',
+  IN_STOCK: 'bg-success-100 text-success-700',
+  SHIPPED: 'bg-info-100 text-info-700',
+  USED: 'bg-error-100 text-error-700',
+};
+
+const containerStatusClasses: Record<string, string> = {
+  active: 'bg-success-500',
+  opened: 'bg-primary-500',
+  closed: 'bg-slate-500',
+};
 
 function Inventory() {
   const navigate = useNavigate();
@@ -300,16 +319,6 @@ function Inventory() {
     return labels[eventType] || eventType;
   };
 
-  const getStatusBadgeClass = (status: string): string => {
-    const classes: Record<string, string> = {
-      'AVAILABLE': 'status-available',
-      'IN_STOCK': 'status-instock',
-      'SHIPPED': 'status-shipped',
-      'USED': 'status-used',
-    };
-    return classes[status] || '';
-  };
-
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
@@ -322,14 +331,17 @@ function Inventory() {
   };
 
   return (
-    <div className="inventory-page">
-      <div className="inventory-card">
+    <div className="min-h-[calc(100vh-120px)] bg-slate-100 p-4 max-sm:p-2">
+      <div className="max-w-[800px] mx-auto bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] overflow-hidden max-sm:rounded-xl">
         {/* Header */}
-        <div className="inventory-header">
-          <button className="back-btn" onClick={() => navigate('/')}>
+        <div className="flex items-center gap-3 p-5 bg-linear-to-br from-primary-500 to-primary-700 text-white">
+          <button
+            className="bg-white/20 border-none text-white w-9 h-9 rounded-lg text-lg cursor-pointer flex items-center justify-center duration-200 hover:bg-white/30"
+            onClick={() => navigate('/')}
+          >
             ←
           </button>
-          <h2>{t.inventoryQuery}</h2>
+          <h2 className="m-0 text-xl font-bold text-white flex-1 leading-9 h-9 flex items-center">{t.inventoryQuery}</h2>
           <button onClick={() => {
             const data = queryMode === 'SKU' ? skuResults : queryMode === 'LOCATION' ? locationResults : [];
             if (data.length === 0) return;
@@ -347,25 +359,25 @@ function Inventory() {
                 'Inventory',
               );
             });
-          }} className="add-btn" style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', background: 'rgba(255,255,255,0.2)', border: '2px solid rgba(255,255,255,0.3)', color: 'white', borderRadius: '8px', cursor: 'pointer' }} disabled={(queryMode === 'SKU' ? skuResults : locationResults).length === 0}>
+          }} className="text-xs py-1.5 px-3 bg-white/20 border-2 border-white/30 text-white rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled={(queryMode === 'SKU' ? skuResults : locationResults).length === 0}>
             ↓ XLSX
           </button>
-          <div className="warehouse-badge">{currentWarehouse}</div>
+          <div className="py-2 px-3 bg-white/20 text-white rounded-lg font-semibold text-sm">{currentWarehouse}</div>
         </div>
 
         {/* QUERY CONTENT */}
         <>
         {/* Query Mode Status Bar */}
-        <div className={`workflow-status ${queryMode === 'SKU' ? 'sku-mode' : queryMode === 'LOCATION' ? 'loc-mode' : queryMode === 'SERIAL' ? 'serial-mode' : 'container-mode'}`}>
-          <div className="status-row">
-            <span className="status-mode">
+        <div className="py-3 px-4 text-white flex justify-between items-center bg-linear-to-br from-primary-500 to-primary-700">
+          <div className="flex items-center gap-3">
+            <span className="font-semibold text-base">
               {queryMode === 'SKU' ? t.searchBySKU : queryMode === 'LOCATION' ? t.searchByLocation : queryMode === 'SERIAL' ? (language === 'tr' ? 'Seri No Geçmişi' : 'Serial History') : (language === 'tr' ? 'Koli/Palet Sorgula' : 'Container Query')}
             </span>
           </div>
         </div>
 
         {/* Instruction */}
-        <div className="scan-instruction">
+        <div className="text-center px-4 pt-6 pb-3 text-base text-slate-600 font-medium">
           {queryMode === 'SKU'
             ? (language === 'tr' ? 'Ürün barkodunu okutun veya SKU girin' : 'Scan product barcode or enter SKU')
             : queryMode === 'LOCATION'
@@ -377,27 +389,43 @@ function Inventory() {
         </div>
 
         {/* Query Mode Buttons */}
-        <div className="mode-buttons query-modes">
+        <div className="grid grid-cols-4 gap-2 px-4 pb-4 pt-2">
           <button
-            className={`mode-btn ${queryMode === 'SKU' ? 'active sku' : ''}`}
+            className={`py-3 px-2 border-none rounded-xl font-semibold text-[0.8125rem] cursor-pointer duration-150 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 max-sm:py-3 max-sm:px-2 max-sm:text-sm ${
+              queryMode === 'SKU'
+                ? 'bg-success-500 text-white'
+                : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+            }`}
             onClick={() => { setQueryMode('SKU'); clearResults(); }}
           >
             {language === 'tr' ? 'SKU' : 'SKU'}
           </button>
           <button
-            className={`mode-btn ${queryMode === 'LOCATION' ? 'active location' : ''}`}
+            className={`py-3 px-2 border-none rounded-xl font-semibold text-[0.8125rem] cursor-pointer duration-150 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 max-sm:py-3 max-sm:px-2 max-sm:text-sm ${
+              queryMode === 'LOCATION'
+                ? 'bg-info-500 text-white'
+                : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+            }`}
             onClick={() => { setQueryMode('LOCATION'); clearResults(); }}
           >
             {language === 'tr' ? 'Lokasyon' : 'Location'}
           </button>
           <button
-            className={`mode-btn ${queryMode === 'SERIAL' ? 'active serial' : ''}`}
+            className={`py-3 px-2 border-none rounded-xl font-semibold text-[0.8125rem] cursor-pointer duration-150 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 max-sm:py-3 max-sm:px-2 max-sm:text-sm ${
+              queryMode === 'SERIAL'
+                ? 'bg-warning-500 text-white'
+                : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+            }`}
             onClick={() => { setQueryMode('SERIAL'); clearResults(); }}
           >
             {language === 'tr' ? 'Seri No' : 'Serial'}
           </button>
           <button
-            className={`mode-btn ${queryMode === 'CONTAINER' ? 'active container' : ''}`}
+            className={`py-3 px-2 border-none rounded-xl font-semibold text-[0.8125rem] cursor-pointer duration-150 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 max-sm:py-3 max-sm:px-2 max-sm:text-sm ${
+              queryMode === 'CONTAINER'
+                ? 'bg-error-400 text-white'
+                : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+            }`}
             onClick={() => { setQueryMode('CONTAINER'); clearResults(); }}
           >
             {language === 'tr' ? 'Koli' : 'Container'}
@@ -405,7 +433,7 @@ function Inventory() {
         </div>
 
         {/* HID Input */}
-        <div className="hid-input-section">
+        <div className="px-4 pb-4 pt-2">
           <input
             ref={inputRef}
             type="text"
@@ -421,28 +449,35 @@ function Inventory() {
                 ? (language === 'tr' ? 'Seri numaralı barkod (örn: IWA-001-000001)' : 'Serial barcode (e.g. IWA-001-000001)')
                 : (language === 'tr' ? 'Koli/Palet barkodu (örn: KOL-00001)' : 'Container barcode (e.g. KOL-00001)')
             }
-            className="hid-input"
+            className="w-full py-3 px-4 text-base border-2 border-slate-300 rounded-xl text-center font-mono bg-slate-100 text-slate-800 duration-150 box-border focus:outline-none focus:border-primary-400 focus:bg-white focus:shadow-[0_0_0_4px] focus:shadow-primary-100"
             autoFocus
           />
         </div>
 
         {/* Action Buttons */}
-        <div className="action-buttons">
+        <div className="flex gap-2 px-4 pb-4 flex-wrap max-sm:gap-1">
           <button
-            className={`action-btn camera ${showCamera || isNativeScanning ? 'active' : ''}`}
+            className={`flex-1 min-w-[80px] py-3 border-none rounded-lg font-medium text-[0.9375rem] cursor-pointer duration-150 flex items-center justify-center gap-1 max-sm:py-3 max-sm:px-2 max-sm:text-[0.8125rem] ${
+              showCamera || isNativeScanning
+                ? 'bg-error-500 text-white hover:bg-error-600'
+                : 'bg-primary-500 text-white hover:bg-primary-600'
+            }`}
             onClick={toggleCamera}
           >
             {showCamera || isNativeScanning ? (language === 'tr' ? 'Kapat' : 'Close') : (language === 'tr' ? 'Kamera' : 'Camera')}
           </button>
           <button
-            className="action-btn complete"
+            className="flex-1 min-w-[80px] py-3 border-none rounded-lg font-medium text-[0.9375rem] cursor-pointer duration-150 flex items-center justify-center gap-1 bg-success-500 text-white hover:bg-success-600 disabled:opacity-50 disabled:cursor-not-allowed max-sm:py-3 max-sm:px-2 max-sm:text-[0.8125rem]"
             onClick={() => handleSearch(searchInput)}
             disabled={loading || !searchInput.trim()}
           >
             {t.search}
           </button>
           {(skuInfo || locationInfo || serialHistory || containerData) && (
-            <button className="action-btn cancel" onClick={clearResults}>
+            <button
+              className="flex-[0.5] min-w-[80px] py-3 border-none rounded-lg font-medium text-[0.9375rem] cursor-pointer duration-150 flex items-center justify-center gap-1 bg-slate-500 text-white hover:bg-slate-600 max-sm:flex-[0.4] max-sm:py-3 max-sm:px-2 max-sm:text-[0.8125rem]"
+              onClick={clearResults}
+            >
               {language === 'tr' ? 'Temizle' : 'Clear'}
             </button>
           )}
@@ -450,71 +485,75 @@ function Inventory() {
 
         {/* Camera Section */}
         {showCamera && !isNative && (
-          <div className="camera-section">
+          <div className="px-4 pb-4">
             <div id="inventory-qr-reader" style={{ width: '100%', borderRadius: '12px', overflow: 'hidden' }}></div>
           </div>
         )}
 
         {/* Native Scanning Animation */}
         {isNativeScanning && (
-          <div className="camera-section">
-            <div className="native-scanning">
-              <div className="scanning-animation"></div>
-              <p>{language === 'tr' ? 'Barkod taranıyor...' : 'Scanning barcode...'}</p>
+          <div className="px-4 pb-4">
+            <div className="bg-slate-900 rounded-xl py-8 px-4 text-center text-white">
+              <div className="w-20 h-20 mx-auto mb-4 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin"></div>
+              <p className="m-0 text-[0.9375rem] opacity-80">{language === 'tr' ? 'Barkod taranıyor...' : 'Scanning barcode...'}</p>
             </div>
           </div>
         )}
 
         {/* Loading */}
-        {loading && <div className="scan-loading">🔍</div>}
+        {loading && <div className="text-center p-4 text-2xl animate-pulse">🔍</div>}
 
         {/* Error */}
-        {error && <div className="scan-error">{error}</div>}
+        {error && (
+          <div className="mx-4 mb-4 p-3 bg-error-50 text-error-600 rounded-lg text-center font-medium border border-error-200">
+            {error}
+          </div>
+        )}
 
         {/* SKU Query Results */}
         {queryMode === 'SKU' && skuInfo && (
-          <div className="results-section">
-            <div className="product-header">
-              <h3>{skuInfo.product_name}</h3>
-              <span className="sku-badge">{skuInfo.sku_code}</span>
+          <div className="px-4 pb-4 pt-3">
+            <div className="flex justify-between items-center py-3 px-4 bg-primary-50 rounded-lg mb-3">
+              <h3 className="m-0 text-base font-semibold text-primary-700">{skuInfo.product_name}</h3>
+              <span className="font-mono text-[0.8125rem] bg-primary-100 text-primary-700 py-1 px-3 rounded-lg font-semibold">{skuInfo.sku_code}</span>
             </div>
 
-            <div className="totals-row">
-              <div className="total-item">
-                <span className="total-value">{getTotalByType(skuResults, 'EACH')}</span>
-                <span className="total-label">{t.each}</span>
+            <div className="flex gap-2 mb-3">
+              <div className="flex-1 flex flex-col items-center gap-1 p-3 bg-success-50 rounded-lg border border-success-200">
+                <span className="text-[1.375rem] font-extrabold text-success-600 font-mono">{getTotalByType(skuResults, 'EACH')}</span>
+                <span className="text-[0.6875rem] font-semibold text-slate-500 uppercase">{t.each}</span>
               </div>
-              <div className="total-item">
-                <span className="total-value">{getTotalByType(skuResults, 'BOX')}</span>
-                <span className="total-label">{t.boxes}</span>
+              <div className="flex-1 flex flex-col items-center gap-1 p-3 bg-success-50 rounded-lg border border-success-200">
+                <span className="text-[1.375rem] font-extrabold text-success-600 font-mono">{getTotalByType(skuResults, 'BOX')}</span>
+                <span className="text-[0.6875rem] font-semibold text-slate-500 uppercase">{t.boxes}</span>
               </div>
-              <div className="total-item">
-                <span className="total-value">{getTotalByType(skuResults, 'PALLET')}</span>
-                <span className="total-label">{t.pallets}</span>
+              <div className="flex-1 flex flex-col items-center gap-1 p-3 bg-success-50 rounded-lg border border-success-200">
+                <span className="text-[1.375rem] font-extrabold text-success-600 font-mono">{getTotalByType(skuResults, 'PALLET')}</span>
+                <span className="text-[0.6875rem] font-semibold text-slate-500 uppercase">{t.pallets}</span>
               </div>
             </div>
 
-            <div className="items-list">
-              <div className="items-header">
+            <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
+              <div className="flex justify-between items-center py-3 px-4 bg-slate-100 border-b border-slate-200 font-semibold text-slate-600">
                 <span>{t.locations}</span>
-                <span className="items-total">{skuResults.length}</span>
+                <span className="bg-primary-500 text-white py-1 px-3 rounded-full text-[0.8125rem]">{skuResults.length}</span>
               </div>
               {skuResults.length === 0 ? (
-                <div className="scan-action-hint">{t.noStockFound}</div>
+                <div className="py-3 px-4 text-center text-[0.8125rem] text-slate-500 bg-slate-100 italic">{t.noStockFound}</div>
               ) : (
                 skuResults.map((item, idx) => (
-                  <div key={idx} className="item-row">
-                    <div className="item-info">
-                      <div className="item-name">
+                  <div key={idx} className={`flex items-center justify-between py-3 px-4 bg-white ${idx < skuResults.length - 1 ? 'border-b border-slate-200' : ''}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 font-medium text-slate-800 text-[0.9375rem] mb-1">
                         {item.location_code}
                         {item.zone && (
-                          <span className={`zone-tag ${item.zone?.toLowerCase()}`}>
+                          <span className={`inline-block py-0.5 px-2 rounded-md text-[0.6875rem] font-semibold uppercase ${zoneTagClasses[item.zone?.toLowerCase()] || 'bg-slate-100 text-slate-600'}`}>
                             {item.zone}
                           </span>
                         )}
                       </div>
                     </div>
-                    <span className="item-qty">{item.quantity_each || 0}</span>
+                    <span className="font-bold text-success-600 text-base font-mono">{item.quantity_each || 0}</span>
                   </div>
                 ))
               )}
@@ -524,46 +563,46 @@ function Inventory() {
 
         {/* Location Query Results */}
         {queryMode === 'LOCATION' && locationInfo && (
-          <div className="results-section">
-            <div className="location-header">
-              <h3>{locationInfo.location_code}</h3>
+          <div className="px-4 pb-4 pt-3">
+            <div className="flex justify-between items-center py-3 px-4 bg-primary-50 rounded-lg mb-3">
+              <h3 className="m-0 text-base font-semibold text-primary-700">{locationInfo.location_code}</h3>
               {locationInfo.zone && (
-                <span className={`zone-tag ${locationInfo.zone?.toLowerCase()}`}>
+                <span className={`inline-block py-0.5 px-2 rounded-md text-[0.6875rem] font-semibold uppercase ${zoneTagClasses[locationInfo.zone?.toLowerCase()] || 'bg-slate-100 text-slate-600'}`}>
                   {locationInfo.zone}
                 </span>
               )}
             </div>
 
-            <div className="totals-row">
-              <div className="total-item">
-                <span className="total-value">{locationResults.length}</span>
-                <span className="total-label">{t.products}</span>
+            <div className="flex gap-2 mb-3">
+              <div className="flex-1 flex flex-col items-center gap-1 p-3 bg-success-50 rounded-lg border border-success-200">
+                <span className="text-[1.375rem] font-extrabold text-success-600 font-mono">{locationResults.length}</span>
+                <span className="text-[0.6875rem] font-semibold text-slate-500 uppercase">{t.products}</span>
               </div>
-              <div className="total-item">
-                <span className="total-value">{getTotalByType(locationResults, 'EACH')}</span>
-                <span className="total-label">{t.each}</span>
+              <div className="flex-1 flex flex-col items-center gap-1 p-3 bg-success-50 rounded-lg border border-success-200">
+                <span className="text-[1.375rem] font-extrabold text-success-600 font-mono">{getTotalByType(locationResults, 'EACH')}</span>
+                <span className="text-[0.6875rem] font-semibold text-slate-500 uppercase">{t.each}</span>
               </div>
-              <div className="total-item">
-                <span className="total-value">{getTotalByType(locationResults, 'BOX')}</span>
-                <span className="total-label">{t.boxes}</span>
+              <div className="flex-1 flex flex-col items-center gap-1 p-3 bg-success-50 rounded-lg border border-success-200">
+                <span className="text-[1.375rem] font-extrabold text-success-600 font-mono">{getTotalByType(locationResults, 'BOX')}</span>
+                <span className="text-[0.6875rem] font-semibold text-slate-500 uppercase">{t.boxes}</span>
               </div>
             </div>
 
-            <div className="items-list">
-              <div className="items-header">
+            <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
+              <div className="flex justify-between items-center py-3 px-4 bg-slate-100 border-b border-slate-200 font-semibold text-slate-600">
                 <span>{t.products}</span>
-                <span className="items-total">{locationResults.length}</span>
+                <span className="bg-primary-500 text-white py-1 px-3 rounded-full text-[0.8125rem]">{locationResults.length}</span>
               </div>
               {locationResults.length === 0 ? (
-                <div className="scan-action-hint">{t.locationEmpty}</div>
+                <div className="py-3 px-4 text-center text-[0.8125rem] text-slate-500 bg-slate-100 italic">{t.locationEmpty}</div>
               ) : (
                 locationResults.map((item, idx) => (
-                  <div key={idx} className="item-row">
-                    <div className="item-info">
-                      <div className="item-name">{item.product_name}</div>
-                      <div className="item-sku">{item.sku_code}</div>
+                  <div key={idx} className={`flex items-center justify-between py-3 px-4 bg-white ${idx < locationResults.length - 1 ? 'border-b border-slate-200' : ''}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 font-medium text-slate-800 text-[0.9375rem] mb-1">{item.product_name}</div>
+                      <div className="font-mono text-xs text-slate-500">{item.sku_code}</div>
                     </div>
-                    <span className="item-qty">{item.quantity_each || 0}</span>
+                    <span className="font-bold text-success-600 text-base font-mono">{item.quantity_each || 0}</span>
                   </div>
                 ))
               )}
@@ -573,58 +612,58 @@ function Inventory() {
 
         {/* Serial History Results */}
         {queryMode === 'SERIAL' && serialHistory && (
-          <div className="results-section">
-            <div className="product-header serial-header">
+          <div className="px-4 pb-4 pt-3">
+            <div className="flex justify-between items-center py-3 px-4 bg-warning-50 rounded-lg mb-3 border border-warning-200">
               <div>
-                <h3>{serialHistory.serial.product_name}</h3>
-                <div className="serial-barcode">
+                <h3 className="m-0 text-base font-semibold text-warning-700">{serialHistory.serial.product_name}</h3>
+                <div className="text-[0.85rem] text-slate-500 mt-1 font-mono">
                   {serialHistory.serial.full_barcode}
                 </div>
               </div>
-              <span className={`serial-status-badge ${getStatusBadgeClass(serialHistory.serial.status)}`}>
+              <span className={`inline-block py-2 px-3 rounded-lg text-xs font-bold uppercase ${serialStatusClasses[serialHistory.serial.status] || 'bg-slate-100 text-slate-600'}`}>
                 {serialHistory.serial.status}
               </span>
             </div>
 
-            <div className="totals-row">
-              <div className="total-item serial-total">
-                <span className="total-value">{serialHistory.serial.serial_no}</span>
-                <span className="total-label">{language === 'tr' ? 'Seri No' : 'Serial No'}</span>
+            <div className="flex gap-2 mb-3">
+              <div className="flex-1 flex flex-col items-center gap-1 p-3 bg-warning-50 rounded-lg border border-warning-200">
+                <span className="text-[1.375rem] font-extrabold text-warning-700 font-mono">{serialHistory.serial.serial_no}</span>
+                <span className="text-[0.6875rem] font-semibold text-slate-500 uppercase">{language === 'tr' ? 'Seri No' : 'Serial No'}</span>
               </div>
-              <div className="total-item">
-                <span className="total-value">{serialHistory.history.length}</span>
-                <span className="total-label">{language === 'tr' ? 'Hareket' : 'Events'}</span>
+              <div className="flex-1 flex flex-col items-center gap-1 p-3 bg-success-50 rounded-lg border border-success-200">
+                <span className="text-[1.375rem] font-extrabold text-success-600 font-mono">{serialHistory.history.length}</span>
+                <span className="text-[0.6875rem] font-semibold text-slate-500 uppercase">{language === 'tr' ? 'Hareket' : 'Events'}</span>
               </div>
             </div>
 
-            <div className="serial-info-card">
-              <div className="serial-info-row">
-                <span className="serial-info-label">{language === 'tr' ? 'Ürün SKU' : 'Product SKU'}:</span>
-                <span className="serial-info-value">{serialHistory.serial.sku_code}</span>
+            <div className="bg-slate-100 rounded-lg p-3 mb-3 border border-slate-200">
+              <div className="flex justify-between py-2 border-b border-slate-200">
+                <span className="text-[0.8125rem] text-slate-500">{language === 'tr' ? 'Ürün SKU' : 'Product SKU'}:</span>
+                <span className="text-[0.8125rem] font-semibold text-slate-800 font-mono">{serialHistory.serial.sku_code}</span>
               </div>
-              <div className="serial-info-row">
-                <span className="serial-info-label">{language === 'tr' ? 'Oluşturulma' : 'Created'}:</span>
-                <span className="serial-info-value">{formatDate(serialHistory.serial.created_at)}</span>
+              <div className="flex justify-between py-2 border-b border-slate-200">
+                <span className="text-[0.8125rem] text-slate-500">{language === 'tr' ? 'Oluşturulma' : 'Created'}:</span>
+                <span className="text-[0.8125rem] font-semibold text-slate-800 font-mono">{formatDate(serialHistory.serial.created_at)}</span>
               </div>
               {serialHistory.serial.last_scanned_at && (
-                <div className="serial-info-row">
-                  <span className="serial-info-label">{language === 'tr' ? 'Son Tarama' : 'Last Scan'}:</span>
-                  <span className="serial-info-value">{formatDate(serialHistory.serial.last_scanned_at)}</span>
+                <div className="flex justify-between py-2">
+                  <span className="text-[0.8125rem] text-slate-500">{language === 'tr' ? 'Son Tarama' : 'Last Scan'}:</span>
+                  <span className="text-[0.8125rem] font-semibold text-slate-800 font-mono">{formatDate(serialHistory.serial.last_scanned_at)}</span>
                 </div>
               )}
             </div>
 
-            <div className="items-list">
-              <div className="items-header">
+            <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
+              <div className="flex justify-between items-center py-3 px-4 bg-slate-100 border-b border-slate-200 font-semibold text-slate-600">
                 <span>{language === 'tr' ? 'Hareket Geçmişi' : 'Event History'}</span>
-                <span className="items-total">{serialHistory.history.length}</span>
+                <span className="bg-primary-500 text-white py-1 px-3 rounded-full text-[0.8125rem]">{serialHistory.history.length}</span>
               </div>
               {serialHistory.history.length === 0 ? (
-                <div className="scan-action-hint">{language === 'tr' ? 'Henüz hareket kaydı yok' : 'No events recorded yet'}</div>
+                <div className="py-3 px-4 text-center text-[0.8125rem] text-slate-500 bg-slate-100 italic">{language === 'tr' ? 'Henüz hareket kaydı yok' : 'No events recorded yet'}</div>
               ) : (
                 serialHistory.history.map((event, idx) => (
-                  <div key={idx} className="history-event-row">
-                    <div className="history-event-icon">
+                  <div key={idx} className={`flex gap-3 py-3 px-4 bg-white ${idx < serialHistory.history.length - 1 ? 'border-b border-slate-200' : ''}`}>
+                    <div className="text-lg shrink-0 w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg">
                       {event.event_type === 'CREATED' && '🆕'}
                       {event.event_type === 'RECEIVED' && '📥'}
                       {event.event_type === 'TRANSFERRED' && '🔄'}
@@ -633,9 +672,9 @@ function Inventory() {
                       {event.event_type === 'STATUS_CHANGE' && '📝'}
                       {event.event_type === 'COUNTED' && '🔢'}
                     </div>
-                    <div className="history-event-info">
-                      <div className="history-event-type">{getEventTypeLabel(event.event_type)}</div>
-                      <div className="history-event-details">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-slate-800 text-[0.9375rem] mb-1">{getEventTypeLabel(event.event_type)}</div>
+                      <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                         {event.from_location && event.to_location && (
                           <span>{event.from_location} → {event.to_location}</span>
                         )}
@@ -643,10 +682,10 @@ function Inventory() {
                           <span>→ {event.to_location}</span>
                         )}
                         {event.performed_by && (
-                          <span className="history-event-user">{event.performed_by}</span>
+                          <span className="bg-info-100 text-info-700 py-0.5 px-2 rounded-md text-[0.6875rem]">{event.performed_by}</span>
                         )}
                       </div>
-                      <div className="history-event-date">{formatDate(event.created_at)}</div>
+                      <div className="text-[0.6875rem] text-slate-400 mt-1">{formatDate(event.created_at)}</div>
                     </div>
                   </div>
                 ))
@@ -657,75 +696,87 @@ function Inventory() {
 
         {/* Container Query Results */}
         {queryMode === 'CONTAINER' && containerData && (
-          <div className="results-section">
-            <div className={`product-header container-header ${containerData.container.container_type === 'BOX' ? 'box' : 'pallet'}`}>
+          <div className="px-4 pb-4 pt-3">
+            <div className={`flex justify-between items-center py-3 px-4 rounded-lg mb-3 border ${
+              containerData.container.container_type === 'BOX'
+                ? 'bg-error-50 border-error-200'
+                : 'bg-success-50 border-success-200'
+            }`}>
               <div>
-                <h3>
+                <h3 className={`m-0 text-base font-semibold ${
+                  containerData.container.container_type === 'BOX' ? 'text-error-700' : 'text-success-700'
+                }`}>
                   {containerData.container.container_type === 'BOX' ? (language === 'tr' ? 'Koli' : 'Box') : (language === 'tr' ? 'Palet' : 'Pallet')}
                 </h3>
-                <div className="container-barcode">
+                <div className="text-[1.1rem] font-bold font-mono mt-1 text-slate-800">
                   {containerData.container.barcode}
                 </div>
               </div>
-              <span className={`container-status-badge ${containerData.container.status.toLowerCase()}`}>
+              <span className={`inline-block py-2 px-3 rounded-lg text-xs font-bold uppercase text-white ${containerStatusClasses[containerData.container.status.toLowerCase()] || 'bg-slate-500'}`}>
                 {containerData.container.status === 'ACTIVE' ? (language === 'tr' ? 'Aktif' : 'Active') :
                  containerData.container.status === 'OPENED' ? (language === 'tr' ? 'Açık' : 'Opened') : containerData.container.status}
               </span>
             </div>
 
-            <div className="totals-row">
-              <div className={`total-item container-total ${containerData.container.container_type === 'BOX' ? 'box' : 'pallet'}`}>
-                <span className="total-value">
+            <div className="flex gap-2 mb-3">
+              <div className={`flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border ${
+                containerData.container.container_type === 'BOX'
+                  ? 'bg-error-50 border-error-200'
+                  : 'bg-success-50 border-success-200'
+              }`}>
+                <span className={`text-[1.375rem] font-extrabold font-mono ${
+                  containerData.container.container_type === 'BOX' ? 'text-error-700' : 'text-success-700'
+                }`}>
                   {containerData.contents.length}
                 </span>
-                <span className="total-label">{language === 'tr' ? 'Ürün Çeşidi' : 'Product Types'}</span>
+                <span className="text-[0.6875rem] font-semibold text-slate-500 uppercase">{language === 'tr' ? 'Ürün Çeşidi' : 'Product Types'}</span>
               </div>
-              <div className="total-item">
-                <span className="total-value">
+              <div className="flex-1 flex flex-col items-center gap-1 p-3 bg-success-50 rounded-lg border border-success-200">
+                <span className="text-[1.375rem] font-extrabold text-success-600 font-mono">
                   {containerData.contents.reduce((sum, item) => sum + item.quantity, 0)}
                 </span>
-                <span className="total-label">{language === 'tr' ? 'Toplam Adet' : 'Total Qty'}</span>
+                <span className="text-[0.6875rem] font-semibold text-slate-500 uppercase">{language === 'tr' ? 'Toplam Adet' : 'Total Qty'}</span>
               </div>
             </div>
 
-            <div className="serial-info-card">
-              <div className="serial-info-row">
-                <span className="serial-info-label">{language === 'tr' ? 'Oluşturan' : 'Created By'}:</span>
-                <span className="serial-info-value">{containerData.container.created_by}</span>
+            <div className="bg-slate-100 rounded-lg p-3 mb-3 border border-slate-200">
+              <div className="flex justify-between py-2 border-b border-slate-200">
+                <span className="text-[0.8125rem] text-slate-500">{language === 'tr' ? 'Oluşturan' : 'Created By'}:</span>
+                <span className="text-[0.8125rem] font-semibold text-slate-800 font-mono">{containerData.container.created_by}</span>
               </div>
-              <div className="serial-info-row">
-                <span className="serial-info-label">{language === 'tr' ? 'Oluşturulma' : 'Created'}:</span>
-                <span className="serial-info-value">{formatDate(containerData.container.created_at)}</span>
+              <div className={`flex justify-between py-2 ${containerData.container.opened_at || containerData.container.notes ? 'border-b border-slate-200' : ''}`}>
+                <span className="text-[0.8125rem] text-slate-500">{language === 'tr' ? 'Oluşturulma' : 'Created'}:</span>
+                <span className="text-[0.8125rem] font-semibold text-slate-800 font-mono">{formatDate(containerData.container.created_at)}</span>
               </div>
               {containerData.container.opened_at && (
-                <div className="serial-info-row">
-                  <span className="serial-info-label">{language === 'tr' ? 'Açılma Tarihi' : 'Opened At'}:</span>
-                  <span className="serial-info-value">{formatDate(containerData.container.opened_at)}</span>
+                <div className={`flex justify-between py-2 ${containerData.container.notes ? 'border-b border-slate-200' : ''}`}>
+                  <span className="text-[0.8125rem] text-slate-500">{language === 'tr' ? 'Açılma Tarihi' : 'Opened At'}:</span>
+                  <span className="text-[0.8125rem] font-semibold text-slate-800 font-mono">{formatDate(containerData.container.opened_at)}</span>
                 </div>
               )}
               {containerData.container.notes && (
-                <div className="serial-info-row">
-                  <span className="serial-info-label">{language === 'tr' ? 'Notlar' : 'Notes'}:</span>
-                  <span className="serial-info-value">{containerData.container.notes}</span>
+                <div className="flex justify-between py-2">
+                  <span className="text-[0.8125rem] text-slate-500">{language === 'tr' ? 'Notlar' : 'Notes'}:</span>
+                  <span className="text-[0.8125rem] font-semibold text-slate-800 font-mono">{containerData.container.notes}</span>
                 </div>
               )}
             </div>
 
-            <div className="items-list">
-              <div className="items-header">
+            <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
+              <div className="flex justify-between items-center py-3 px-4 bg-slate-100 border-b border-slate-200 font-semibold text-slate-600">
                 <span>{language === 'tr' ? 'İçerik' : 'Contents'}</span>
-                <span className="items-total">{containerData.contents.length}</span>
+                <span className="bg-primary-500 text-white py-1 px-3 rounded-full text-[0.8125rem]">{containerData.contents.length}</span>
               </div>
               {containerData.contents.length === 0 ? (
-                <div className="scan-action-hint">{language === 'tr' ? 'Koli boş' : 'Container is empty'}</div>
+                <div className="py-3 px-4 text-center text-[0.8125rem] text-slate-500 bg-slate-100 italic">{language === 'tr' ? 'Koli boş' : 'Container is empty'}</div>
               ) : (
                 containerData.contents.map((item, idx) => (
-                  <div key={idx} className="item-row">
-                    <div className="item-info">
-                      <div className="item-name">{item.product_name}</div>
-                      <div className="item-sku">{item.sku_code}</div>
+                  <div key={idx} className={`flex items-center justify-between py-3 px-4 bg-white ${idx < containerData.contents.length - 1 ? 'border-b border-slate-200' : ''}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 font-medium text-slate-800 text-[0.9375rem] mb-1">{item.product_name}</div>
+                      <div className="font-mono text-xs text-slate-500">{item.sku_code}</div>
                     </div>
-                    <span className="item-qty">{item.quantity}</span>
+                    <span className="font-bold text-success-600 text-base font-mono">{item.quantity}</span>
                   </div>
                 ))
               )}
@@ -735,17 +786,17 @@ function Inventory() {
 
         {/* Initial State */}
         {!loading && !error && !skuInfo && !locationInfo && !serialHistory && !containerData && !showCamera && !isNativeScanning && (
-          <div className="initial-state">
-            <div className="hint-icon">
+          <div className="text-center py-8 px-6">
+            <div className="text-[2.5rem] mb-3">
               {queryMode === 'SKU' ? '🏷️' : queryMode === 'LOCATION' ? '📍' : queryMode === 'SERIAL' ? '🔢' : '📦'}
             </div>
-            <h3>
+            <h3 className="m-0 mb-2 text-slate-800 text-base font-semibold">
               {queryMode === 'SKU' ? t.skuQueryMode : queryMode === 'LOCATION' ? t.locationQueryMode : queryMode === 'SERIAL' ? (language === 'tr' ? 'Seri Numara Takibi' : 'Serial Number Tracking') : (language === 'tr' ? 'Koli/Palet Sorgula' : 'Container Query')}
             </h3>
-            <p>
+            <p className="m-0 mb-4 text-slate-500 text-sm leading-relaxed">
               {queryMode === 'SKU' ? t.skuQueryHint : queryMode === 'LOCATION' ? t.locationQueryHint : queryMode === 'SERIAL' ? (language === 'tr' ? 'Bir seri numaralı barkod tarayarak ürünün tüm geçmişini görüntüleyin' : 'Scan a serialized barcode to view the complete history of that item') : (language === 'tr' ? 'Koli veya palet barkodunu tarayarak içeriğini görüntüleyin' : 'Scan a container barcode to view its contents')}
             </p>
-            <div className="example-code">
+            <div className="inline-block py-2 px-4 bg-slate-100 rounded-lg font-mono text-[0.8125rem] text-slate-600">
               {t.example}: {queryMode === 'SKU' ? 'IWA-001, IWA-002' : queryMode === 'LOCATION' ? 'LOC-A01-01-01' : queryMode === 'SERIAL' ? 'IWA-001-000001' : 'KOL-00001, PAL-00001'}
             </div>
           </div>

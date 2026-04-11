@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../lib/api';
 import { useStore } from '../stores/appStore';
 import { translations } from '../i18n/translations';
-import './Transactions.css';
 
 interface TransactionWithDetails {
   transaction_id: number;
@@ -216,25 +215,35 @@ function Transactions() {
     return labels[language]?.[type] || type;
   };
 
-  const getTypeClass = (type: string) => {
+  const getTypeBadgeClass = (type: string) => {
     const classes: Record<string, string> = {
-      IN: 'type-in',
-      OUT: 'type-out',
-      ADJUST: 'type-adjust',
-      TRANSFER: 'type-transfer',
+      IN: 'bg-green-100 text-green-800',
+      OUT: 'bg-red-100 text-red-800',
+      ADJUST: 'bg-amber-100 text-amber-800',
+      TRANSFER: 'bg-blue-100 text-blue-800',
     };
-    return classes[type] || '';
+    return classes[type] || 'bg-slate-100 text-slate-600';
+  };
+
+  const getFilterBtnActiveClass = (type: string) => {
+    const classes: Record<string, string> = {
+      IN: 'bg-emerald-500 border-emerald-500 text-white',
+      OUT: 'bg-red-500 border-red-500 text-white',
+      TRANSFER: 'bg-blue-500 border-blue-500 text-white',
+      ADJUST: 'bg-amber-500 border-amber-500 text-white',
+    };
+    return classes[type] || 'bg-blue-500 border-blue-500 text-white';
   };
 
   return (
-    <div className="transactions-page">
-      <div className="transactions-card">
+    <div className="min-h-[calc(100vh-120px)] bg-slate-100 p-4 max-sm:p-2">
+      <div className="max-w-[800px] mx-auto bg-white rounded-2xl max-sm:rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] overflow-hidden">
         {/* Header */}
-        <div className="transactions-header">
-          <button className="back-btn" onClick={() => navigate('/')}>
+        <div className="flex items-center gap-3 p-5 max-sm:p-4 bg-gradient-to-br from-blue-500 to-blue-700 text-white">
+          <button className="bg-white/20 border-none text-white w-9 h-9 rounded-lg text-[1.125rem] cursor-pointer flex items-center justify-center transition-colors duration-200 hover:bg-white/30" onClick={() => navigate('/')}>
             ←
           </button>
-          <h2>{t.transactionHistory}</h2>
+          <h2 className="m-0 text-xl max-sm:text-[1.1rem] font-bold text-white flex-1">{t.transactionHistory}</h2>
           <button onClick={() => {
             if (filteredTransactions.length === 0) return;
             import('../utils/exportXlsx').then(({ exportToXlsx }) => {
@@ -254,183 +263,147 @@ function Transactions() {
                 'Transactions',
               );
             });
-          }} className="refresh-btn" disabled={filteredTransactions.length === 0} title="Export XLSX">
+          }} className="px-4 py-2 bg-white/20 text-white border-none rounded-lg text-[0.9rem] font-semibold cursor-pointer transition-colors duration-200 hover:bg-white/30 disabled:opacity-60 disabled:cursor-not-allowed" disabled={filteredTransactions.length === 0} title="Export XLSX">
             ↓ XLSX
           </button>
-          <button onClick={loadTransactions} className="refresh-btn" disabled={loading}>
+          <button onClick={loadTransactions} className="px-4 py-2 bg-white/20 text-white border-none rounded-lg text-[0.9rem] font-semibold cursor-pointer transition-colors duration-200 hover:bg-white/30 disabled:opacity-60 disabled:cursor-not-allowed" disabled={loading}>
             🔄 {t.refresh}
           </button>
         </div>
 
         {/* Filters */}
-        <div className="filters-section">
-          <div className="filter-group">
-            <label>{t.filterByType}</label>
-            <div className="filter-buttons">
+        <div className="p-4 max-sm:p-3 bg-slate-50 border-b border-slate-200">
+          <div className="mb-3">
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{t.filterByType}</label>
+            <div className="flex gap-2 flex-wrap">
               <button
-                className={`filter-btn ${typeFilter === 'all' ? 'active' : ''}`}
+                className={`px-3 py-2 max-sm:px-2.5 max-sm:py-1.5 rounded-md text-[0.8rem] max-sm:text-xs font-medium cursor-pointer transition-all duration-200 ${typeFilter === 'all' ? 'bg-blue-500 border-blue-500 text-white border' : 'bg-white border border-slate-200 text-slate-500 hover:border-blue-500 hover:text-blue-500'}`}
                 onClick={() => setTypeFilter('all')}
               >
                 {t.allTypes}
               </button>
-              <button
-                className={`filter-btn type-in ${typeFilter === 'IN' ? 'active' : ''}`}
-                onClick={() => setTypeFilter('IN')}
-              >
-                {t.in}
-              </button>
-              <button
-                className={`filter-btn type-out ${typeFilter === 'OUT' ? 'active' : ''}`}
-                onClick={() => setTypeFilter('OUT')}
-              >
-                {t.out}
-              </button>
-              <button
-                className={`filter-btn type-transfer ${typeFilter === 'TRANSFER' ? 'active' : ''}`}
-                onClick={() => setTypeFilter('TRANSFER')}
-              >
-                {t.transfer}
-              </button>
-              <button
-                className={`filter-btn type-adjust ${typeFilter === 'ADJUST' ? 'active' : ''}`}
-                onClick={() => setTypeFilter('ADJUST')}
-              >
-                {t.adjust}
-              </button>
+              {(['IN', 'OUT', 'TRANSFER', 'ADJUST'] as TypeFilter[]).map(type => (
+                <button
+                  key={type}
+                  className={`px-3 py-2 max-sm:px-2.5 max-sm:py-1.5 rounded-md text-[0.8rem] max-sm:text-xs font-medium cursor-pointer transition-all duration-200 ${typeFilter === type ? getFilterBtnActiveClass(type) + ' border' : 'bg-white border border-slate-200 text-slate-500 hover:border-blue-500 hover:text-blue-500'}`}
+                  onClick={() => setTypeFilter(type)}
+                >
+                  {type === 'IN' ? t.in : type === 'OUT' ? t.out : type === 'TRANSFER' ? t.transfer : t.adjust}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="filter-group">
-            <label>{t.filterByDate}</label>
-            <div className="filter-buttons">
-              <button
-                className={`filter-btn ${dateFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setDateFilter('all')}
-              >
-                {t.allTime}
-              </button>
-              <button
-                className={`filter-btn ${dateFilter === 'today' ? 'active' : ''}`}
-                onClick={() => setDateFilter('today')}
-              >
-                {t.today}
-              </button>
-              <button
-                className={`filter-btn ${dateFilter === 'yesterday' ? 'active' : ''}`}
-                onClick={() => setDateFilter('yesterday')}
-              >
-                {t.yesterday}
-              </button>
-              <button
-                className={`filter-btn ${dateFilter === 'last7' ? 'active' : ''}`}
-                onClick={() => setDateFilter('last7')}
-              >
-                {t.last7Days}
-              </button>
-              <button
-                className={`filter-btn ${dateFilter === 'last30' ? 'active' : ''}`}
-                onClick={() => setDateFilter('last30')}
-              >
-                {t.last30Days}
-              </button>
+          <div className="mb-3">
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{t.filterByDate}</label>
+            <div className="flex gap-2 flex-wrap">
+              {(['all', 'today', 'yesterday', 'last7', 'last30'] as DateFilter[]).map(df => (
+                <button
+                  key={df}
+                  className={`px-3 py-2 max-sm:px-2.5 max-sm:py-1.5 rounded-md text-[0.8rem] max-sm:text-xs font-medium cursor-pointer transition-all duration-200 ${dateFilter === df ? 'bg-blue-500 border-blue-500 text-white border' : 'bg-white border border-slate-200 text-slate-500 hover:border-blue-500 hover:text-blue-500'}`}
+                  onClick={() => setDateFilter(df)}
+                >
+                  {df === 'all' ? t.allTime : df === 'today' ? t.today : df === 'yesterday' ? t.yesterday : df === 'last7' ? t.last7Days : t.last30Days}
+                </button>
+              ))}
             </div>
           </div>
 
           {/* SKU and Location Filters */}
-          <div className="text-filters">
-            <div className="filter-input-group">
-              <label>{t.filterBySKU}</label>
+          <div className="grid grid-cols-2 max-sm:grid-cols-1 gap-3 mt-3">
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{t.filterBySKU}</label>
               <input
                 type="text"
                 value={skuFilter}
                 onChange={(e) => setSkuFilter(e.target.value)}
                 placeholder={t.skuPlaceholder}
-                className="filter-input"
+                className="px-3 py-2.5 max-sm:px-2.5 max-sm:py-2 border border-slate-200 rounded-md text-[0.85rem] max-sm:text-[0.8rem] transition-all duration-200 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] placeholder:text-slate-400"
               />
             </div>
-            <div className="filter-input-group">
-              <label>{t.filterByLocation}</label>
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{t.filterByLocation}</label>
               <input
                 type="text"
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
                 placeholder={t.locationPlaceholder}
-                className="filter-input"
+                className="px-3 py-2.5 max-sm:px-2.5 max-sm:py-2 border border-slate-200 rounded-md text-[0.85rem] max-sm:text-[0.8rem] transition-all duration-200 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] placeholder:text-slate-400"
               />
             </div>
           </div>
 
-          <div className="filter-footer">
-            <div className="filter-summary">
-              {loadingSkuFilter && <span className="loading-indicator">...</span>}
+          <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200 max-sm:flex-col max-sm:gap-2 max-sm:items-stretch">
+            <div className="text-[0.85rem] text-slate-500 max-sm:text-center">
+              {loadingSkuFilter && <span className="inline-block mr-2 animate-pulse">...</span>}
               {displayedTransactions.length} / {transactions.length} {t.items}
             </div>
             {hasActiveFilters && (
-              <button className="clear-filters-btn" onClick={clearAllFilters}>
+              <button className="px-3 py-1.5 max-sm:w-full max-sm:py-2 bg-red-500 text-white border-none rounded-md text-[0.8rem] font-semibold cursor-pointer transition-colors duration-200 hover:bg-red-600" onClick={clearAllFilters}>
                 {t.clearFilters}
               </button>
             )}
           </div>
         </div>
 
-        {loading && <div className="loading">{t.loadingTransactions}</div>}
-        {error && <div className="error">{error}</div>}
+        {loading && <div className="text-center py-12 px-4 text-gray-500">{t.loadingTransactions}</div>}
+        {error && <div className="bg-red-100 text-red-800 p-4 m-4 rounded-lg text-center">{error}</div>}
 
         {!loading && !error && displayedTransactions.length > 0 && (
-          <div className="transactions-list">
+          <div className="max-h-[60vh] overflow-y-auto">
             {displayedTransactions.map((txn) => (
               <div key={txn.transaction_id}>
                 <div
-                  className={`transaction-item ${expandedId === txn.transaction_id ? 'expanded' : ''}`}
+                  className={`p-4 max-sm:p-3 border-b border-slate-100 cursor-pointer transition-colors duration-150 hover:bg-slate-50 ${expandedId === txn.transaction_id ? 'bg-blue-50' : ''}`}
                   onClick={() => loadTransactionItems(txn.transaction_id)}
                 >
-                  <div className="txn-main">
-                    <span className={`type-badge ${getTypeClass(txn.transaction_type)}`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`inline-block px-2.5 max-sm:px-2 py-1.5 max-sm:py-1 rounded-md text-[0.7rem] max-sm:text-[0.65rem] font-bold uppercase tracking-wide min-w-[70px] max-sm:min-w-[60px] text-center ${getTypeBadgeClass(txn.transaction_type)}`}>
                       {getTypeLabel(txn.transaction_type)}
                     </span>
-                    <div className="txn-info">
-                      <div className="txn-location">{txn.location_code || '-'}</div>
-                      <div className="txn-meta">
-                        <span className="txn-date">{formatDate(txn.created_at)}</span>
-                        <span className="txn-user">{txn.created_by}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono font-semibold text-teal-600 text-[0.95rem] max-sm:text-[0.85rem]">{txn.location_code || '-'}</div>
+                      <div className="flex gap-3 mt-1 max-sm:flex-col max-sm:gap-0.5">
+                        <span className="text-[0.8rem] text-slate-500">{formatDate(txn.created_at)}</span>
+                        <span className="text-[0.8rem] text-slate-400">{txn.created_by}</span>
                       </div>
                     </div>
-                    <div className="txn-count">{txn.item_count} {t.items}</div>
+                    <div className="font-bold text-blue-500 text-[0.95rem] whitespace-nowrap">{txn.item_count} {t.items}</div>
                   </div>
                   {txn.notes && (
-                    <div className="txn-notes">{txn.notes}</div>
+                    <div className="mt-2 pt-2 border-t border-dashed border-slate-200 text-[0.85rem] text-slate-500 italic">{txn.notes}</div>
                   )}
                 </div>
 
                 {expandedId === txn.transaction_id && (
-                  <div className="expanded-content">
+                  <div className="px-4 max-sm:px-2 pb-4 pt-3 bg-slate-50">
                     {loadingItems ? (
-                      <div className="loading-items">{t.loadingItems}</div>
+                      <div className="text-center p-4 text-gray-500 text-[0.9rem]">{t.loadingItems}</div>
                     ) : expandedItems.length > 0 ? (
-                      <div className="items-detail">
-                        <div className="detail-header">
-                          <span className="detail-title">{t.transactionDetails}</span>
-                          <span className="detail-id">#{txn.transaction_id}</span>
+                      <div className="bg-white rounded-[10px] p-4 max-sm:p-3 shadow-sm">
+                        <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
+                          <span className="font-semibold text-gray-800 text-[0.95rem]">{t.transactionDetails}</span>
+                          <span className="text-[0.8rem] text-gray-500 font-mono">#{txn.transaction_id}</span>
                         </div>
-                        <div className="items-list">
+                        <div className="flex flex-col gap-2">
                           {expandedItems.map((item) => (
-                            <div key={item.item_id} className="item-row">
-                              <div className="item-info">
-                                <span className="item-name">{item.product_name}</span>
-                                <span className="item-sku">{item.sku_code}</span>
+                            <div key={item.item_id} className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-medium text-gray-800 text-[0.9rem]">{item.product_name}</span>
+                                <span className="font-mono text-xs text-gray-500">{item.sku_code}</span>
                               </div>
-                              <span className="item-qty">{item.quantity_each} {t.each}</span>
+                              <span className="font-bold text-emerald-600 text-[0.95rem]">{item.quantity_each} {t.each}</span>
                             </div>
                           ))}
                         </div>
                         {txn.reference_no && (
-                          <div className="detail-ref">
+                          <div className="text-[0.85rem] text-gray-500 pt-3 mt-3 border-t border-gray-200">
                             {t.reference}: <strong>{txn.reference_no}</strong>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="no-items">{t.noItemsFound}</div>
+                      <div className="text-center p-4 text-gray-500 text-[0.9rem]">{t.noItemsFound}</div>
                     )}
                   </div>
                 )}
@@ -440,8 +413,8 @@ function Transactions() {
         )}
 
         {!loading && !error && displayedTransactions.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon">📋</div>
+          <div className="text-center py-12 px-4 text-gray-500">
+            <div className="text-5xl mb-4">📋</div>
             <p>{t.noTransactionsFound}</p>
           </div>
         )}

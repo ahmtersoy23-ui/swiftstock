@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../stores/appStore';
 import { apiClient, reportApi } from '../lib/api';
-import './Reports.css';
 
 type ReportType = 'COUNT' | 'INVENTORY';
 
@@ -132,14 +131,14 @@ function Reports() {
   }, [reportType, currentWarehouse]);
 
   return (
-    <div className="reports-page">
-      <div className="reports-card">
+    <div className="min-h-[calc(100vh-120px)] bg-slate-100 p-4 max-sm:p-2">
+      <div className="max-w-[800px] mx-auto bg-white rounded-2xl max-sm:rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] overflow-hidden">
         {/* Header */}
-        <div className="reports-header">
-          <button className="back-btn" onClick={() => navigate('/')}>
+        <div className="flex items-center gap-3 p-5 bg-gradient-to-br from-blue-500 to-blue-700 text-white">
+          <button className="bg-white/20 border-none text-white w-9 h-9 rounded-lg text-[1.125rem] cursor-pointer flex items-center justify-center transition-colors duration-150 hover:bg-white/30" onClick={() => navigate('/')}>
             ←
           </button>
-          <h2>{language === 'tr' ? 'Raporlar' : 'Reports'}</h2>
+          <h2 className="m-0 text-xl font-bold flex-1 text-white">{language === 'tr' ? 'Raporlar' : 'Reports'}</h2>
           <button onClick={() => {
             if (reportType === 'INVENTORY' && inventoryReport?.items?.length) {
               import('../utils/exportXlsx').then(({ exportToXlsx }) => {
@@ -171,22 +170,22 @@ function Reports() {
                 );
               });
             }
-          }} className="add-btn" style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', background: 'rgba(255,255,255,0.2)', border: '2px solid rgba(255,255,255,0.3)', color: 'white', borderRadius: '8px', cursor: 'pointer' }}>
+          }} className="px-3 py-1.5 bg-white/20 text-white border-2 border-white/30 rounded-lg text-xs font-semibold cursor-pointer hover:bg-white/30">
             ↓ XLSX
           </button>
-          <div className="warehouse-badge">{currentWarehouse}</div>
+          <div className="bg-white/20 text-white px-3 py-2 rounded-lg text-[0.8125rem] font-semibold">{currentWarehouse}</div>
         </div>
 
         {/* Report Type Selector */}
-        <div className="report-type-buttons">
+        <div className="grid grid-cols-2 gap-2 p-4 bg-slate-100">
           <button
-            className={`type-btn ${reportType === 'COUNT' ? 'active' : ''}`}
+            className={`px-4 py-3 border-none rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 ${reportType === 'COUNT' ? 'bg-primary-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
             onClick={() => { setReportType('COUNT'); setSelectedReport(null); }}
           >
             {language === 'tr' ? 'Sayım Raporları' : 'Count Reports'}
           </button>
           <button
-            className={`type-btn ${reportType === 'INVENTORY' ? 'active' : ''}`}
+            className={`px-4 py-3 border-none rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 ${reportType === 'INVENTORY' ? 'bg-primary-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
             onClick={() => { setReportType('INVENTORY'); setSelectedReport(null); }}
           >
             {language === 'tr' ? 'Envanter Raporu' : 'Inventory Report'}
@@ -195,43 +194,43 @@ function Reports() {
 
         {/* Loading */}
         {loading && (
-          <div className="reports-loading">
-            <span className="loading-icon">...</span>
+          <div className="flex justify-center items-center p-8">
+            <span className="text-[2rem] animate-pulse">...</span>
           </div>
         )}
 
         {/* COUNT REPORTS LIST */}
         {reportType === 'COUNT' && !loading && !selectedReport && (
-          <div className="reports-list">
-            <div className="list-header">
+          <div className="max-h-[60vh] overflow-y-auto">
+            <div className="flex justify-between items-center px-4 py-3 bg-slate-100 text-[0.8125rem] font-semibold text-slate-600">
               <span>{language === 'tr' ? 'Sayım Raporları' : 'Count Reports'}</span>
-              <span className="list-count">{countReports.length}</span>
+              <span className="bg-primary-500 text-white px-2 py-1 rounded-full text-xs">{countReports.length}</span>
             </div>
             {countReports.length === 0 ? (
-              <div className="empty-state">
+              <div className="p-8 text-center text-slate-400 text-sm">
                 {language === 'tr' ? 'Henüz sayım raporu yok' : 'No count reports yet'}
               </div>
             ) : (
               countReports.map((report) => (
                 <div
                   key={report.report_id}
-                  className="report-item"
+                  className="flex justify-between items-center p-4 border-b border-slate-200 cursor-pointer transition-colors duration-150 hover:bg-slate-100"
                   onClick={() => loadReportDetails(report.report_id)}
                 >
-                  <div className="report-item-info">
-                    <div className="report-number">{report.report_number}</div>
-                    <div className="report-meta">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-mono font-semibold text-slate-800 text-[0.9375rem]">{report.report_number}</div>
+                    <div className="text-xs text-slate-500 mt-1">
                       {report.warehouse_name || report.warehouse_code} • {new Date(report.report_date).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US')}
                     </div>
-                    <div className="report-extra">
+                    <div className="text-[0.6875rem] text-slate-400 mt-1">
                       {report.total_locations} {language === 'tr' ? 'lokasyon' : 'locations'} • {language === 'tr' ? 'Olusturan' : 'By'}: {report.created_by}
                     </div>
                   </div>
-                  <div className="report-variance">
-                    <span className={`variance-value ${report.total_variance === 0 ? 'zero' : report.total_variance > 0 ? 'positive' : 'negative'}`}>
+                  <div className="text-right">
+                    <span className={`block font-bold text-base ${report.total_variance === 0 ? 'text-success-500' : report.total_variance > 0 ? 'text-primary-500' : 'text-error-500'}`}>
                       {report.total_variance > 0 ? '+' : ''}{report.total_variance}
                     </span>
-                    <span className="variance-percent">{report.variance_percentage}%</span>
+                    <span className="text-[0.6875rem] text-slate-400">{report.variance_percentage}%</span>
                   </div>
                 </div>
               ))
@@ -241,68 +240,68 @@ function Reports() {
 
         {/* COUNT REPORT DETAIL */}
         {reportType === 'COUNT' && selectedReport && (
-          <div className="report-detail">
-            <button className="back-btn-inline" onClick={() => setSelectedReport(null)}>
+          <div className="p-4">
+            <button className="bg-slate-100 border-none px-4 py-3 rounded-lg text-sm text-slate-600 cursor-pointer w-full text-left mb-4 transition-colors duration-150 hover:bg-slate-200" onClick={() => setSelectedReport(null)}>
               ← {language === 'tr' ? 'Geri' : 'Back'}
             </button>
 
-            <div className="detail-header">
-              <div className="detail-title">
-                <h3>{selectedReport.report.report_number}</h3>
-                <span className="detail-warehouse">
+            <div className="flex justify-between items-start bg-success-50 p-4 rounded-xl mb-4 border border-success-200">
+              <div>
+                <h3 className="m-0 text-success-700 text-base">{selectedReport.report.report_number}</h3>
+                <span className="text-[0.8125rem] text-slate-600">
                   {selectedReport.report.warehouse_name || selectedReport.report.warehouse_code}
                 </span>
               </div>
-              <span className="detail-date">
+              <span className="text-[0.8125rem] text-slate-600">
                 {new Date(selectedReport.report.report_date).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US')}
               </span>
             </div>
 
-            <div className="detail-summary">
-              <div className="summary-item">
-                <span className="summary-value">{selectedReport.report.total_expected}</span>
-                <span className="summary-label">{language === 'tr' ? 'Beklenen' : 'Expected'}</span>
+            <div className="grid grid-cols-3 gap-3 max-sm:gap-2 mb-4">
+              <div className="bg-slate-100 p-4 max-sm:p-3 rounded-lg text-center">
+                <span className="block text-[1.375rem] max-sm:text-[1.125rem] font-bold text-slate-800">{selectedReport.report.total_expected}</span>
+                <span className="text-[0.6875rem] text-slate-500 uppercase">{language === 'tr' ? 'Beklenen' : 'Expected'}</span>
               </div>
-              <div className="summary-item">
-                <span className="summary-value">{selectedReport.report.total_counted}</span>
-                <span className="summary-label">{language === 'tr' ? 'Sayilan' : 'Counted'}</span>
+              <div className="bg-slate-100 p-4 max-sm:p-3 rounded-lg text-center">
+                <span className="block text-[1.375rem] max-sm:text-[1.125rem] font-bold text-slate-800">{selectedReport.report.total_counted}</span>
+                <span className="text-[0.6875rem] text-slate-500 uppercase">{language === 'tr' ? 'Sayilan' : 'Counted'}</span>
               </div>
-              <div className={`summary-item ${selectedReport.report.total_variance === 0 ? 'zero' : selectedReport.report.total_variance > 0 ? 'positive' : 'negative'}`}>
-                <span className="summary-value">
+              <div className={`p-4 max-sm:p-3 rounded-lg text-center ${selectedReport.report.total_variance === 0 ? 'bg-success-50 border border-success-200' : selectedReport.report.total_variance > 0 ? 'bg-primary-50 border border-primary-200' : 'bg-error-50 border border-error-200'}`}>
+                <span className={`block text-[1.375rem] max-sm:text-[1.125rem] font-bold ${selectedReport.report.total_variance === 0 ? 'text-success-600' : selectedReport.report.total_variance > 0 ? 'text-primary-600' : 'text-error-600'}`}>
                   {selectedReport.report.total_variance > 0 ? '+' : ''}{selectedReport.report.total_variance}
                 </span>
-                <span className="summary-label">{language === 'tr' ? 'Fark' : 'Variance'}</span>
+                <span className="text-[0.6875rem] text-slate-500 uppercase">{language === 'tr' ? 'Fark' : 'Variance'}</span>
               </div>
             </div>
 
             {/* Locations */}
-            <div className="detail-locations">
-              <div className="locations-header">
+            <div className="bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
+              <div className="flex justify-between items-center px-4 py-3 bg-slate-200 text-[0.8125rem] font-semibold text-slate-600">
                 <span>{language === 'tr' ? 'Lokasyonlar' : 'Locations'}</span>
-                <span className="locations-count">{selectedReport.locations?.length || 0}</span>
+                <span className="bg-primary-500 text-white px-2 py-1 rounded-full text-xs">{selectedReport.locations?.length || 0}</span>
               </div>
               {selectedReport.locations?.map((loc, locIdx) => (
-                <div key={locIdx} className="location-block">
-                  <div className="location-row">
-                    <span className="location-code">{loc.location_code}</span>
-                    <span className="location-stats">
+                <div key={locIdx} className="border-b border-slate-300 pb-2 last:border-b-0">
+                  <div className="flex justify-between items-center px-4 py-3 bg-white">
+                    <span className="font-mono font-semibold text-slate-800">{loc.location_code}</span>
+                    <span className="text-xs text-slate-500">
                       {loc.total_expected} → {loc.total_counted}
-                      <span className={`loc-variance ${loc.total_variance === 0 ? 'zero' : loc.total_variance > 0 ? 'positive' : 'negative'}`}>
+                      <span className={`ml-2 font-semibold ${loc.total_variance === 0 ? 'text-success-500' : loc.total_variance > 0 ? 'text-primary-500' : 'text-error-500'}`}>
                         ({loc.total_variance > 0 ? '+' : ''}{loc.total_variance})
                       </span>
                     </span>
                   </div>
                   {/* Items in location */}
                   {loc.items?.map((item, itemIdx) => (
-                    <div key={itemIdx} className="item-row">
-                      <div className="item-info">
-                        <span className="item-name">{item.product_name || item.sku_code}</span>
-                        <span className="item-sku">{item.sku_code}</span>
+                    <div key={itemIdx} className="flex justify-between items-center py-2 px-4 pl-6 text-[0.8125rem]">
+                      <div className="flex-1 min-w-0">
+                        <span className="block text-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">{item.product_name || item.sku_code}</span>
+                        <span className="block text-[0.6875rem] text-slate-400">{item.sku_code}</span>
                       </div>
-                      <div className="item-stats">
+                      <div className="text-right text-xs text-slate-500">
                         <span>{item.expected_quantity} → {item.counted_quantity}</span>
                         {item.variance !== 0 && (
-                          <span className={`item-variance ${item.variance > 0 ? 'positive' : 'negative'}`}>
+                          <span className={`ml-1 ${item.variance > 0 ? 'text-primary-500' : 'text-error-500'}`}>
                             ({item.variance > 0 ? '+' : ''}{item.variance})
                           </span>
                         )}
@@ -312,16 +311,16 @@ function Reports() {
                   {/* Unexpected items */}
                   {(loc.unexpectedItems?.length ?? 0) > 0 && (
                     <>
-                      <div className="unexpected-header">
+                      <div className="py-2 px-4 pl-6 text-[0.6875rem] text-warning-600 font-semibold">
                         {language === 'tr' ? 'Beklenmeyen Urunler' : 'Unexpected Items'}
                       </div>
                       {loc.unexpectedItems!.map((item, itemIdx) => (
-                        <div key={itemIdx} className="item-row unexpected">
-                          <div className="item-info">
-                            <span className="item-name">{item.product_name || item.sku_code}</span>
-                            <span className="item-sku">{item.sku_code}</span>
+                        <div key={itemIdx} className="flex justify-between items-center py-2 px-4 pl-6 text-[0.8125rem] bg-warning-50">
+                          <div className="flex-1 min-w-0">
+                            <span className="block text-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">{item.product_name || item.sku_code}</span>
+                            <span className="block text-[0.6875rem] text-slate-400">{item.sku_code}</span>
                           </div>
-                          <span className="item-unexpected-qty">+{item.counted_quantity}</span>
+                          <span className="text-warning-600 font-semibold">+{item.counted_quantity}</span>
                         </div>
                       ))}
                     </>
@@ -334,63 +333,63 @@ function Reports() {
 
         {/* INVENTORY REPORT */}
         {reportType === 'INVENTORY' && !loading && (
-          <div className="inventory-report">
+          <div className="p-4">
             {inventoryReport ? (
               <>
-                <div className="inventory-header">
-                  <div className="inv-title">
-                    <h3>{language === 'tr' ? 'Envanter Raporu' : 'Inventory Report'}</h3>
-                    <span className="inv-warehouse">
+                <div className="flex justify-between items-start bg-info-50 p-4 rounded-xl mb-4 border border-info-200">
+                  <div>
+                    <h3 className="m-0 text-info-700 text-base">{language === 'tr' ? 'Envanter Raporu' : 'Inventory Report'}</h3>
+                    <span className="text-[0.8125rem] text-info-600">
                       {inventoryReport.warehouse.name} ({inventoryReport.warehouse.code})
                     </span>
                   </div>
-                  <span className="inv-date">{inventoryReport.report_date}</span>
+                  <span className="text-[0.8125rem] text-info-600">{inventoryReport.report_date}</span>
                 </div>
 
-                <div className="inventory-summary">
-                  <div className="inv-stat">
-                    <span className="inv-stat-value">{inventoryReport.summary.total_products}</span>
-                    <span className="inv-stat-label">{language === 'tr' ? 'Urun' : 'Products'}</span>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-info-50 p-4 rounded-lg text-center border border-info-200">
+                    <span className="block text-[1.375rem] font-bold text-info-700">{inventoryReport.summary.total_products}</span>
+                    <span className="text-[0.6875rem] text-info-600 uppercase">{language === 'tr' ? 'Urun' : 'Products'}</span>
                   </div>
-                  <div className="inv-stat">
-                    <span className="inv-stat-value">{inventoryReport.summary.total_quantity}</span>
-                    <span className="inv-stat-label">{language === 'tr' ? 'Toplam Adet' : 'Total Qty'}</span>
+                  <div className="bg-info-50 p-4 rounded-lg text-center border border-info-200">
+                    <span className="block text-[1.375rem] font-bold text-info-700">{inventoryReport.summary.total_quantity}</span>
+                    <span className="text-[0.6875rem] text-info-600 uppercase">{language === 'tr' ? 'Toplam Adet' : 'Total Qty'}</span>
                   </div>
                 </div>
 
-                <div className="inventory-list">
-                  <div className="list-header">
+                <div className="bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
+                  <div className="flex justify-between items-center px-4 py-3 bg-slate-100 text-[0.8125rem] font-semibold text-slate-600">
                     <span>{language === 'tr' ? 'Urunler' : 'Products'}</span>
-                    <span className="list-count">{inventoryReport.items.length}</span>
+                    <span className="bg-primary-500 text-white px-2 py-1 rounded-full text-xs">{inventoryReport.items.length}</span>
                   </div>
                   {inventoryReport.items.length === 0 ? (
-                    <div className="empty-state">
+                    <div className="p-8 text-center text-slate-400 text-sm">
                       {language === 'tr' ? 'Bu depoda stok yok' : 'No stock in this warehouse'}
                     </div>
                   ) : (
                     inventoryReport.items.map((item, idx) => (
-                      <div key={idx} className="inventory-item">
-                        <div className="inv-item-info">
-                          <span className="inv-item-name">{item.product_name}</span>
-                          <span className="inv-item-sku">{item.sku_code}</span>
+                      <div key={idx} className="flex justify-between items-center px-4 py-3 border-b border-slate-200 bg-white last:border-b-0">
+                        <div className="flex-1 min-w-0">
+                          <span className="block text-slate-600 font-medium whitespace-nowrap overflow-hidden text-ellipsis">{item.product_name}</span>
+                          <span className="block text-xs text-slate-500">{item.sku_code}</span>
                           {item.location_count && (
-                            <span className="inv-item-locs">
+                            <span className="block text-[0.6875rem] text-slate-400">
                               {item.location_count} {language === 'tr' ? 'lokasyonda' : 'locations'}
                             </span>
                           )}
                         </div>
-                        <span className="inv-item-qty">{item.quantity}</span>
+                        <span className="text-base font-bold text-info-600">{item.quantity}</span>
                       </div>
                     ))
                   )}
                 </div>
               </>
             ) : (
-              <div className="empty-state-large">
-                <span className="empty-icon">...</span>
-                <h3>{language === 'tr' ? 'Envanter Raporu' : 'Inventory Report'}</h3>
-                <p>{language === 'tr' ? 'Secili depodaki tum stok bilgisini goruntuleyin' : 'View all stock in the selected warehouse'}</p>
-                <button className="load-btn" onClick={loadInventoryReport}>
+              <div className="flex flex-col items-center justify-center p-8 text-center">
+                <span className="text-[2.5rem] mb-4">...</span>
+                <h3 className="m-0 mb-2 text-slate-600 text-base">{language === 'tr' ? 'Envanter Raporu' : 'Inventory Report'}</h3>
+                <p className="m-0 mb-6 text-slate-500 text-sm">{language === 'tr' ? 'Secili depodaki tum stok bilgisini goruntuleyin' : 'View all stock in the selected warehouse'}</p>
+                <button className="bg-primary-500 text-white border-none px-6 py-3 rounded-lg text-[0.9375rem] font-medium cursor-pointer transition-colors duration-150 hover:bg-primary-600" onClick={loadInventoryReport}>
                   {language === 'tr' ? 'Raporu Yukle' : 'Load Report'}
                 </button>
               </div>

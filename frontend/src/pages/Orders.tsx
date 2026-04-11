@@ -4,12 +4,11 @@ import { orderApi } from '../lib/api/orders';
 import { userApi } from '../lib/api';
 import { useStore } from '../stores/appStore';
 import type { ShipmentOrder, ShipmentOrderItem } from '../types';
-import './Orders.css';
 
 const STATUS_LABELS: Record<string, Record<string, string>> = {
   tr: {
-    PENDING: 'Bekliyor', READY_TO_PICK: 'Toplamaya Hazır', PICKING: 'Toplanıyor',
-    PICKED: 'Toplandı', SHIPPED: 'Gönderildi', CANCELLED: 'İptal',
+    PENDING: 'Bekliyor', READY_TO_PICK: 'Toplamaya Hazir', PICKING: 'Toplaniyor',
+    PICKED: 'Toplandi', SHIPPED: 'Gonderildi', CANCELLED: 'Iptal',
   },
   en: {
     PENDING: 'Pending', READY_TO_PICK: 'Ready to Pick', PICKING: 'Picking',
@@ -18,8 +17,30 @@ const STATUS_LABELS: Record<string, Record<string, string>> = {
 };
 
 const PRIORITY_LABELS: Record<string, Record<string, string>> = {
-  tr: { URGENT: 'Acil', HIGH: 'Yüksek', NORMAL: 'Normal', LOW: 'Düşük' },
+  tr: { URGENT: 'Acil', HIGH: 'Yuksek', NORMAL: 'Normal', LOW: 'Dusuk' },
   en: { URGENT: 'Urgent', HIGH: 'High', NORMAL: 'Normal', LOW: 'Low' },
+};
+
+const STATUS_BADGE_CLASSES: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-700',
+  ready_to_pick: 'bg-blue-100 text-blue-700',
+  picking: 'bg-indigo-100 text-indigo-700',
+  picked: 'bg-green-100 text-green-600',
+  shipped: 'bg-cyan-100 text-cyan-600',
+  cancelled: 'bg-red-100 text-red-600',
+};
+
+const PRIORITY_BADGE_CLASSES: Record<string, string> = {
+  urgent: 'bg-red-600 text-white',
+  high: 'bg-amber-500 text-white',
+  normal: 'bg-slate-200 text-slate-500',
+  low: 'bg-slate-100 text-slate-400',
+};
+
+const ITEM_STATUS_COLORS: Record<string, string> = {
+  'is-pending': 'bg-amber-400',
+  'is-picking': 'bg-indigo-400',
+  'is-picked': 'bg-green-500',
 };
 
 interface WmsUser {
@@ -139,7 +160,7 @@ function Orders() {
     try {
       const res = await orderApi.assignPicker(selectedOrder.order_id, selectedPickerId);
       if (res.success) {
-        showMsg(t === 'tr' ? 'Toplayıcı atandı' : 'Picker assigned');
+        showMsg(t === 'tr' ? 'Toplayici atandi' : 'Picker assigned');
         handleSelectOrder(selectedOrder);
         loadOrders();
       }
@@ -153,7 +174,7 @@ function Orders() {
     try {
       const res = await orderApi.startPicking(selectedOrder.order_id);
       if (res.success) {
-        showMsg(t === 'tr' ? 'Toplama başlatıldı' : 'Picking started');
+        showMsg(t === 'tr' ? 'Toplama baslatildi' : 'Picking started');
         handleSelectOrder(selectedOrder);
         loadOrders();
       }
@@ -187,7 +208,7 @@ function Orders() {
     try {
       const res = await orderApi.completePicking(selectedOrder.order_id);
       if (res.success) {
-        showMsg(t === 'tr' ? 'Toplama tamamlandı' : 'Picking completed');
+        showMsg(t === 'tr' ? 'Toplama tamamlandi' : 'Picking completed');
         handleSelectOrder(selectedOrder);
         loadOrders();
       }
@@ -198,13 +219,13 @@ function Orders() {
 
   const handleCancelOrder = async () => {
     if (!selectedOrder) return;
-    const reason = prompt(t === 'tr' ? 'İptal nedeni:' : 'Cancel reason:');
+    const reason = prompt(t === 'tr' ? 'Iptal nedeni:' : 'Cancel reason:');
     if (reason === null) return;
 
     try {
       const res = await orderApi.cancel(selectedOrder.order_id, reason);
       if (res.success) {
-        showMsg(t === 'tr' ? 'Sipariş iptal edildi' : 'Order cancelled');
+        showMsg(t === 'tr' ? 'Siparis iptal edildi' : 'Order cancelled');
         setSelectedOrder(null);
         loadOrders();
       }
@@ -228,7 +249,7 @@ function Orders() {
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newOrder.order_number || !newOrder.customer_name || newItems.length === 0) {
-      setError(t === 'tr' ? 'Sipariş no, müşteri adı ve en az 1 ürün gerekli' : 'Order number, customer name and at least 1 item required');
+      setError(t === 'tr' ? 'Siparis no, musteri adi ve en az 1 urun gerekli' : 'Order number, customer name and at least 1 item required');
       return;
     }
 
@@ -244,7 +265,7 @@ function Orders() {
       });
 
       if (res.success) {
-        showMsg(t === 'tr' ? 'Sipariş oluşturuldu' : 'Order created');
+        showMsg(t === 'tr' ? 'Siparis olusturuldu' : 'Order created');
         setShowCreateModal(false);
         setNewOrder({ order_number: '', customer_name: '', customer_address: '', priority: 'NORMAL', notes: '' });
         setNewItems([]);
@@ -256,13 +277,13 @@ function Orders() {
   };
 
   const getStatusBadge = (status: string) => (
-    <span className={`order-status s-${status.toLowerCase()}`}>
+    <span className={`inline-block px-2 py-0.5 rounded-full text-[0.65rem] font-semibold uppercase ${STATUS_BADGE_CLASSES[status.toLowerCase()] || ''}`}>
       {STATUS_LABELS[t][status] || status}
     </span>
   );
 
   const getPriorityBadge = (priority: string) => (
-    <span className={`order-priority p-${priority.toLowerCase()}`}>
+    <span className={`inline-block px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase ${PRIORITY_BADGE_CLASSES[priority.toLowerCase()] || ''}`}>
       {PRIORITY_LABELS[t][priority] || priority}
     </span>
   );
@@ -283,71 +304,80 @@ function Orders() {
   const isTerminal = (status: string) => ['SHIPPED', 'CANCELLED'].includes(status);
 
   return (
-    <div className="orders-page">
-      <div className="orders-card">
-        <div className="orders-header">
-          <button className="back-btn" onClick={() => navigate('/')}>←</button>
-          <h2>{t === 'tr' ? 'Siparişler' : 'Orders'}</h2>
-          <button className="add-btn" onClick={() => setShowCreateModal(true)}>
+    <div className="min-h-[calc(100vh-120px)] bg-slate-100 p-4">
+      <div className="max-w-[900px] mx-auto bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] overflow-hidden">
+        <div className="bg-gradient-to-br from-violet-500 to-violet-700 text-white p-5 flex items-center gap-3">
+          <button className="bg-white/20 border-none text-white w-9 h-9 rounded-lg text-lg cursor-pointer flex items-center justify-center duration-200 hover:bg-white/30" onClick={() => navigate('/')}>←</button>
+          <h2 className="m-0 text-white text-xl font-bold flex-1 leading-9 h-9 flex items-center">{t === 'tr' ? 'Siparisler' : 'Orders'}</h2>
+          <button className="py-2 px-4 bg-white/20 text-white border-2 border-white/30 rounded-lg font-semibold cursor-pointer text-sm hover:bg-white/30" onClick={() => setShowCreateModal(true)}>
             + {t === 'tr' ? 'Yeni' : 'New'}
           </button>
         </div>
 
-        <div className="orders-content">
-          {success && <div className="success-message">{success}</div>}
-          {error && <div className="error-message" onClick={() => setError(null)}>{error}</div>}
+        <div className="p-4">
+          {success && <div className="py-3 px-4 bg-green-100 text-green-600 rounded-lg mb-4 font-medium">{success}</div>}
+          {error && <div className="py-3 px-4 bg-red-100 text-red-600 rounded-lg mb-4 font-medium cursor-pointer" onClick={() => setError(null)}>{error}</div>}
 
-          <form className="orders-filters" onSubmit={handleSearch}>
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-              <option value="">{t === 'tr' ? 'Tüm Durumlar' : 'All Statuses'}</option>
+          <form className="flex gap-2 mb-4 flex-wrap max-sm:flex-col" onSubmit={handleSearch}>
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="py-2 px-3 border-2 border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-violet-500"
+            >
+              <option value="">{t === 'tr' ? 'Tum Durumlar' : 'All Statuses'}</option>
               {Object.keys(STATUS_LABELS[t]).map(s => (
                 <option key={s} value={s}>{STATUS_LABELS[t][s]}</option>
               ))}
             </select>
-            <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}>
-              <option value="">{t === 'tr' ? 'Tüm Öncelikler' : 'All Priorities'}</option>
+            <select
+              value={priorityFilter}
+              onChange={e => setPriorityFilter(e.target.value)}
+              className="py-2 px-3 border-2 border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-violet-500"
+            >
+              <option value="">{t === 'tr' ? 'Tum Oncelikler' : 'All Priorities'}</option>
               {Object.keys(PRIORITY_LABELS[t]).map(p => (
                 <option key={p} value={p}>{PRIORITY_LABELS[t][p]}</option>
               ))}
             </select>
             <input
               type="text"
-              placeholder={t === 'tr' ? 'Sipariş no veya müşteri...' : 'Order # or customer...'}
+              placeholder={t === 'tr' ? 'Siparis no veya musteri...' : 'Order # or customer...'}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
+              className="flex-1 min-w-[120px] py-2 px-3 border-2 border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-violet-500"
             />
           </form>
 
           {loading ? (
-            <div className="loading">{t === 'tr' ? 'Yükleniyor...' : 'Loading...'}</div>
+            <div className="text-center p-8 text-slate-500">{t === 'tr' ? 'Yukleniyor...' : 'Loading...'}</div>
           ) : (
-            <div className="orders-layout">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-4">
               {/* Order List */}
-              <div className="orders-list">
-                <h3>{t === 'tr' ? 'Siparişler' : 'Orders'} ({orders.length})</h3>
+              <div>
+                <h3 className="m-0 mb-3 text-base text-slate-800">{t === 'tr' ? 'Siparisler' : 'Orders'} ({orders.length})</h3>
                 {orders.length === 0 ? (
-                  <div className="empty-state">
-                    {t === 'tr' ? 'Sipariş bulunamadı' : 'No orders found'}
+                  <div className="text-center p-8 text-slate-400 text-sm">
+                    {t === 'tr' ? 'Siparis bulunamadi' : 'No orders found'}
                   </div>
                 ) : (
-                  <div className="order-cards">
+                  <div className="flex flex-col gap-2 max-h-[calc(100vh-340px)] overflow-y-auto">
                     {orders.map(order => (
                       <div
                         key={order.order_id}
-                        className={`order-card ${selectedOrder?.order_id === order.order_id ? 'selected' : ''}`}
+                        className={`p-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl cursor-pointer duration-200 hover:border-violet-500 hover:bg-violet-50 ${selectedOrder?.order_id === order.order_id ? 'border-violet-500 bg-violet-50 shadow-[0_0_0_3px_rgba(139,92,246,0.1)]' : ''}`}
                         onClick={() => handleSelectOrder(order)}
                       >
-                        <div className="order-card-top">
-                          <span className="order-number">{order.order_number}</span>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className="text-base font-bold text-slate-800 font-mono">{order.order_number}</span>
                           {getStatusBadge(order.status)}
                         </div>
-                        <div className="order-card-meta">
+                        <div className="text-[0.8rem] text-slate-500 mb-1">
                           {order.customer_name}
                           {order.picker_full_name && (
-                            <span className="picker-info"> — {order.picker_full_name}</span>
+                            <span className="text-xs text-violet-700 font-medium"> — {order.picker_full_name}</span>
                           )}
                         </div>
-                        <div className="order-card-bottom">
+                        <div className="flex justify-between items-center text-xs text-slate-400 mt-1.5">
                           <span>{formatDate(order.order_date)}</span>
                           {getPriorityBadge(order.priority)}
                         </div>
@@ -359,73 +389,73 @@ function Orders() {
 
               {/* Detail Panel */}
               {selectedOrder && (
-                <div className="order-detail-panel">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                   {detailLoading ? (
-                    <div className="loading">{t === 'tr' ? 'Yükleniyor...' : 'Loading...'}</div>
+                    <div className="text-center p-8 text-slate-500">{t === 'tr' ? 'Yukleniyor...' : 'Loading...'}</div>
                   ) : (
                     <>
-                      <div className="order-detail-header">
+                      <div className="flex justify-between items-start mb-4">
                         <div>
-                          <h3>{selectedOrder.order_number}</h3>
-                          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                          <h3 className="m-0 text-lg text-slate-800">{selectedOrder.order_number}</h3>
+                          <div className="flex gap-2 mt-1">
                             {getStatusBadge(selectedOrder.status)}
                             {getPriorityBadge(selectedOrder.priority)}
                           </div>
                         </div>
                       </div>
 
-                      <div className="order-detail-info">
-                        <div className="detail-field">
-                          <span className="label">{t === 'tr' ? 'Müşteri' : 'Customer'}</span>
-                          <span className="value">{selectedOrder.customer_name}</span>
+                      <div className="grid grid-cols-2 max-sm:grid-cols-1 gap-2 mb-4 text-[0.8rem]">
+                        <div className="flex flex-col">
+                          <span className="text-slate-400 text-[0.7rem] uppercase font-semibold">{t === 'tr' ? 'Musteri' : 'Customer'}</span>
+                          <span className="text-slate-800 font-medium">{selectedOrder.customer_name}</span>
                         </div>
-                        <div className="detail-field">
-                          <span className="label">{t === 'tr' ? 'Depo' : 'Warehouse'}</span>
-                          <span className="value">{selectedOrder.warehouse_name || selectedOrder.warehouse_code}</span>
+                        <div className="flex flex-col">
+                          <span className="text-slate-400 text-[0.7rem] uppercase font-semibold">{t === 'tr' ? 'Depo' : 'Warehouse'}</span>
+                          <span className="text-slate-800 font-medium">{selectedOrder.warehouse_name || selectedOrder.warehouse_code}</span>
                         </div>
-                        <div className="detail-field">
-                          <span className="label">{t === 'tr' ? 'Tarih' : 'Date'}</span>
-                          <span className="value">{formatDate(selectedOrder.order_date)}</span>
+                        <div className="flex flex-col">
+                          <span className="text-slate-400 text-[0.7rem] uppercase font-semibold">{t === 'tr' ? 'Tarih' : 'Date'}</span>
+                          <span className="text-slate-800 font-medium">{formatDate(selectedOrder.order_date)}</span>
                         </div>
-                        <div className="detail-field">
-                          <span className="label">{t === 'tr' ? 'Toplayıcı' : 'Picker'}</span>
-                          <span className="value">
+                        <div className="flex flex-col">
+                          <span className="text-slate-400 text-[0.7rem] uppercase font-semibold">{t === 'tr' ? 'Toplayici' : 'Picker'}</span>
+                          <span className="text-slate-800 font-medium">
                             {selectedOrder.picker_full_name || selectedOrder.picker_username || '-'}
                           </span>
                         </div>
                         {selectedOrder.customer_address && (
-                          <div className="detail-field" style={{ gridColumn: '1 / -1' }}>
-                            <span className="label">{t === 'tr' ? 'Adres' : 'Address'}</span>
-                            <span className="value">{selectedOrder.customer_address}</span>
+                          <div className="flex flex-col col-span-full">
+                            <span className="text-slate-400 text-[0.7rem] uppercase font-semibold">{t === 'tr' ? 'Adres' : 'Address'}</span>
+                            <span className="text-slate-800 font-medium">{selectedOrder.customer_address}</span>
                           </div>
                         )}
                       </div>
 
                       {/* Items */}
-                      <div className="order-items-section">
-                        <h4>
-                          {t === 'tr' ? 'Ürünler' : 'Items'}
+                      <div>
+                        <h4 className="m-0 mb-2 text-[0.9rem] text-slate-600">
+                          {t === 'tr' ? 'Urunler' : 'Items'}
                           {selectedOrder.items && ` (${selectedOrder.items.length})`}
                         </h4>
-                        <div className="order-items-list">
+                        <div className="flex flex-col gap-1.5">
                           {selectedOrder.items?.map(item => (
                             <div
                               key={item.item_id}
-                              className="order-item-row"
+                              className="flex items-center gap-2 py-2 px-2.5 bg-white rounded-lg border border-slate-200 text-[0.8rem]"
                               onClick={() => {
                                 if (selectedOrder.status === 'PICKING') handleRecordPick(item);
                               }}
                               style={{ cursor: selectedOrder.status === 'PICKING' ? 'pointer' : 'default' }}
                             >
-                              <span className="item-line">{item.line_number}</span>
-                              <span className={`item-status-dot ${getItemStatusDot(item)}`} />
-                              <div className="item-info">
-                                <div className="item-sku">{item.product_sku}</div>
-                                <div className="item-name">{item.product_name}</div>
+                              <span className="w-[22px] h-[22px] bg-slate-200 rounded-full flex items-center justify-center text-[0.65rem] font-bold text-slate-500 shrink-0">{item.line_number}</span>
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${ITEM_STATUS_COLORS[getItemStatusDot(item)] || ''}`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-mono text-[0.7rem] text-violet-500 font-semibold">{item.product_sku}</div>
+                                <div className="text-xs text-slate-500 whitespace-nowrap overflow-hidden text-ellipsis">{item.product_name}</div>
                               </div>
-                              <div className="item-qty">
-                                <span className="picked">{item.quantity_picked}</span>
-                                <span className="total">/{item.quantity_ordered}</span>
+                              <div className="text-right shrink-0">
+                                <span className="text-green-600 font-bold">{item.quantity_picked}</span>
+                                <span className="text-slate-400">/{item.quantity_ordered}</span>
                               </div>
                             </div>
                           ))}
@@ -434,17 +464,18 @@ function Orders() {
 
                       {/* Actions */}
                       {!isTerminal(selectedOrder.status) && (
-                        <div className="order-actions">
+                        <div className="flex gap-2 mt-4 flex-wrap max-sm:flex-col">
                           {/* Assign Picker */}
                           {(selectedOrder.status === 'PENDING' || selectedOrder.status === 'READY_TO_PICK') && (
                             <>
-                              <div className="picker-select-row" style={{ width: '100%' }}>
+                              <div className="flex gap-2 w-full">
                                 <select
                                   value={selectedPickerId}
                                   onChange={e => setSelectedPickerId(Number(e.target.value))}
+                                  className="flex-1 py-2 border-2 border-slate-200 rounded-lg text-[0.8rem] focus:outline-none focus:border-violet-500"
                                 >
                                   <option value={0}>
-                                    {t === 'tr' ? 'Toplayıcı seç...' : 'Select picker...'}
+                                    {t === 'tr' ? 'Toplayici sec...' : 'Select picker...'}
                                   </option>
                                   {users
                                     .filter(u => ['ADMIN', 'MANAGER', 'OPERATOR'].includes(u.role))
@@ -455,7 +486,7 @@ function Orders() {
                                     ))}
                                 </select>
                                 <button
-                                  className="btn-assign"
+                                  className="bg-blue-100 text-blue-700 border-none rounded-lg text-[0.8rem] font-semibold cursor-pointer px-3 py-2 hover:bg-blue-200"
                                   onClick={handleAssignPicker}
                                   disabled={!selectedPickerId}
                                   style={{ opacity: selectedPickerId ? 1 : 0.5 }}
@@ -468,21 +499,21 @@ function Orders() {
 
                           {/* Start Picking */}
                           {(selectedOrder.status === 'PENDING' || selectedOrder.status === 'READY_TO_PICK') && (
-                            <button className="btn-start-pick" onClick={handleStartPicking}>
-                              {t === 'tr' ? 'Toplamaya Başla' : 'Start Picking'}
+                            <button className="flex-1 min-w-[100px] py-2 px-3 border-none rounded-lg text-[0.8rem] font-semibold cursor-pointer duration-200 bg-gradient-to-br from-violet-500 to-violet-700 text-white hover:opacity-90" onClick={handleStartPicking}>
+                              {t === 'tr' ? 'Toplamaya Basla' : 'Start Picking'}
                             </button>
                           )}
 
                           {/* Complete Picking */}
                           {selectedOrder.status === 'PICKING' && (
-                            <button className="btn-complete-pick" onClick={handleCompletePicking}>
-                              {t === 'tr' ? 'Toplamayı Tamamla' : 'Complete Picking'}
+                            <button className="flex-1 min-w-[100px] py-2 px-3 border-none rounded-lg text-[0.8rem] font-semibold cursor-pointer duration-200 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white hover:opacity-90" onClick={handleCompletePicking}>
+                              {t === 'tr' ? 'Toplamayi Tamamla' : 'Complete Picking'}
                             </button>
                           )}
 
                           {/* Cancel */}
-                          <button className="btn-cancel-order" onClick={handleCancelOrder}>
-                            {t === 'tr' ? 'İptal' : 'Cancel'}
+                          <button className="flex-1 min-w-[100px] py-2 px-3 rounded-lg text-[0.8rem] font-semibold cursor-pointer duration-200 bg-slate-100 text-red-600 border border-red-200 hover:bg-red-100" onClick={handleCancelOrder}>
+                            {t === 'tr' ? 'Iptal' : 'Cancel'}
                           </button>
                         </div>
                       )}
@@ -497,42 +528,46 @@ function Orders() {
 
       {/* Create Order Modal */}
       {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3>{t === 'tr' ? 'Yeni Sipariş' : 'New Order'}</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-4" onClick={() => setShowCreateModal(false)}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-[480px] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="m-0 mb-5 text-slate-800 text-lg">{t === 'tr' ? 'Yeni Siparis' : 'New Order'}</h3>
             <form onSubmit={handleCreateOrder}>
-              <div className="form-group">
-                <label>{t === 'tr' ? 'Sipariş No' : 'Order Number'} *</label>
+              <div className="mb-4">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Siparis No' : 'Order Number'} *</label>
                 <input
                   type="text"
                   value={newOrder.order_number}
                   onChange={e => setNewOrder(p => ({ ...p, order_number: e.target.value }))}
                   placeholder="ORD-2026-001"
                   required
+                  className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] duration-200 box-border focus:outline-none focus:border-violet-500"
                 />
               </div>
-              <div className="form-group">
-                <label>{t === 'tr' ? 'Müşteri Adı' : 'Customer Name'} *</label>
+              <div className="mb-4">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Musteri Adi' : 'Customer Name'} *</label>
                 <input
                   type="text"
                   value={newOrder.customer_name}
                   onChange={e => setNewOrder(p => ({ ...p, customer_name: e.target.value }))}
                   required
+                  className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] duration-200 box-border focus:outline-none focus:border-violet-500"
                 />
               </div>
-              <div className="form-group">
-                <label>{t === 'tr' ? 'Adres' : 'Address'}</label>
+              <div className="mb-4">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Adres' : 'Address'}</label>
                 <input
                   type="text"
                   value={newOrder.customer_address}
                   onChange={e => setNewOrder(p => ({ ...p, customer_address: e.target.value }))}
+                  className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] duration-200 box-border focus:outline-none focus:border-violet-500"
                 />
               </div>
-              <div className="form-group">
-                <label>{t === 'tr' ? 'Öncelik' : 'Priority'}</label>
+              <div className="mb-4">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Oncelik' : 'Priority'}</label>
                 <select
                   value={newOrder.priority}
                   onChange={e => setNewOrder(p => ({ ...p, priority: e.target.value }))}
+                  className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] duration-200 box-border focus:outline-none focus:border-violet-500"
                 >
                   {Object.keys(PRIORITY_LABELS[t]).map(p => (
                     <option key={p} value={p}>{PRIORITY_LABELS[t][p]}</option>
@@ -541,54 +576,57 @@ function Orders() {
               </div>
 
               {/* Item Adder */}
-              <div className="form-group">
-                <label>{t === 'tr' ? 'Ürünler' : 'Items'} *</label>
-                <div className="item-adder">
-                  <div className="form-group">
+              <div className="mb-4">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Urunler' : 'Items'} *</label>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-[2]">
                     <input
                       type="text"
                       value={itemSku}
                       onChange={e => setItemSku(e.target.value)}
                       placeholder="IWASKU"
+                      className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] duration-200 box-border focus:outline-none focus:border-violet-500"
                     />
                   </div>
-                  <div className="form-group">
+                  <div className="flex-1">
                     <input
                       type="number"
                       value={itemQty}
                       onChange={e => setItemQty(Math.max(1, Number(e.target.value)))}
                       min={1}
+                      className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] duration-200 box-border focus:outline-none focus:border-violet-500"
                     />
                   </div>
-                  <button type="button" className="btn-add-item" onClick={handleAddItem}>+</button>
+                  <button type="button" className="py-2.5 px-3 bg-violet-500 text-white border-none rounded-lg text-base cursor-pointer whitespace-nowrap h-[42px] hover:bg-violet-600" onClick={handleAddItem}>+</button>
                 </div>
                 {newItems.length > 0 && (
-                  <div className="modal-items-list">
+                  <div className="mt-3 flex flex-col gap-1">
                     {newItems.map((item, i) => (
-                      <div key={i} className="modal-item">
+                      <div key={i} className="flex justify-between items-center py-1.5 px-2 bg-slate-50 rounded-md text-[0.8rem]">
                         <span>{item.product_sku} x{item.quantity}</span>
-                        <button type="button" className="remove-item" onClick={() => handleRemoveItem(i)}>×</button>
+                        <button type="button" className="bg-transparent border-none text-red-600 cursor-pointer text-base px-1" onClick={() => handleRemoveItem(i)}>x</button>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div className="form-group">
-                <label>{t === 'tr' ? 'Notlar' : 'Notes'}</label>
+              <div className="mb-4">
+                <label className="block mb-1.5 font-medium text-slate-600 text-sm">{t === 'tr' ? 'Notlar' : 'Notes'}</label>
                 <textarea
                   value={newOrder.notes}
                   onChange={e => setNewOrder(p => ({ ...p, notes: e.target.value }))}
                   rows={2}
+                  className="w-full py-2.5 px-3 border-2 border-slate-200 rounded-lg text-[0.9375rem] duration-200 box-border focus:outline-none focus:border-violet-500"
                 />
               </div>
 
-              <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={() => setShowCreateModal(false)}>
-                  {t === 'tr' ? 'Vazgeç' : 'Cancel'}
+              <div className="flex gap-3 mt-6 justify-end">
+                <button type="button" className="py-2.5 px-4 bg-slate-100 text-slate-500 border-none rounded-lg font-medium cursor-pointer hover:bg-slate-200" onClick={() => setShowCreateModal(false)}>
+                  {t === 'tr' ? 'Vazgec' : 'Cancel'}
                 </button>
-                <button type="submit" className="btn-save" disabled={newItems.length === 0}>
-                  {t === 'tr' ? 'Oluştur' : 'Create'}
+                <button type="submit" className="py-2.5 px-4 bg-gradient-to-br from-violet-500 to-violet-700 text-white border-none rounded-lg font-medium cursor-pointer hover:opacity-90" disabled={newItems.length === 0}>
+                  {t === 'tr' ? 'Olustur' : 'Create'}
                 </button>
               </div>
             </form>

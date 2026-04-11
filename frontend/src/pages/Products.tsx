@@ -4,7 +4,6 @@ import { useStore } from '../stores/appStore';
 import api, { serialApi } from '../lib/api';
 import type { Product } from '../types';
 import { translations } from '../i18n/translations';
-import './Products.css';
 
 function Products() {
   const navigate = useNavigate();
@@ -26,9 +25,9 @@ function Products() {
 
   // Label templates
   const LABEL_TEMPLATES = [
-    { id: 'standard', name: language === 'tr' ? 'Standart (100×30mm)' : 'Standard (100×30mm)', width: '100mm', height: '30mm', fontSize: '8pt', barcodeH: '14mm', serialSize: '6pt' },
-    { id: 'small', name: language === 'tr' ? 'Küçük (50×25mm)' : 'Small (50×25mm)', width: '50mm', height: '25mm', fontSize: '6pt', barcodeH: '10mm', serialSize: '5pt' },
-    { id: 'large', name: language === 'tr' ? 'Büyük (100×50mm)' : 'Large (100×50mm)', width: '100mm', height: '50mm', fontSize: '10pt', barcodeH: '20mm', serialSize: '7pt' },
+    { id: 'standard', name: language === 'tr' ? 'Standart (100x30mm)' : 'Standard (100x30mm)', width: '100mm', height: '30mm', fontSize: '8pt', barcodeH: '14mm', serialSize: '6pt' },
+    { id: 'small', name: language === 'tr' ? 'Kucuk (50x25mm)' : 'Small (50x25mm)', width: '50mm', height: '25mm', fontSize: '6pt', barcodeH: '10mm', serialSize: '5pt' },
+    { id: 'large', name: language === 'tr' ? 'Buyuk (100x50mm)' : 'Large (100x50mm)', width: '100mm', height: '50mm', fontSize: '10pt', barcodeH: '20mm', serialSize: '7pt' },
   ];
 
   // Label print modal state
@@ -82,7 +81,7 @@ function Products() {
       setBulkMode(false);
       setSelectedSkus(new Set());
     } catch {
-      setError('Toplu etiket üretimi başarısız');
+      setError('Toplu etiket uretimi basarisiz');
     } finally {
       setBulkLoading(false);
     }
@@ -321,14 +320,14 @@ function Products() {
   };
 
   return (
-    <div className="products-page">
-      <div className="products-card">
+    <div className="min-h-[calc(100vh-120px)] bg-slate-100 p-4 md:p-2">
+      <div className="max-w-[800px] mx-auto bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] overflow-hidden">
         {/* Header */}
-        <div className="products-header">
-          <button className="back-btn" onClick={() => navigate('/')}>
+        <div className="flex items-center gap-3 p-5 bg-gradient-to-br from-blue-500 to-blue-700 text-white">
+          <button className="bg-white/20 border-none text-white w-9 h-9 rounded-lg text-lg cursor-pointer flex items-center justify-center duration-200 hover:bg-white/30" onClick={() => navigate('/')}>
             ←
           </button>
-          <h2>{t.productsCatalog}</h2>
+          <h2 className="m-0 text-xl font-bold text-white flex-1">{t.productsCatalog}</h2>
           <button onClick={() => {
             if (products.length === 0) return;
             import('../utils/exportXlsx').then(({ exportToXlsx }) => {
@@ -342,26 +341,26 @@ function Products() {
                 'Products',
               );
             });
-          }} className="add-btn" style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem' }} disabled={products.length === 0}>
+          }} className="py-1.5 px-3 bg-white/20 text-white border-2 border-white/30 rounded-lg font-semibold cursor-pointer text-xs hover:bg-white/30" disabled={products.length === 0}>
             ↓ XLSX
           </button>
-          <div className="warehouse-badge">{currentWarehouse}</div>
+          <div className="py-1.5 px-3 bg-white/20 rounded-md font-semibold text-[0.9rem]">{currentWarehouse}</div>
         </div>
 
         {/* Content */}
-        <div className="products-content">
-          <div className="header-actions">
+        <div className="p-4">
+          <div className="flex gap-2 items-center flex-wrap mb-3 md:flex-col md:items-stretch">
             <input
               type="text"
               placeholder={t.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="search-input"
+              className="py-3 px-3 border-2 border-gray-200 rounded-md text-base flex-1 min-w-[200px] focus:outline-none focus:border-blue-600 md:w-full md:min-w-0 md:py-2.5 md:text-[0.9rem]"
             />
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="filter-select"
+              className="py-3 px-3 border-2 border-gray-200 rounded-md text-base bg-white cursor-pointer duration-200 min-w-[150px] focus:outline-none focus:border-blue-600 hover:border-gray-400 md:w-full md:min-w-0 md:py-2.5 md:text-[0.9rem]"
               title={t.filterByCategory}
             >
               <option value="">{t.allCategories}</option>
@@ -373,83 +372,84 @@ function Products() {
             </select>
             <button
               onClick={() => { setBulkMode(!bulkMode); setSelectedSkus(new Set()); }}
-              className="card-btn print"
-              style={{ padding: '6px 12px', fontSize: '12px', background: bulkMode ? '#8b5cf6' : '#e2e8f0', color: bulkMode ? 'white' : '#475569', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+              className="py-1.5 px-3 text-xs border-none rounded-md cursor-pointer font-semibold"
+              style={{ background: bulkMode ? '#8b5cf6' : '#e2e8f0', color: bulkMode ? 'white' : '#475569' }}
             >
-              {bulkMode ? (language === 'tr' ? 'Seçimi Kapat' : 'Cancel') : (language === 'tr' ? 'Toplu Etiket' : 'Bulk Labels')}
+              {bulkMode ? (language === 'tr' ? 'Secimi Kapat' : 'Cancel') : (language === 'tr' ? 'Toplu Etiket' : 'Bulk Labels')}
             </button>
           </div>
 
           {/* Bulk bar */}
           {bulkMode && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0', flexWrap: 'wrap' }}>
-              <button onClick={toggleSelectAll} style={{ padding: '4px 10px', fontSize: '12px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}>
-                {selectedSkus.size === products.length ? (language === 'tr' ? 'Seçimi Kaldır' : 'Deselect All') : (language === 'tr' ? 'Tümünü Seç' : 'Select All')}
+            <div className="flex items-center gap-2 py-2 flex-wrap">
+              <button onClick={toggleSelectAll} className="py-1 px-2.5 text-xs bg-slate-100 border border-slate-200 rounded-md cursor-pointer">
+                {selectedSkus.size === products.length ? (language === 'tr' ? 'Secimi Kaldir' : 'Deselect All') : (language === 'tr' ? 'Tumunu Sec' : 'Select All')}
               </button>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>
-                {selectedSkus.size} {language === 'tr' ? 'seçili' : 'selected'}
+              <span className="text-[13px] text-slate-500">
+                {selectedSkus.size} {language === 'tr' ? 'secili' : 'selected'}
               </span>
               <input
                 type="number"
                 value={bulkQty}
                 onChange={e => setBulkQty(Math.max(1, Number(e.target.value)))}
                 min={1}
-                style={{ width: '60px', padding: '4px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px' }}
-                title={language === 'tr' ? 'Her SKU için adet' : 'Qty per SKU'}
+                className="w-[60px] py-1 px-2 border border-slate-200 rounded-md text-[13px]"
+                title={language === 'tr' ? 'Her SKU icin adet' : 'Qty per SKU'}
               />
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>{language === 'tr' ? 'adet/SKU' : 'per SKU'}</span>
+              <span className="text-[11px] text-slate-400">{language === 'tr' ? 'adet/SKU' : 'per SKU'}</span>
               <button
                 onClick={handleBulkPrint}
                 disabled={selectedSkus.size === 0 || bulkLoading}
-                style={{ marginLeft: 'auto', padding: '6px 16px', background: selectedSkus.size > 0 ? '#10b981' : '#e2e8f0', color: selectedSkus.size > 0 ? 'white' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: selectedSkus.size > 0 ? 'pointer' : 'not-allowed', fontWeight: '600', fontSize: '13px' }}
+                className="ml-auto py-1.5 px-4 border-none rounded-md font-semibold text-[13px]"
+                style={{ background: selectedSkus.size > 0 ? '#10b981' : '#e2e8f0', color: selectedSkus.size > 0 ? 'white' : '#94a3b8', cursor: selectedSkus.size > 0 ? 'pointer' : 'not-allowed' }}
               >
-                {bulkLoading ? '...' : `🖨️ ${selectedSkus.size * bulkQty} ${language === 'tr' ? 'etiket' : 'labels'}`}
+                {bulkLoading ? '...' : `${selectedSkus.size * bulkQty} ${language === 'tr' ? 'etiket' : 'labels'}`}
               </button>
             </div>
           )}
 
           {/* Stats */}
-          <div className="products-stats">
+          <div className="text-center py-3 bg-blue-50 rounded-lg mb-3 font-semibold text-blue-800">
             <span>{totalProducts.toLocaleString()} {t.total}</span>
           </div>
 
-          {error && <div className="error">❌ {error}</div>}
+          {error && <div className="bg-red-100 text-red-800 p-4 rounded-md mb-4 md:text-[0.9rem] md:p-3">{error}</div>}
 
-          {loading && <div className="loading">{t.loadingProducts}</div>}
+          {loading && <div className="text-center p-12 text-gray-500 text-lg">{t.loadingProducts}</div>}
 
           {!loading && !error && products.length > 0 && (
             <>
               {/* Card View */}
-              <div className="products-cards">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-4 md:grid-cols-1">
                 {products.map((product) => (
                   <div
                     key={product.sku_code}
-                    className={`product-card ${bulkMode && selectedSkus.has(product.sku_code) ? 'selected' : ''}`}
+                    className={`relative bg-white rounded-[10px] shadow-[0_2px_4px_rgba(0,0,0,0.08)] overflow-hidden border-2 border-transparent duration-200 hover:shadow-[0_4px_8px_rgba(0,0,0,0.12)] ${bulkMode && selectedSkus.has(product.sku_code) ? 'border-blue-500 bg-blue-50' : ''}`}
                     onClick={bulkMode ? () => toggleSelect(product.sku_code) : undefined}
                     style={bulkMode ? { cursor: 'pointer' } : undefined}
                   >
                     {bulkMode && (
-                      <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                      <div className="absolute top-2 right-2">
                         <input
                           type="checkbox"
                           checked={selectedSkus.has(product.sku_code)}
                           onChange={() => toggleSelect(product.sku_code)}
                           onClick={e => e.stopPropagation()}
-                          style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#8b5cf6' }}
+                          className="w-4 h-4 cursor-pointer accent-violet-500"
                         />
                       </div>
                     )}
-                    <div className="card-header">
-                      <span className="card-sku">{product.sku_code}</span>
-                      {product.category && <span className="card-category">{product.category}</span>}
+                    <div className="flex items-center gap-2 py-3 px-4 bg-slate-50 border-b border-gray-200">
+                      <span className="font-mono text-[0.8rem] text-blue-600 font-semibold flex-1">{product.sku_code}</span>
+                      {product.category && <span className="text-[0.7rem] bg-green-100 text-green-800 py-0.5 px-2 rounded font-medium">{product.category}</span>}
                     </div>
-                    <div className="card-body">
-                      <div className="card-name">{product.product_name}</div>
+                    <div className="p-4">
+                      <div className="font-semibold text-[0.95rem] text-gray-800 leading-snug mb-2">{product.product_name}</div>
                     </div>
                     {!bulkMode && (
-                      <div className="card-actions">
-                        <button onClick={() => handlePrintLabel(product)} className="card-btn print">
-                          🖨️ {t.printLabel}
+                      <div className="flex border-t border-gray-200">
+                        <button onClick={() => handlePrintLabel(product)} className="flex-1 py-3 border-none text-[0.85rem] font-semibold cursor-pointer duration-200 bg-blue-50 text-blue-600 hover:bg-blue-100">
+                          {t.printLabel}
                         </button>
                       </div>
                     )}
@@ -458,39 +458,39 @@ function Products() {
               </div>
 
               {/* Pagination */}
-              <div className="table-footer">
-                <div className="footer-info">
+              <div className="p-4 bg-white rounded-lg mt-4 text-sm text-gray-500 flex justify-between items-center flex-wrap gap-4 shadow-sm md:p-3">
+                <div className="md:text-[0.8rem]">
                   {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalProducts)} / {totalProducts.toLocaleString()}
                 </div>
-                <div className="pagination">
+                <div className="flex gap-2 items-center md:gap-1">
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    className="btn-page"
+                    className="py-2 px-3 bg-white border border-gray-300 rounded cursor-pointer text-sm duration-200 hover:enabled:bg-gray-100 hover:enabled:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-3 md:text-[0.85rem]"
                   >
                     ⏮
                   </button>
                   <button
                     onClick={() => setCurrentPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="btn-page"
+                    className="py-2 px-3 bg-white border border-gray-300 rounded cursor-pointer text-sm duration-200 hover:enabled:bg-gray-100 hover:enabled:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-3 md:text-[0.85rem]"
                   >
                     ◀
                   </button>
-                  <span className="page-info">
+                  <span className="px-2 font-semibold text-gray-700 md:text-[0.85rem] md:px-1">
                     {currentPage} / {totalPages}
                   </span>
                   <button
                     onClick={() => setCurrentPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="btn-page"
+                    className="py-2 px-3 bg-white border border-gray-300 rounded cursor-pointer text-sm duration-200 hover:enabled:bg-gray-100 hover:enabled:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-3 md:text-[0.85rem]"
                   >
                     ▶
                   </button>
                   <button
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
-                    className="btn-page"
+                    className="py-2 px-3 bg-white border border-gray-300 rounded cursor-pointer text-sm duration-200 hover:enabled:bg-gray-100 hover:enabled:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-3 md:text-[0.85rem]"
                   >
                     ⏭
                   </button>
@@ -500,7 +500,7 @@ function Products() {
           )}
 
           {!loading && !error && products.length === 0 && (
-            <div className="empty-state">{t.noProductsFound}</div>
+            <div className="text-center p-12 text-gray-500 text-lg">{t.noProductsFound}</div>
           )}
         </div>
       </div>
@@ -508,29 +508,29 @@ function Products() {
       {/* Label Print Modal */}
       {labelModal.product && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
           onClick={() => !labelModal.loading && setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' })}
         >
           <div
-            style={{ background: 'white', borderRadius: 12, padding: 28, width: 340, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
+            className="bg-white rounded-xl p-7 w-[340px] shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ marginBottom: 6, color: '#111' }}>Etiket Bas</h3>
-            <p style={{ color: '#6b7280', marginBottom: 4, fontSize: 13 }}>{labelModal.product.sku_code}</p>
-            <p style={{ color: '#374151', marginBottom: 16, fontSize: 14, fontWeight: 500 }}>{labelModal.product.product_name}</p>
-            <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14 }}>
-              {language === 'tr' ? 'Şablon' : 'Template'}
+            <h3 className="mb-1.5 text-gray-900">Etiket Bas</h3>
+            <p className="text-gray-500 mb-1 text-[13px]">{labelModal.product.sku_code}</p>
+            <p className="text-gray-700 mb-4 text-sm font-medium">{labelModal.product.product_name}</p>
+            <label className="block mb-1.5 font-semibold text-sm">
+              {language === 'tr' ? 'Sablon' : 'Template'}
             </label>
             <select
               value={labelModal.template}
               onChange={(e) => setLabelModal((prev) => ({ ...prev, template: e.target.value }))}
-              style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: '2px solid #e5e7eb', borderRadius: 6, marginBottom: 12 }}
+              className="w-full py-2 px-3 text-sm border-2 border-gray-200 rounded-md mb-3"
             >
               {LABEL_TEMPLATES.map(tpl => (
                 <option key={tpl.id} value={tpl.id}>{tpl.name}</option>
               ))}
             </select>
-            <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14 }}>
+            <label className="block mb-1.5 font-semibold text-sm">
               {language === 'tr' ? 'Adet' : 'Quantity'}
             </label>
             <input
@@ -541,20 +541,21 @@ function Products() {
               onChange={(e) => setLabelModal((prev) => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
               onKeyDown={(e) => e.key === 'Enter' && !labelModal.loading && handleGenerateLabels()}
               autoFocus
-              style={{ width: '100%', padding: '10px 12px', fontSize: 18, textAlign: 'center', border: '2px solid #e5e7eb', borderRadius: 6, marginBottom: 16 }}
+              className="w-full py-2.5 px-3 text-lg text-center border-2 border-gray-200 rounded-md mb-4"
             />
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="flex gap-2">
               <button
                 onClick={handleGenerateLabels}
                 disabled={labelModal.loading}
-                style={{ flex: 1, padding: '12px 0', background: labelModal.loading ? '#9ca3af' : '#10b981', color: 'white', border: 'none', borderRadius: 6, fontWeight: 600, cursor: labelModal.loading ? 'not-allowed' : 'pointer', fontSize: 14 }}
+                className="flex-1 py-3 border-none rounded-md font-semibold text-sm text-white"
+                style={{ background: labelModal.loading ? '#9ca3af' : '#10b981', cursor: labelModal.loading ? 'not-allowed' : 'pointer' }}
               >
                 {labelModal.loading ? 'Uretiliyor...' : 'Seri No Uret ve Hazirla'}
               </button>
               <button
                 onClick={() => setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' })}
                 disabled={labelModal.loading}
-                style={{ padding: '12px 16px', background: '#6b7280', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}
+                className="py-3 px-4 bg-gray-500 text-white border-none rounded-md cursor-pointer text-sm"
               >
                 Iptal
               </button>

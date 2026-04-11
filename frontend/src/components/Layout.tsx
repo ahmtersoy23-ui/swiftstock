@@ -4,7 +4,6 @@ import { useStore } from '../stores/appStore';
 import { useSSO } from '../hooks/useSSO';
 import { alertApi } from '../lib/api/alerts';
 import api from '../lib/api';
-import './Layout.css';
 
 interface Alert {
   alert_id: number;
@@ -112,7 +111,7 @@ function Layout({ children }: LayoutProps) {
     const now = performance.timeOrigin + performance.now();
     const diff = now - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return language === 'tr' ? 'Az önce' : 'Just now';
+    if (mins < 1) return language === 'tr' ? 'Az once' : 'Just now';
     if (mins < 60) return `${mins}${language === 'tr' ? 'dk' : 'm'}`;
     const hours = Math.floor(mins / 60);
     if (hours < 24) return `${hours}${language === 'tr' ? 'sa' : 'h'}`;
@@ -120,123 +119,72 @@ function Layout({ children }: LayoutProps) {
   }, [language]);
 
   return (
-    <div className={`layout layout-minimal theme-${currentWarehouse}`}>
-      <header className={`header header-minimal theme-${currentWarehouse}`}>
-        <div className="header-content">
+    <div className={`flex flex-col h-screen bg-slate-50 theme-${currentWarehouse}`}>
+      <header className={`relative bg-slate-800 text-white py-3 px-6 shadow-md duration-200 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:bg-primary-500 md:py-2 md:px-3 theme-${currentWarehouse}`}>
+        <div className="flex justify-between items-center max-w-[1200px] mx-auto relative">
           {!isHomePage && (
-            <button className="home-btn" onClick={handleHomeClick} title="Ana Sayfa">
-              <span className="home-icon">&#x2302;</span>
+            <button
+              className="bg-white/10 border border-white/20 text-white w-9 h-9 rounded-lg cursor-pointer flex items-center justify-center duration-150 mr-2 hover:bg-white/20 md:w-8 md:h-8"
+              onClick={handleHomeClick}
+              title="Ana Sayfa"
+            >
+              <span className="text-lg">&#x2302;</span>
             </button>
           )}
-          <h1 className="logo" onClick={handleHomeClick} style={{ cursor: 'pointer' }}>
+          <h1
+            className="absolute left-1/2 -translate-x-1/2 m-0 text-[1.375rem] font-bold tracking-wider text-white md:text-lg md:tracking-normal"
+            onClick={handleHomeClick}
+            style={{ cursor: 'pointer' }}
+          >
             SWIFTSTOCK
           </h1>
-          <div className="user-info">
+          <div className="flex gap-2 items-center md:gap-1">
             {user && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginRight: '12px',
-                fontSize: '14px',
-                color: '#94a3b8',
-              }}>
+              <div className="flex items-center gap-2 mr-3 text-sm text-slate-400">
                 {user.picture && (
                   <img
                     src={user.picture}
                     alt={user.name}
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '50%',
-                      border: '2px solid #3b82f6',
-                    }}
+                    className="w-7 h-7 rounded-full border-2 border-blue-500"
                   />
                 )}
-                <span style={{ fontWeight: '500' }}>{user.name}</span>
+                <span className="font-medium">{user.name}</span>
               </div>
             )}
 
             {/* Alerts Bell */}
-            <div ref={alertRef} style={{ position: 'relative' }}>
+            <div ref={alertRef} className="relative">
               <button
                 onClick={() => setShowAlerts(!showAlerts)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '18px',
-                  position: 'relative',
-                  padding: '4px 8px',
-                  color: '#94a3b8',
-                }}
+                className="bg-transparent border-none cursor-pointer text-lg relative py-1 px-2 text-slate-400"
                 title={language === 'tr' ? 'Bildirimler' : 'Notifications'}
               >
                 🔔
                 {unreadCount > 0 && (
-                  <span style={{
-                    position: 'absolute',
-                    top: '0',
-                    right: '2px',
-                    background: '#dc2626',
-                    color: 'white',
-                    borderRadius: '50%',
-                    width: '16px',
-                    height: '16px',
-                    fontSize: '10px',
-                    fontWeight: '700',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
+                  <span className="absolute top-0 right-0.5 bg-red-600 text-white rounded-full w-4 h-4 text-[10px] font-bold flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </button>
 
               {showAlerts && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  width: '320px',
-                  maxHeight: '400px',
-                  overflowY: 'auto',
-                  background: 'white',
-                  borderRadius: '12px',
-                  boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-                  border: '1px solid #e2e8f0',
-                  zIndex: 1000,
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    borderBottom: '1px solid #f1f5f9',
-                  }}>
-                    <span style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>
+                <div className="absolute top-full right-0 w-80 max-h-[400px] overflow-y-auto bg-white rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.15)] border border-slate-200 z-[1000]">
+                  <div className="flex justify-between items-center px-4 py-3 border-b border-slate-100">
+                    <span className="font-semibold text-sm text-slate-800">
                       {language === 'tr' ? 'Bildirimler' : 'Notifications'}
                     </span>
                     {unreadCount > 0 && (
                       <button
                         onClick={handleMarkAllRead}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#3b82f6',
-                          fontSize: '12px',
-                          cursor: 'pointer',
-                          fontWeight: '500',
-                        }}
+                        className="bg-transparent border-none text-blue-500 text-xs cursor-pointer font-medium"
                       >
-                        {language === 'tr' ? 'Tümünü oku' : 'Mark all read'}
+                        {language === 'tr' ? 'Tumunu oku' : 'Mark all read'}
                       </button>
                     )}
                   </div>
 
                   {alerts.length === 0 ? (
-                    <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                    <div className="p-6 text-center text-slate-400 text-[13px]">
                       {language === 'tr' ? 'Bildirim yok' : 'No notifications'}
                     </div>
                   ) : (
@@ -244,53 +192,24 @@ function Layout({ children }: LayoutProps) {
                       <div
                         key={alert.alert_id}
                         onClick={() => !alert.is_read && handleMarkRead(alert.alert_id)}
-                        style={{
-                          padding: '10px 16px',
-                          borderBottom: '1px solid #f8fafc',
-                          cursor: alert.is_read ? 'default' : 'pointer',
-                          background: alert.is_read ? 'white' : '#fffbeb',
-                          transition: 'background 0.2s',
-                        }}
+                        className={`px-4 py-2.5 border-b border-slate-50 duration-200 ${alert.is_read ? 'bg-white cursor-default' : 'bg-amber-50 cursor-pointer'}`}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{
-                              fontSize: '12px',
-                              fontWeight: alert.is_read ? '400' : '600',
-                              color: '#1e293b',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                            }}>
-                              <span style={{
-                                width: '6px',
-                                height: '6px',
-                                borderRadius: '50%',
-                                background: alert.is_read ? '#e2e8f0' : getSeverityColor(alert.severity),
-                                flexShrink: 0,
-                              }} />
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs text-slate-800 flex items-center gap-1.5 ${alert.is_read ? 'font-normal' : 'font-semibold'}`}>
+                              <span
+                                className="w-1.5 h-1.5 rounded-full shrink-0"
+                                style={{ background: alert.is_read ? '#e2e8f0' : getSeverityColor(alert.severity) }}
+                              />
                               {alert.title}
                             </div>
                             {alert.message && (
-                              <div style={{
-                                fontSize: '11px',
-                                color: '#64748b',
-                                marginTop: '2px',
-                                paddingLeft: '12px',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                              }}>
+                              <div className="text-[11px] text-slate-500 mt-0.5 pl-3 whitespace-nowrap overflow-hidden text-ellipsis">
                                 {alert.message}
                               </div>
                             )}
                           </div>
-                          <span style={{
-                            fontSize: '10px',
-                            color: '#94a3b8',
-                            flexShrink: 0,
-                            marginLeft: '8px',
-                          }}>
+                          <span className="text-[10px] text-slate-400 shrink-0 ml-2">
                             {formatAlertTime(alert.created_at)}
                           </span>
                         </div>
@@ -304,7 +223,7 @@ function Layout({ children }: LayoutProps) {
             <select
               value={language}
               onChange={handleLanguageChange}
-              className="language-select"
+              className="bg-white/10 text-white border border-white/20 py-2 px-3 rounded-lg text-sm font-medium cursor-pointer duration-150 hover:bg-white/20 focus:outline-none focus:bg-white/20 focus:border-white/40 md:py-1 md:px-2 md:text-xs [&_option]:bg-slate-800 [&_option]:text-white"
               title="Language / Dil"
             >
               <option value="tr">TR</option>
@@ -313,12 +232,12 @@ function Layout({ children }: LayoutProps) {
             <select
               value={currentWarehouse}
               onChange={handleWarehouseChange}
-              className="warehouse-select"
+              className="bg-white/10 text-white border border-white/20 py-2 px-3 rounded-lg text-sm font-medium cursor-pointer duration-150 hover:bg-white/20 focus:outline-none focus:bg-white/20 focus:border-white/40 md:py-1 md:px-2 md:text-xs [&_option]:bg-slate-800 [&_option]:text-white"
             >
               {warehouses.length > 0 ? (
                 warehouses.map((w) => (
                   <option key={w.code} value={w.code} disabled={!w.is_active}>
-                    {w.code}{!w.is_active ? ' (yakında)' : ''}
+                    {w.code}{!w.is_active ? ' (yakinda)' : ''}
                   </option>
                 ))
               ) : (
@@ -327,18 +246,8 @@ function Layout({ children }: LayoutProps) {
             </select>
             <button
               onClick={logout}
-              className="logout-btn"
+              className="py-1.5 px-3 bg-red-600 text-white border-none rounded-md cursor-pointer text-sm font-medium"
               title="Logout"
-              style={{
-                padding: '6px 12px',
-                backgroundColor: '#dc2626',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-              }}
             >
               →
             </button>
@@ -346,7 +255,7 @@ function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      <main className="main main-full">{children}</main>
+      <main className="flex-1 p-0 max-w-full w-full overflow-y-auto">{children}</main>
     </div>
   );
 }
