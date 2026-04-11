@@ -10,7 +10,7 @@ cd backend && npm test        # jest (6 test)
 ```
 
 ## Kurallar
-- Custom CSS (Tailwind YOK)
+- Tailwind v4 + component classes (.btn-*, .card-*, .badge-*, .alert-*) in @layer components
 - PWA: Workbox + Capacitor
 - Serial zorunlu (FACTORY+IN), kategori = zone
 - `re-export` sorunu: `export { X } from './module'` CI'da TS2614 firlatabilir → dogrudan import kullan
