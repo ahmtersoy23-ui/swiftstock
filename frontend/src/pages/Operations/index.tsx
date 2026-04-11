@@ -227,8 +227,8 @@ function Operations() {
     try {
       const response = await apiClient.getAllOperationModes();
       if (response.success) {
-        // Show all active operation modes (IN, OUT, TRANSFER, COUNT)
-        setAvailableModes(response.data);
+        // Filter out ACTION-* codes — those are barcode-triggered actions, not selectable modes
+        setAvailableModes(response.data.filter((m: OperationMode) => !m.mode_code.startsWith('ACTION-')));
       }
     } catch (err) {
       console.error('Failed to load modes:', err);
