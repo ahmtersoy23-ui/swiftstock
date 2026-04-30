@@ -1,3 +1,5 @@
+import { useStore } from '../stores/appStore';
+
 export const translations = {
   tr: {
     // Navigation
@@ -643,7 +645,7 @@ export const translations = {
 };
 
 export const useTranslation = () => {
-  const language = 'tr'; // This will be replaced with actual store usage
+  const language = useStore((s) => s.language);
   return {
     t: (key: string) => {
       const keys = key.split('.');

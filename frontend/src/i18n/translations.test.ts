@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
 import { translations, useTranslation } from './translations';
+import { useStore } from '../stores/appStore';
 
 describe('translations', () => {
   it('has both tr and en language objects', () => {
@@ -59,20 +61,39 @@ describe('translations', () => {
 });
 
 describe('useTranslation', () => {
+  beforeEach(() => {
+    act(() => {
+      useStore.getState().setLanguage('tr');
+    });
+  });
+
   it('returns a t function and language', () => {
-    const { t, language } = useTranslation();
-    expect(typeof t).toBe('function');
-    expect(language).toBe('tr');
+    const { result } = renderHook(() => useTranslation());
+    expect(typeof result.current.t).toBe('function');
+    expect(result.current.language).toBe('tr');
   });
 
   it('translates known keys in Turkish', () => {
-    const { t } = useTranslation();
-    expect(t('home')).toBe('Ana Sayfa');
-    expect(t('operations')).toBe('Operasyonlar');
+    const { result } = renderHook(() => useTranslation());
+    expect(result.current.t('home')).toBe('Ana Sayfa');
+    expect(result.current.t('operations')).toBe('Operasyonlar');
   });
 
   it('returns the key itself for unknown keys', () => {
-    const { t } = useTranslation();
-    expect(t('nonexistent.key')).toBe('nonexistent.key');
+    const { result } = renderHook(() => useTranslation());
+    expect(result.current.t('nonexistent.key')).toBe('nonexistent.key');
+  });
+
+  it('switches to English when store language changes', () => {
+    const { result, rerender } = renderHook(() => useTranslation());
+    expect(result.current.t('home')).toBe('Ana Sayfa');
+
+    act(() => {
+      useStore.getState().setLanguage('en');
+    });
+    rerender();
+
+    expect(result.current.language).toBe('en');
+    expect(result.current.t('home')).toBe('Home');
   });
 });
