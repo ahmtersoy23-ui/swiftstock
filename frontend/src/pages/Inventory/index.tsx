@@ -3,104 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { BarcodeScanner, BarcodeFormat } from '@capacitor-mlkit/barcode-scanning';
 import { Html5Qrcode } from 'html5-qrcode';
-import { useStore } from '../stores/appStore';
-import { apiClient } from '../lib/api';
-import { translations } from '../i18n/translations';
+import { useStore } from '../../stores/appStore';
+import { apiClient } from '../../lib/api';
+import { translations } from '../../i18n/translations';
+import {
+  type QueryMode,
+  type LocationInventoryItem,
+  type SKUInventoryItem,
+  type SerialHistoryData,
+  type ContainerData,
+  zoneTagClasses,
+  serialStatusClasses,
+  containerStatusClasses,
+} from './types';
 
 const isNative = Capacitor.isNativePlatform();
-
-type QueryMode = 'SKU' | 'LOCATION' | 'SERIAL' | 'CONTAINER';
-
-interface LocationInventoryItem {
-  sku_code: string;
-  product_name: string;
-  quantity_each: number;
-  quantity_box: number;
-  quantity_pallet: number;
-}
-
-interface SKUInventoryItem {
-  location_code: string;
-  zone: string;
-  quantity_each: number;
-  quantity_box: number;
-  quantity_pallet: number;
-}
-
-interface SerialHistoryEvent {
-  history_id: number;
-  event_type: string;
-  from_status: string | null;
-  to_status: string | null;
-  from_location: string | null;
-  to_location: string | null;
-  from_warehouse: string | null;
-  to_warehouse: string | null;
-  performed_by: string | null;
-  session_mode: string | null;
-  notes: string | null;
-  created_at: string;
-}
-
-interface SerialInfo {
-  serial_id: number;
-  full_barcode: string;
-  sku_code: string;
-  serial_no: string;
-  product_name: string;
-  status: string;
-  created_at: string;
-  last_scanned_at: string | null;
-}
-
-interface SerialHistoryData {
-  serial: SerialInfo;
-  history: SerialHistoryEvent[];
-  scan_operations: Array<{ operation_id: number; operation_type: string; scanned_at: string }>;
-}
-
-interface ContainerContent {
-  sku_code: string;
-  product_name: string;
-  product_barcode: string;
-  quantity: number;
-}
-
-interface ContainerData {
-  container: {
-    container_id: number;
-    barcode: string;
-    container_type: 'BOX' | 'PALLET';
-    warehouse_id: number;
-    location_id: number | null;
-    status: string;
-    created_by: string;
-    created_at: string;
-    opened_at: string | null;
-    notes: string | null;
-  };
-  contents: ContainerContent[];
-}
-
-const zoneTagClasses: Record<string, string> = {
-  picking: 'bg-primary-100 text-primary-700',
-  storage: 'bg-success-100 text-success-700',
-  receiving: 'bg-warning-100 text-warning-700',
-  shipping: 'bg-info-100 text-info-700',
-};
-
-const serialStatusClasses: Record<string, string> = {
-  AVAILABLE: 'bg-primary-100 text-primary-700',
-  IN_STOCK: 'bg-success-100 text-success-700',
-  SHIPPED: 'bg-info-100 text-info-700',
-  USED: 'bg-error-100 text-error-700',
-};
-
-const containerStatusClasses: Record<string, string> = {
-  active: 'bg-success-500',
-  opened: 'bg-primary-500',
-  closed: 'bg-slate-500',
-};
 
 function Inventory() {
   const navigate = useNavigate();
@@ -345,7 +262,7 @@ function Inventory() {
           <button onClick={() => {
             const data = queryMode === 'SKU' ? skuResults : queryMode === 'LOCATION' ? locationResults : [];
             if (data.length === 0) return;
-            import('../utils/exportXlsx').then(({ exportToXlsx }) => {
+            import('../../utils/exportXlsx').then(({ exportToXlsx }) => {
               exportToXlsx(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (data as any[]).map((item: Record<string, unknown>) => ({
