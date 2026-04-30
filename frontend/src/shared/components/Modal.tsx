@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -8,6 +8,8 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   /** Close on overlay click, default: true */
   closeOnOverlay?: boolean;
+  /** Optional explicit aria-label for the dialog (used when no <ModalHeader> is rendered) */
+  ariaLabel?: string;
 }
 
 const sizeMap = {
@@ -18,7 +20,7 @@ const sizeMap = {
   full: 'max-w-3xl',
 };
 
-export function Modal({ isOpen, onClose, children, size = 'lg', closeOnOverlay = true }: ModalProps) {
+export function Modal({ isOpen, onClose, children, size = 'lg', closeOnOverlay = true, ariaLabel }: ModalProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,7 +45,13 @@ export function Modal({ isOpen, onClose, children, size = 'lg', closeOnOverlay =
         }
       }}
     >
-      <div ref={contentRef} className={`bg-white rounded-xl shadow-xl w-full ${sizeMap[size]} max-h-[90vh] overflow-y-auto`}>
+      <div
+        ref={contentRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={ariaLabel ?? 'Modal'}
+        className={`bg-white rounded-xl shadow-xl w-full ${sizeMap[size]} max-h-[90vh] overflow-y-auto`}
+      >
         {children}
       </div>
     </div>
@@ -56,12 +64,30 @@ interface ModalHeaderProps {
 }
 
 export function ModalHeader({ children, onClose }: ModalHeaderProps) {
+  const headingId = useId();
+  const headerRef = useRef<HTMLHeadingElement>(null);
+
+  // Best-effort: also wire aria-labelledby on the parent <dialog> at mount so screen
+  // readers announce the heading text instead of the generic "Modal" fallback.
+  useEffect(() => {
+    const dialog = headerRef.current?.closest('[role="dialog"]') as HTMLElement | null;
+    if (dialog && headerRef.current) {
+      dialog.setAttribute('aria-labelledby', headerRef.current.id);
+      dialog.removeAttribute('aria-label');
+    }
+  }, []);
+
   return (
     <div className="flex items-center justify-between p-5 border-b border-slate-200">
-      <h3 className="text-lg font-semibold text-slate-800">{children}</h3>
+      <h3 ref={headerRef} id={headingId} className="text-lg font-semibold text-slate-800">{children}</h3>
       {onClose && (
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Kapat"
+          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
         </button>
       )}
     </div>

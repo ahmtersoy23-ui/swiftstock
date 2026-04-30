@@ -124,11 +124,13 @@ function Layout({ children }: LayoutProps) {
         <div className="flex justify-between items-center max-w-[1200px] mx-auto relative">
           {!isHomePage && (
             <button
+              type="button"
               className="bg-white/10 border border-white/20 text-white w-9 h-9 rounded-lg cursor-pointer flex items-center justify-center duration-150 mr-2 hover:bg-white/20 md:w-8 md:h-8"
               onClick={handleHomeClick}
               title="Ana Sayfa"
+              aria-label="Ana Sayfa"
             >
-              <span className="text-lg">&#x2302;</span>
+              <span className="text-lg" aria-hidden="true">&#x2302;</span>
             </button>
           )}
           <h1
@@ -155,13 +157,24 @@ function Layout({ children }: LayoutProps) {
             {/* Alerts Bell */}
             <div ref={alertRef} className="relative">
               <button
+                type="button"
                 onClick={() => setShowAlerts(!showAlerts)}
                 className="bg-transparent border-none cursor-pointer text-lg relative py-1 px-2 text-slate-400"
                 title={language === 'tr' ? 'Bildirimler' : 'Notifications'}
+                aria-label={
+                  unreadCount > 0
+                    ? `${language === 'tr' ? 'Bildirimler' : 'Notifications'} (${unreadCount} ${language === 'tr' ? 'okunmamış' : 'unread'})`
+                    : (language === 'tr' ? 'Bildirimler' : 'Notifications')
+                }
+                aria-haspopup="true"
+                aria-expanded={showAlerts}
               >
-                🔔
+                <span aria-hidden="true">🔔</span>
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0.5 bg-red-600 text-white rounded-full w-4 h-4 text-[10px] font-bold flex items-center justify-center">
+                  <span
+                    className="absolute top-0 right-0.5 bg-red-600 text-white rounded-full w-4 h-4 text-[10px] font-bold flex items-center justify-center"
+                    aria-hidden="true"
+                  >
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -225,6 +238,7 @@ function Layout({ children }: LayoutProps) {
               onChange={handleLanguageChange}
               className="bg-white/10 text-white border border-white/20 py-2 px-3 rounded-lg text-sm font-medium cursor-pointer duration-150 hover:bg-white/20 focus:outline-none focus:bg-white/20 focus:border-white/40 md:py-1 md:px-2 md:text-xs [&_option]:bg-slate-800 [&_option]:text-white"
               title="Language / Dil"
+              aria-label="Language / Dil"
             >
               <option value="tr">TR</option>
               <option value="en">EN</option>
@@ -233,6 +247,7 @@ function Layout({ children }: LayoutProps) {
               value={currentWarehouse}
               onChange={handleWarehouseChange}
               className="bg-white/10 text-white border border-white/20 py-2 px-3 rounded-lg text-sm font-medium cursor-pointer duration-150 hover:bg-white/20 focus:outline-none focus:bg-white/20 focus:border-white/40 md:py-1 md:px-2 md:text-xs [&_option]:bg-slate-800 [&_option]:text-white"
+              aria-label={language === 'tr' ? 'Depo seçimi' : 'Warehouse'}
             >
               {warehouses.length > 0 ? (
                 warehouses.map((w) => (
