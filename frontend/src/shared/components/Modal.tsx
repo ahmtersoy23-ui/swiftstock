@@ -34,6 +34,21 @@ export function Modal({ isOpen, onClose, children, size = 'lg', closeOnOverlay =
     };
   }, [isOpen, onClose]);
 
+  // Initial focus: first focusable element inside the dialog, fallback to the dialog container.
+  useEffect(() => {
+    if (!isOpen) return;
+    const container = contentRef.current;
+    if (!container) return;
+    const focusableSelector =
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusable = container.querySelector<HTMLElement>(focusableSelector);
+    if (focusable) {
+      focusable.focus();
+    } else {
+      container.focus();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -50,7 +65,8 @@ export function Modal({ isOpen, onClose, children, size = 'lg', closeOnOverlay =
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel ?? 'Modal'}
-        className={`bg-white rounded-xl shadow-xl w-full ${sizeMap[size]} max-h-[90vh] overflow-y-auto`}
+        tabIndex={-1}
+        className={`bg-white rounded-xl shadow-xl w-full ${sizeMap[size]} max-h-[90vh] overflow-y-auto focus:outline-none`}
       >
         {children}
       </div>

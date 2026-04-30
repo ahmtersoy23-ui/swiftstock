@@ -120,6 +120,12 @@ function Layout({ children }: LayoutProps) {
 
   return (
     <div className={`flex flex-col h-screen bg-slate-50 theme-${currentWarehouse}`}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded"
+      >
+        Ana içeriğe geç
+      </a>
       <header className={`relative bg-slate-800 text-white py-3 px-6 shadow-md duration-200 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:bg-primary-500 md:py-2 md:px-3 theme-${currentWarehouse}`}>
         <div className="flex justify-between items-center max-w-[1200px] mx-auto relative">
           {!isHomePage && (
@@ -270,7 +276,7 @@ function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      <main className="flex-1 p-0 max-w-full w-full overflow-y-auto">{children}</main>
+      <main id="main-content" className="flex-1 p-0 max-w-full w-full overflow-y-auto">{children}</main>
     </div>
   );
 }
