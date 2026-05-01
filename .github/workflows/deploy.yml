@@ -113,5 +113,5 @@ jobs:
           port: 2222
           script: |
             cd /var/www/swiftstock-backend
-            npm ci --omit=dev
-            pm2 restart swiftstock-backend
+            npm ci --omit=dev --ignore-scripts
+            sudo -u iwaapps -H PM2_HOME=/home/iwaapps/.pm2 pm2 restart swiftstock-backend
