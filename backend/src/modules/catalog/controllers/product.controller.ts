@@ -18,13 +18,13 @@ function handleError(res: Response, error: unknown, context: string): void {
 
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
-    const { page = '1', limit = '100', search = '', category_id = '' } = req.query;
+    const { page = '1', limit = '100', search = '', category = '' } = req.query;
 
     const result = await productService.getAllProducts({
       page: parseInt(page as string),
       limit: parseInt(limit as string),
       search: search as string,
-      category: category_id as string,
+      category: category as string,
     });
 
     res.json({
