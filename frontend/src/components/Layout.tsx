@@ -128,7 +128,7 @@ function Layout({ children }: LayoutProps) {
       </a>
       <header className={`relative bg-slate-800 text-white py-3 px-6 shadow-md duration-200 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:bg-primary-500 md:py-2 md:px-3 theme-${currentWarehouse}`}>
         <div className="flex justify-between items-center max-w-[1200px] mx-auto relative">
-          {!isHomePage && (
+          {!isHomePage ? (
             <button
               type="button"
               className="bg-white/10 border border-white/20 text-white w-9 h-9 rounded-lg cursor-pointer flex items-center justify-center duration-150 mr-2 hover:bg-white/20 md:w-8 md:h-8"
@@ -138,6 +138,9 @@ function Layout({ children }: LayoutProps) {
             >
               <span className="text-lg" aria-hidden="true">&#x2302;</span>
             </button>
+          ) : (
+            // Home sayfasinda sol tarafa placeholder — justify-between sag kontrolleri saga itsin
+            <div className="w-9 h-9 mr-2 md:w-8 md:h-8" aria-hidden="true" />
           )}
           <h1
             className="absolute left-1/2 -translate-x-1/2 m-0 text-[1.375rem] font-bold tracking-wider text-white md:text-lg md:tracking-normal"
