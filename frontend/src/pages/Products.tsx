@@ -24,20 +24,12 @@ function Products() {
   const [pageSize] = useState(100);
   const [searchDebounce, setSearchDebounce] = useState('');
 
-  // Label templates
-  const LABEL_TEMPLATES = [
-    { id: 'standard', name: language === 'tr' ? 'Standart (100x30mm)' : 'Standard (100x30mm)', width: '100mm', height: '30mm', fontSize: '8pt', barcodeH: '14mm', serialSize: '6pt' },
-    { id: 'small', name: language === 'tr' ? 'Kucuk (50x25mm)' : 'Small (50x25mm)', width: '50mm', height: '25mm', fontSize: '6pt', barcodeH: '10mm', serialSize: '5pt' },
-    { id: 'large', name: language === 'tr' ? 'Buyuk (100x50mm)' : 'Large (100x50mm)', width: '100mm', height: '50mm', fontSize: '10pt', barcodeH: '20mm', serialSize: '7pt' },
-  ];
-
   // Label print modal state
   const [labelModal, setLabelModal] = useState<{
     product: Product | null;
     quantity: number;
     loading: boolean;
-    template: string;
-  }>({ product: null, quantity: 1, loading: false, template: 'standard' });
+  }>({ product: null, quantity: 1, loading: false });
 
   // Bulk selection
   const [bulkMode, setBulkMode] = useState(false);
@@ -88,54 +80,101 @@ function Products() {
     }
   };
 
+  // Toplu etiket basma — tum SKU'lar tek popup, dogrudan print dialog
   const openBulkPrintPopup = (items: Array<{ sku: string; name: string; barcodes: string[] }>) => {
     const printWindow = window.open('', '_blank', 'width=450,height=600');
     if (!printWindow) return;
     const totalLabels = items.reduce((s, i) => s + i.barcodes.length, 0);
     printWindow.document.write(`<!DOCTYPE html><html><head><title>${totalLabels} Etiket</title>
-      <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js">${'<'}/script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">${'<'}/script>
       <style>
         @page { size: 100mm 30mm; margin: 0; }
-        body { margin: 0; padding: 0; }
-        .label { width: 100mm; height: 30mm; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-after: always; padding: 2mm; box-sizing: border-box; }
-        .pname { font-size: 7pt; font-family: Arial, sans-serif; text-align: center; max-height: 8mm; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: 1mm; }
-        svg { max-width: 90mm; height: 14mm; }
-        .scode { font-size: 6pt; font-family: 'Courier New', monospace; color: #333; text-align: center; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; }
+        .label {
+          width: 100mm; height: 30mm;
+          padding: 1.5mm 2mm 1.5mm 1.5mm;
+          gap: 2mm;
+          display: flex; align-items: center;
+          page-break-after: always; overflow: hidden;
+        }
+        .label:last-child { page-break-after: auto; }
+        .qr-box { width: 26mm; height: 26mm; flex-shrink: 0; }
+        .qr-box img, .qr-box canvas { width: 100% !important; height: 100% !important; display: block; }
+        .text-area {
+          flex: 1; min-width: 0; height: 100%;
+          display: flex; flex-direction: column; justify-content: center;
+          gap: 1mm; overflow: hidden;
+        }
+        .product-name {
+          font-size: 12pt; font-weight: 700; line-height: 1.2;
+          word-break: break-word; overflow-wrap: anywhere;
+        }
+        .iwasku-serial {
+          font-size: 8pt; font-family: 'Courier New', monospace;
+          letter-spacing: 0.3px; color: #333; flex-shrink: 0;
+        }
       </style></head><body></body></html>`);
     printWindow.document.close();
 
     const render = () => {
+      const win = printWindow as Window & {
+        QRCode: new (el: Element, opts: object) => unknown;
+      };
+
+      const fitText = (nameEl: HTMLElement) => {
+        const textArea = nameEl.parentElement;
+        if (!textArea) return;
+        const maxFont = 12, minFont = 6, step = 0.25;
+        let current = maxFont;
+        nameEl.style.fontSize = current + 'pt';
+        while (textArea.scrollHeight > textArea.clientHeight + 0.5 && current > minFont) {
+          current = Math.max(minFont, current - step);
+          nameEl.style.fontSize = current + 'pt';
+        }
+      };
+
       items.forEach(item => {
         item.barcodes.forEach(bc => {
           const label = printWindow.document.createElement('div');
           label.className = 'label';
-          const pname = printWindow.document.createElement('div');
-          pname.className = 'pname';
-          pname.textContent = item.name;
-          label.appendChild(pname);
-          const svg = printWindow.document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          svg.setAttribute('class', 'barcode');
-          label.appendChild(svg);
-          const scode = printWindow.document.createElement('div');
-          scode.className = 'scode';
-          scode.textContent = bc;
-          label.appendChild(scode);
+
+          const qrBox = printWindow.document.createElement('div');
+          qrBox.className = 'qr-box';
+          label.appendChild(qrBox);
+
+          const textArea = printWindow.document.createElement('div');
+          textArea.className = 'text-area';
+
+          const nameDiv = printWindow.document.createElement('div');
+          nameDiv.className = 'product-name';
+          nameDiv.textContent = item.name;
+          textArea.appendChild(nameDiv);
+
+          const serialDiv = printWindow.document.createElement('div');
+          serialDiv.className = 'iwasku-serial';
+          serialDiv.textContent = bc;
+          textArea.appendChild(serialDiv);
+
+          label.appendChild(textArea);
           printWindow.document.body.appendChild(label);
+
+          try {
+            new win.QRCode(qrBox, {
+              text: bc,
+              width: 98, height: 98,
+              colorDark: '#000000', colorLight: '#ffffff',
+              correctLevel: 1, // M
+            });
+          } catch { /* skip */ }
+
+          fitText(nameDiv);
         });
-      });
-      const svgs = printWindow.document.querySelectorAll('.barcode');
-      const allBarcodes = items.flatMap(i => i.barcodes);
-      svgs.forEach((svg, i) => {
-        try {
-          (printWindow as unknown as { JsBarcode: (el: Element, data: string, opts: object) => void }).JsBarcode(svg, allBarcodes[i], {
-            format: 'CODE128', width: 2, height: 40, displayValue: false, margin: 0,
-          });
-        } catch { /* skip */ }
       });
       setTimeout(() => printWindow.print(), 300);
     };
 
-    if ((printWindow as unknown as { JsBarcode?: unknown }).JsBarcode) {
+    if ((printWindow as unknown as { QRCode?: unknown }).QRCode) {
       render();
     } else {
       printWindow.onload = render;
@@ -204,7 +243,7 @@ function Products() {
 
   // Opens the label quantity modal
   const handlePrintLabel = (product: Product) => {
-    setLabelModal({ product, quantity: 1, loading: false, template: 'standard' });
+    setLabelModal({ product, quantity: 1, loading: false });
   };
 
   // Generates serials via API, then opens print popup
@@ -215,24 +254,18 @@ function Products() {
       const result = await serialApi.generate(labelModal.product.sku_code, labelModal.quantity);
       if (!result.success) throw new Error((result as { error?: string }).error || 'Seri numarasi olusturulamadi');
       const serials = (result as { data: { serials: Array<{ full_barcode: string }> } }).data.serials;
-      const tpl = LABEL_TEMPLATES.find(t => t.id === labelModal.template) || LABEL_TEMPLATES[0];
-      setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' });
-      openPrintPopup(labelModal.product, serials, tpl);
+      const product = labelModal.product;
+      setLabelModal({ product: null, quantity: 1, loading: false });
+      openPrintPopup(product, serials);
     } catch (err) {
       setError((err as Error).message);
       setLabelModal((prev) => ({ ...prev, loading: false }));
     }
   };
 
-  // Opens print popup and renders labels from pre-fetched serial data
-  const openPrintPopup = (product: Product, serials: Array<{ full_barcode: string }>, tpl?: { width: string; height: string; fontSize: string; barcodeH: string; serialSize: string }) => {
-    const w = tpl?.width || '100mm';
-    const h = tpl?.height || '30mm';
-    const fs = tpl?.fontSize || '8pt';
-    const bh = tpl?.barcodeH || '14mm';
-    const ss = tpl?.serialSize || '6pt';
-    const barcodeW = parseInt(w) - 4; // mm, with 2mm padding each side
-
+  // Opens print popup and renders labels from pre-fetched serial data.
+  // 100x30mm etiket: sol 26x26mm QR + sag (urun adi 12pt bold auto-shrink + iwasku-serial 8pt)
+  const openPrintPopup = (product: Product, serials: Array<{ full_barcode: string }>) => {
     const printWindow = window.open('', '_blank', 'width=700,height=900');
     if (!printWindow) return;
 
@@ -240,7 +273,7 @@ function Products() {
 <html>
   <head>
     <title>Etiket Yazdir</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
@@ -249,20 +282,38 @@ function Products() {
       .btn { padding: 12px 24px; margin: 4px; cursor: pointer; font-size: 15px; border: none; border-radius: 6px; font-weight: 600; }
       .btn-print { background: #2563eb; color: white; }
       .btn-close { background: #6b7280; color: white; }
-      .labels-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; padding: 16px; background: white; border-radius: 8px; }
-      .label { width: ${w}; height: ${h}; border: 1px dashed #999; padding: 1mm 2mm; background: white;
-        display: flex; flex-direction: column; align-items: center; justify-content: space-between; page-break-inside: avoid; }
-      .product-name { font-size: ${fs}; font-weight: bold; line-height: 1.2; text-align: center;
-        width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-      .barcode-container { width: ${barcodeW}mm; height: ${bh}; display: flex; align-items: center; justify-content: center; }
-      .barcode-container svg { max-width: 100%; max-height: 100%; }
-      .serial-code { font-size: ${ss}; font-family: 'Courier New', monospace; color: #333; text-align: center; }
+      .labels-container { display: flex; flex-direction: column; gap: 8px; padding: 16px; background: white; border-radius: 8px; }
+      .label {
+        width: 100mm; height: 30mm;
+        border: 1px dashed #bbb;
+        padding: 1.5mm 2mm 1.5mm 1.5mm;
+        gap: 2mm;
+        background: white;
+        display: flex; align-items: center;
+        page-break-inside: avoid; overflow: hidden;
+      }
+      .qr-box { width: 26mm; height: 26mm; flex-shrink: 0; }
+      .qr-box img, .qr-box canvas { width: 100% !important; height: 100% !important; display: block; }
+      .text-area {
+        flex: 1; min-width: 0; height: 100%;
+        display: flex; flex-direction: column; justify-content: center;
+        gap: 1mm; overflow: hidden;
+      }
+      .product-name {
+        font-size: 12pt; font-weight: 700; line-height: 1.2;
+        word-break: break-word; overflow-wrap: anywhere;
+      }
+      .iwasku-serial {
+        font-size: 8pt; font-family: 'Courier New', monospace;
+        letter-spacing: 0.3px; color: #333; flex-shrink: 0;
+      }
       @media print {
         body { padding: 0; background: white; }
         .controls { display: none !important; }
-        .labels-container { padding: 0; background: transparent; }
-        .label { border: none; }
-        @page { size: auto; margin: 5mm; }
+        .labels-container { padding: 0; background: transparent; gap: 0; }
+        .label { border: none; page-break-after: always; }
+        .label:last-child { page-break-after: auto; }
+        @page { size: 100mm 30mm; margin: 0; }
       }
     </style>
   </head>
@@ -277,9 +328,9 @@ function Products() {
 </html>`);
     printWindow.document.close();
 
-    printWindow.addEventListener('load', () => {
+    const render = () => {
       const win = printWindow as Window & {
-        JsBarcode: (selector: string, value: string, options: object) => void;
+        QRCode: new (el: Element, opts: object) => unknown;
       };
 
       const titleEl = printWindow.document.getElementById('title-text');
@@ -288,36 +339,60 @@ function Products() {
       const container = printWindow.document.getElementById('labels-container');
       if (!container) return;
 
-      serials.forEach((s, i) => {
+      const fitText = (nameEl: HTMLElement) => {
+        const textArea = nameEl.parentElement;
+        if (!textArea) return;
+        const maxFont = 12, minFont = 6, step = 0.25;
+        let current = maxFont;
+        nameEl.style.fontSize = current + 'pt';
+        while (textArea.scrollHeight > textArea.clientHeight + 0.5 && current > minFont) {
+          current = Math.max(minFont, current - step);
+          nameEl.style.fontSize = current + 'pt';
+        }
+      };
+
+      serials.forEach((s) => {
         const label = printWindow.document.createElement('div');
         label.className = 'label';
+
+        const qrBox = printWindow.document.createElement('div');
+        qrBox.className = 'qr-box';
+        label.appendChild(qrBox);
+
+        const textArea = printWindow.document.createElement('div');
+        textArea.className = 'text-area';
 
         const nameDiv = printWindow.document.createElement('div');
         nameDiv.className = 'product-name';
         nameDiv.textContent = product.product_name;
-        label.appendChild(nameDiv);
-
-        const barcodeDiv = printWindow.document.createElement('div');
-        barcodeDiv.className = 'barcode-container';
-        const svg = printWindow.document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('id', `barcode-${i}`);
-        barcodeDiv.appendChild(svg);
-        label.appendChild(barcodeDiv);
+        textArea.appendChild(nameDiv);
 
         const serialDiv = printWindow.document.createElement('div');
-        serialDiv.className = 'serial-code';
+        serialDiv.className = 'iwasku-serial';
         serialDiv.textContent = s.full_barcode;
-        label.appendChild(serialDiv);
+        textArea.appendChild(serialDiv);
 
+        label.appendChild(textArea);
         container.appendChild(label);
-      });
 
-      serials.forEach((s, i) => {
-        win.JsBarcode?.(`#barcode-${i}`, s.full_barcode, {
-          format: 'CODE128', width: 2.2, height: 55, displayValue: false, margin: 0,
-        });
+        try {
+          new win.QRCode(qrBox, {
+            text: s.full_barcode,
+            width: 98, height: 98,
+            colorDark: '#000000', colorLight: '#ffffff',
+            correctLevel: 1, // M
+          });
+        } catch { /* skip */ }
+
+        fitText(nameDiv);
       });
-    });
+    };
+
+    if ((printWindow as unknown as { QRCode?: unknown }).QRCode) {
+      render();
+    } else {
+      printWindow.addEventListener('load', render);
+    }
   };
 
   return (
@@ -506,21 +581,17 @@ function Products() {
         </div>
       </div>
 
-      {/* Label Print Modal */}
-      <Modal isOpen={!!labelModal.product} onClose={() => !labelModal.loading && setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' })} size="sm">
-        <ModalHeader onClose={() => !labelModal.loading && setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' })}>Etiket Bas</ModalHeader>
+      {/* Label Print Modal — sabit 100x30mm QR etiket */}
+      <Modal isOpen={!!labelModal.product} onClose={() => !labelModal.loading && setLabelModal({ product: null, quantity: 1, loading: false })} size="sm">
+        <ModalHeader onClose={() => !labelModal.loading && setLabelModal({ product: null, quantity: 1, loading: false })}>Etiket Bas</ModalHeader>
         <ModalBody>
           <p className="text-gray-500 mb-1 text-[13px]">{labelModal.product?.sku_code}</p>
           <p className="text-gray-700 mb-4 text-sm font-medium">{labelModal.product?.product_name}</p>
-          <label className="block mb-1.5 font-semibold text-sm">{language === 'tr' ? 'Sablon' : 'Template'}</label>
-          <select value={labelModal.template} onChange={(e) => setLabelModal((prev) => ({ ...prev, template: e.target.value }))} className="w-full py-2 px-3 text-sm border-2 border-gray-200 rounded-md mb-3">
-            {LABEL_TEMPLATES.map(tpl => (<option key={tpl.id} value={tpl.id}>{tpl.name}</option>))}
-          </select>
           <label className="block mb-1.5 font-semibold text-sm">{language === 'tr' ? 'Adet' : 'Quantity'}</label>
           <input type="number" min={1} max={500} value={labelModal.quantity} onChange={(e) => setLabelModal((prev) => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))} onKeyDown={(e) => e.key === 'Enter' && !labelModal.loading && handleGenerateLabels()} autoFocus className="w-full py-2.5 px-3 text-lg text-center border-2 border-gray-200 rounded-md mb-4" />
           <div className="flex gap-2">
             <button onClick={handleGenerateLabels} disabled={labelModal.loading} className="flex-1 py-3 border-none rounded-md font-semibold text-sm text-white" style={{ background: labelModal.loading ? '#9ca3af' : '#10b981', cursor: labelModal.loading ? 'not-allowed' : 'pointer' }}>{labelModal.loading ? 'Uretiliyor...' : 'Seri No Uret ve Hazirla'}</button>
-            <button onClick={() => setLabelModal({ product: null, quantity: 1, loading: false, template: 'standard' })} disabled={labelModal.loading} className="py-3 px-4 bg-gray-500 text-white border-none rounded-md cursor-pointer text-sm">Iptal</button>
+            <button onClick={() => setLabelModal({ product: null, quantity: 1, loading: false })} disabled={labelModal.loading} className="py-3 px-4 bg-gray-500 text-white border-none rounded-md cursor-pointer text-sm">Iptal</button>
           </div>
         </ModalBody>
       </Modal>
